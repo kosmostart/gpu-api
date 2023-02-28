@@ -58,6 +58,26 @@ fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> {
             return textureSampleLevel(t_diffuse, s_diffuse, fragment_input.texture_coordinates, 0.0);
         }
         default: {
+            if (
+                fragment_input.clip_position[0] < fragment_input.component_coordinates[0] ||
+                fragment_input.clip_position[0] > fragment_input.component_coordinates[2] ||
+                fragment_input.clip_position[1] < fragment_input.component_coordinates[1] ||
+                fragment_input.clip_position[1] > fragment_input.component_coordinates[3]
+            ) {
+                discard;
+            }
+
+            if (
+                fragment_input.has_overlay == 1u && (
+                    fragment_input.clip_position[0] >= fragment_input.overlay_coordinates[0] &&
+                    fragment_input.clip_position[0] <= fragment_input.overlay_coordinates[2] &&
+                    fragment_input.clip_position[1] >= fragment_input.overlay_coordinates[1] &&
+                    fragment_input.clip_position[1] <= fragment_input.overlay_coordinates[3]
+                )
+            ) {
+                discard;
+            }
+            
             if (fragment_input.has_element_border == 1u) {
                 let element_border_width = 1.0;
                 let element_border_radius = 10.0;

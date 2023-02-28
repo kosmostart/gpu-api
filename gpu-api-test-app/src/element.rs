@@ -79,7 +79,7 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
 
     let vertex_type = 0;
 
-    let component_coordinates = [0.0, 0.0, 0.0, 0.0];
+    let component_coordinates = [0.0, 0.0, 800.0, 800.0];
     let has_overlay = 0;
     let overlay_coordinates = [0.0, 0.0, 0.0, 0.0];
 
