@@ -30,7 +30,7 @@ pub struct Pipeline {
 pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, CameraController, CameraUniform, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl")))
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
     });    
 
     let texture_bind_group_layout = device.create_bind_group_layout(        
@@ -58,7 +58,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                 label: Some("texture_bind_group_layout"),
             });
 
-        let diffuse_bytes = include_bytes!("../../textures/happy-tree.png");
+        let diffuse_bytes = include_bytes!("../../../textures/happy-tree.png");
         let diffuse_texture = crate::texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").expect("Failed to create texture");
 
         let texture_bind_group = device.create_bind_group(

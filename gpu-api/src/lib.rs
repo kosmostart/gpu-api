@@ -6,4 +6,7 @@ pub mod texture;
 pub mod camera;
 pub mod instance;
 pub mod model;
-pub mod pipeline;
+pub mod pipeline {
+    pub mod element_pipeline;
+    pub mod model_pipeline;
+}

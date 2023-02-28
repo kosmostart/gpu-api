@@ -1,0 +1,272 @@
+use std::{borrow::Cow, mem::size_of};
+use log::*;
+use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat};
+use crate::texture::Texture;
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct Vertex {
+    pub vertex_type: u32,
+    pub position: [f32; 3],
+    pub color: [f32; 4],
+    pub element_coordinates: [f32; 4],
+    pub has_element_border: u32,
+    pub element_border_color: [f32; 4],
+    pub component_coordinates: [f32; 4],
+    pub texture_coordinates: [f32; 2],
+    pub has_overlay: u32,    
+    pub overlay_coordinates: [f32; 4]
+}
+
+unsafe impl bytemuck::Pod for Vertex {}
+unsafe impl bytemuck::Zeroable for Vertex {}
+
+pub struct Pipeline {
+    pub shader: ShaderModule,
+    pub diffuse_texture: Texture,
+    pub texture_bind_group_layout: BindGroupLayout,
+    pub diffuse_bind_group: BindGroup,    
+    pub pipeline_layout: PipelineLayout,
+    pub swapchain_format: TextureFormat,
+    pub render_pipeline: RenderPipeline
+}
+
+pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue) -> Pipeline {
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("Shader1"),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("element.wgsl")))
+    });
+
+    let diffuse_bytes = include_bytes!("../../../textures/happy-tree.png");
+    let diffuse_texture = crate::texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
+
+    let texture_bind_group_layout = device.create_bind_group_layout(        
+        &wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
+    
+    let diffuse_bind_group = device.create_bind_group(
+        &wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                }
+            ],
+            label: Some("diffuse_bind_group"),
+        }
+    );        
+
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("Pipeline Layout"),
+        bind_group_layouts: &[
+            &texture_bind_group_layout            
+        ],
+        push_constant_ranges: &[]
+    });
+
+    let swapchain_capabilities = surface.get_capabilities(&adapter);
+    let swapchain_format = swapchain_capabilities.formats[0];
+
+    warn!("{:?}", swapchain_format);
+
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        multiview: None,
+        label: None,
+        layout: Some(&pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[
+                wgpu::VertexBufferLayout {
+                    array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            offset: 0,
+                            shader_location: 0,
+                            format: wgpu::VertexFormat::Uint32
+                        },
+                        wgpu::VertexAttribute {
+                            offset: size_of::<u32>() as wgpu::BufferAddress,
+                            shader_location: 1,
+                            format: wgpu::VertexFormat::Float32x3,
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                            size_of::<u32>() +
+                            size_of::<[f32; 3]>()) as wgpu::BufferAddress,
+                            shader_location: 2,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>()) as wgpu::BufferAddress,
+                            shader_location: 3,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>()) as wgpu::BufferAddress,
+                            shader_location: 4,
+                            format: wgpu::VertexFormat::Uint32
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>()) as wgpu::BufferAddress,
+                            shader_location: 5,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()) as wgpu::BufferAddress,
+                            shader_location: 6,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()  + 
+                                size_of::<[f32; 4]>()) as wgpu::BufferAddress,
+                            shader_location: 7,
+                            format: wgpu::VertexFormat::Float32x2
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()  + 
+                                size_of::<[f32; 4]>() +
+                                size_of::<[f32; 2]>()) as wgpu::BufferAddress,
+                            shader_location: 8,
+                            format: wgpu::VertexFormat::Uint32
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()  + 
+                                size_of::<[f32; 4]>() +
+                                size_of::<[f32; 2]>() +
+                                size_of::<u32>()) as wgpu::BufferAddress,
+                            shader_location: 9,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()  + 
+                                size_of::<[f32; 4]>() +
+                                size_of::<[f32; 2]>() +
+                                size_of::<[f32; 4]>()) as wgpu::BufferAddress,
+                            shader_location: 10,
+                            format: wgpu::VertexFormat::Uint32
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                size_of::<u32>() +
+                                size_of::<[f32; 3]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<[f32; 4]>() + 
+                                size_of::<u32>() + 
+                                size_of::<[f32; 4]>()  + 
+                                size_of::<[f32; 4]>() +
+                                size_of::<[f32; 2]>() +
+                                size_of::<u32>() +
+                                size_of::<u32>()) as wgpu::BufferAddress,
+                            shader_location: 11,
+                            format: wgpu::VertexFormat::Float32x4
+                        }
+                    ]
+                }
+            ]
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(wgpu::ColorTargetState {
+                format: swapchain_format,
+                blend: Some(wgpu::BlendState {
+                    color: wgpu::BlendComponent {
+                        src_factor: wgpu::BlendFactor::SrcAlpha,
+                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                        operation: wgpu::BlendOperation::Add,
+                    },
+                    alpha: wgpu::BlendComponent {
+                        src_factor: wgpu::BlendFactor::One,
+                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                        operation: wgpu::BlendOperation::Add,
+                    },
+                }),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default()
+    });
+
+    Pipeline {
+        shader,
+        diffuse_texture,
+        texture_bind_group_layout,
+        diffuse_bind_group,        
+        pipeline_layout,
+        swapchain_format,
+        render_pipeline
+    }
+}

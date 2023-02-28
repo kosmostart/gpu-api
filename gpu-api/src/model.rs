@@ -72,7 +72,7 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
 
         for mut primitive in mesh.primitives {
             for position in primitive.positions {
-                vertices.push(pipeline::Vertex {
+                vertices.push(pipeline::model_pipeline::Vertex {
                     position,
                     texture_coordinates: [0.0, 0.0],
                     normal: [1.0, 1.0, 1.0]                   

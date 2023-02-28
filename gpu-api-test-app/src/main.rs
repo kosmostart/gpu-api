@@ -7,7 +7,9 @@ use winit::{event_loop::EventLoopProxy, platform::web::WindowExtWebSys};
 use tokio::runtime::Runtime;
 use gpu_api::{bytemuck, wgpu, wgpu::util::DeviceExt};
 use gpu_api::{pipeline, model::create_model};
+use element::{Color, ElementCfg, create_element};
 
+mod element;
 mod model_load;
 
 #[derive(Debug)]
@@ -86,9 +88,57 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![]
         }
-    );            
-      
-    let (mut camera, mut camera_controller, mut camera_uniform, mut pipeline) = pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    );
+
+    let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
+    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;    
+
+    let mut vertices = vec![];
+    let mut indices = vec![];
+
+    let background_color = Color {
+        r: 0.10196,
+        g: 0.10196,
+        b: 0.10196,
+        a: 1.0
+    };
+
+    let border_color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0
+    };
+
+    let element_cfg = ElementCfg { 
+        x: 30, 
+        y: 30, 
+        width: 70, 
+        height: 100, 
+        background_color, 
+        border_color: Some(border_color)
+    };
+
+    create_element(&layout, element_cfg, &mut vertices, &mut indices);
+
+
+    let mut vertex_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX
+        }
+    );
+
+    let mut index_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&indices),
+            usage: wgpu::BufferUsages::INDEX
+        }
+    );
+    
+    let mut indices_count = indices.len() as u32;
 
     let mut objects = vec![];    
 
@@ -215,7 +265,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 camera_controller.update_camera(&mut camera);
                 camera_uniform.update_view_proj(&camera);
                 queue.write_buffer(
-                    &pipeline.camera_buffer,
+                    &model_pipeline.camera_buffer,
                     0,
                     bytemuck::cast_slice(&[camera_uniform])
                 );
@@ -256,7 +306,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         }
                     );
                                         
-                    render_pass.set_pipeline(&pipeline.render_pipeline);
+                    render_pass.set_pipeline(&model_pipeline.render_pipeline);
 
                     for object in &objects {
                         render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
@@ -264,13 +314,20 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         let instances_range = 0..object.instances.len() as u32;
                         
                         for mesh in &object.meshes {                            
-                            render_pass.set_bind_group(0, &pipeline.texture_bind_group, &[]); // Texture
-                            render_pass.set_bind_group(1, &pipeline.camera_bind_group, &[]); // Camera
+                            render_pass.set_bind_group(0, &model_pipeline.texture_bind_group, &[]); // Texture
+                            render_pass.set_bind_group(1, &model_pipeline.camera_bind_group, &[]); // Camera
                             render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
                         }
-                    }                    
+                    }
+
+                    render_pass.set_pipeline(&element_pipeline.render_pipeline);
+                    
+                    render_pass.set_bind_group(0, &element_pipeline.diffuse_bind_group, &[]); // Texture
+                    render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                    render_pass.draw_indexed(0..indices_count, 0, 0..1);
                 }                
                 
                 queue.submit(Some(encoder.finish()));
