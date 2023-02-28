@@ -1,0 +1,17 @@
+[package]
+name = "gpu-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+log = "*"
+bytemuck = "*"
+bytemuck_derive = "*"
+serde = "*"
+serde_derive = "*"
+image = { version = "*", default-features = false, features = ["png", "jpeg"] }
+cgmath = "*"
+wgpu = "*"
