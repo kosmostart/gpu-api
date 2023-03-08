@@ -29,6 +29,12 @@ pub struct Layout {
     pub cursor_physical_position: Option<PhysicalPosition<f64>>    
 }
 
+pub struct Scene {
+    vertices: Vec<pipeline::element_pipeline::Vertex>,
+    indices: Vec<u32>,
+    element_index: u32
+}
+
 async fn run(event_loop: EventLoop<AppEvent>, window: Window) {    
     let instance = wgpu::Instance::default();
     let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
@@ -92,10 +98,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     );
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;    
-
-    let mut vertices = vec![];
-    let mut indices = vec![];
+    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;            
 
     let background_color = Color {
         r: 0.10196,
@@ -109,24 +112,56 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         g: 1.0,
         b: 0.0,
         a: 1.0
+    };    
+
+    let mut scene1 = Scene {
+        vertices: vec![],
+        indices: vec![],
+        element_index: 0
     };
 
-    let element_cfg = ElementCfg { 
-        x: 30, 
-        y: 30, 
-        width: 70, 
-        height: 100, 
-        background_color, 
-        border_color: Some(border_color)
+    let mut scene2 = Scene {
+        vertices: vec![],
+        indices: vec![],
+        element_index: 0
     };
 
-    create_element(&layout, element_cfg, &mut vertices, &mut indices);
+    while scene1.element_index < 100 {
+        let element_cfg = ElementCfg { 
+            x: scene1.element_index as i32 * 10 + 30,
+            y: 30, 
+            width: 30, 
+            height: 30,
+            background_color, 
+            border_color: Some(border_color)
+        };
+    
+        create_element(&layout, element_cfg, &mut scene1);
 
+        scene1.element_index = scene1.element_index + 1;
+    }
+
+    while scene2.element_index < 100 {
+        let element_cfg = ElementCfg { 
+            x: scene2.element_index as i32 * 10 + 30,
+            y: 130,
+            width: 30, 
+            height: 30,
+            background_color, 
+            border_color: Some(border_color)
+        };
+    
+        create_element(&layout, element_cfg, &mut scene2);
+
+        scene2.element_index = scene2.element_index + 1;
+    }
+    
+    let mut current_scene = "scene1".to_owned();
 
     let mut vertex_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
+            contents: bytemuck::cast_slice(&scene1.vertices),
             usage: wgpu::BufferUsages::VERTEX
         }
     );
@@ -134,12 +169,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let mut index_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&indices),
+            contents: bytemuck::cast_slice(&scene1.indices),
             usage: wgpu::BufferUsages::INDEX
         }
     );
     
-    let mut indices_count = indices.len() as u32;
+    let mut indices_count = scene1.indices.len() as u32;
 
     //let mut objects = vec![];    
 
@@ -182,7 +217,55 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         match state {
                             ElementState::Pressed => {                                
                             }
-                            ElementState::Released => {                                
+                            ElementState::Released => {
+                                match current_scene.as_ref() {
+                                    "scene1" => {
+                                        vertex_buffer = device.create_buffer_init(
+                                            &wgpu::util::BufferInitDescriptor {
+                                                label: Some("Vertex Buffer"),
+                                                contents: bytemuck::cast_slice(&scene1.vertices),
+                                                usage: wgpu::BufferUsages::VERTEX
+                                            }
+                                        );
+                                    
+                                        index_buffer = device.create_buffer_init(
+                                            &wgpu::util::BufferInitDescriptor {
+                                                label: Some("Index Buffer"),
+                                                contents: bytemuck::cast_slice(&scene1.indices),
+                                                usage: wgpu::BufferUsages::INDEX
+                                            }
+                                        );
+                                        
+                                        indices_count = scene1.indices.len() as u32;
+    
+                                        current_scene = "scene2".to_owned();
+                                    }
+                                    "scene2" => {
+                                        vertex_buffer = device.create_buffer_init(
+                                            &wgpu::util::BufferInitDescriptor {
+                                                label: Some("Vertex Buffer"),
+                                                contents: bytemuck::cast_slice(&scene2.vertices),
+                                                usage: wgpu::BufferUsages::VERTEX
+                                            }
+                                        );
+                                    
+                                        index_buffer = device.create_buffer_init(
+                                            &wgpu::util::BufferInitDescriptor {
+                                                label: Some("Index Buffer"),
+                                                contents: bytemuck::cast_slice(&scene2.indices),
+                                                usage: wgpu::BufferUsages::INDEX
+                                            }
+                                        );
+                                        
+                                        indices_count = scene2.indices.len() as u32;
+    
+                                        current_scene = "scene1".to_owned();
+                                    }
+                                    _ => {}
+                                }
+                                 
+
+                                window.request_redraw();
                             }                            
                         }
                     }

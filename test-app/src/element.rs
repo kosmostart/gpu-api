@@ -1,5 +1,5 @@
 use gpu_api::pipeline::element_pipeline::Vertex;
-use crate::Layout;
+use crate::{Layout, Scene};
 
 fn ndc_for_x(x_half: f32, x: f32) -> f32 {
     if x == x_half {
@@ -51,7 +51,7 @@ pub struct ElementCfg {
     pub border_color: Option<Color>,
 }
 
-pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>) {
+pub fn create_element(layout: &Layout, element_cfg: ElementCfg, scene: &mut Scene) {
     let width = element_cfg.width as f32;
     let height = element_cfg.height as f32;
 
@@ -65,10 +65,10 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
     let x2 = x2 as f32;
     let y2 = y2 as f32;
 
-    let x1_relative = ndc_for_x(layout.halfes.x, x1);
-    let y1_relative = ndc_for_y(layout.halfes.y, y1);
-    let x2_relative = ndc_for_x(layout.halfes.x, x2);
-    let y2_relative = ndc_for_y(layout.halfes.y, y2);    
+    let x1_ndc = ndc_for_x(layout.halfes.x, x1);
+    let y1_ndc = ndc_for_y(layout.halfes.y, y1);
+    let x2_ndc = ndc_for_x(layout.halfes.x, x2);
+    let y2_ndc = ndc_for_y(layout.halfes.y, y2);    
 
     let element_coordinates = [x1, y1, x2, y2];    
     
@@ -86,7 +86,7 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
     let element_vertices = vec![
         Vertex {
             vertex_type,
-            position: [x1_relative, y1_relative, 0.0],
+            position: [x1_ndc, y1_ndc, 0.0],
             color: [element_cfg.background_color.r, element_cfg.background_color.g, element_cfg.background_color.b, element_cfg.background_color.a],
             element_coordinates: element_coordinates.clone(),
             has_element_border,
@@ -98,7 +98,7 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
         },
         Vertex {
             vertex_type,
-            position: [x1_relative, y2_relative, 0.0],
+            position: [x1_ndc, y2_ndc, 0.0],
             color: [element_cfg.background_color.r, element_cfg.background_color.g, element_cfg.background_color.b, element_cfg.background_color.a],
             element_coordinates: element_coordinates.clone(),
             has_element_border,
@@ -110,7 +110,7 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
         },
         Vertex {
             vertex_type,
-            position: [x2_relative, y2_relative, 0.0],
+            position: [x2_ndc, y2_ndc, 0.0],
             color: [element_cfg.background_color.r, element_cfg.background_color.g, element_cfg.background_color.b, element_cfg.background_color.a],
             element_coordinates: element_coordinates.clone(),
             has_element_border,
@@ -122,7 +122,7 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
         },
         Vertex {
             vertex_type,
-            position: [x2_relative, y1_relative, 0.0],
+            position: [x2_ndc, y1_ndc, 0.0],
             color: [element_cfg.background_color.r, element_cfg.background_color.g, element_cfg.background_color.b, element_cfg.background_color.a],
             element_coordinates: element_coordinates.clone(),
             has_element_border,
@@ -135,15 +135,13 @@ pub fn create_element(layout: &Layout, element_cfg: ElementCfg, vertices: &mut V
     ];
 
     for vertex in &element_vertices {
-        vertices.push(*vertex);
-    }
+        scene.vertices.push(*vertex);
+    }    
 
-    let element_index = 0;
-
-    indices.push(element_index * 4);
-    indices.push(element_index * 4 + 1);
-    indices.push(element_index * 4 + 2);
-    indices.push(element_index * 4);
-    indices.push(element_index * 4 + 2);
-    indices.push(element_index * 4 + 3);
+    scene.indices.push(scene.element_index * 4);
+    scene.indices.push(scene.element_index * 4 + 1);
+    scene.indices.push(scene.element_index * 4 + 2);
+    scene.indices.push(scene.element_index * 4);
+    scene.indices.push(scene.element_index * 4 + 2);
+    scene.indices.push(scene.element_index * 4 + 3);
 }
