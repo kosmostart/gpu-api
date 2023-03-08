@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use log::*;
-use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget}, window::Window, event::{Event, WindowEvent, ElementState}, dpi::{PhysicalPosition,  PhysicalSize}};
+use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget, EventLoopBuilder}, window::Window, event::{Event, WindowEvent, ElementState}, dpi::{PhysicalPosition,  PhysicalSize}};
 use wgpu::util::DeviceExt;
 #[cfg(target_arch = "wasm32")]
-use winit::{event_loop::EventLoopProxy, platform::web::WindowExtWebSys};
+use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
 use gpu_api::bytemuck;
@@ -148,7 +148,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     //let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
     //objects.push(object);    
 
-    event_loop.run(move |event, _, control_flow| {
+    run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
         *control_flow = ControlFlow::Wait;
         
         match event {
@@ -345,8 +345,15 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     })
 }
 
+pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<'_, AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {
+    #[cfg(target_arch = "wasm32")]
+    event_loop.spawn(event_handler);
+    #[cfg(not(target_arch = "wasm32"))]
+    event_loop.run(event_handler);
+}
+
 fn main() {
-    let event_loop = EventLoop::with_user_event();
+    let event_loop = EventLoopBuilder::with_user_event().build();
     let window = Window::new(&event_loop).unwrap();
 
     #[cfg(not(target_arch = "wasm32"))]
