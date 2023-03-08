@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use log::*;
 use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget}, window::Window, event::{Event, WindowEvent, ElementState}, dpi::{PhysicalPosition,  PhysicalSize}};
+use wgpu::util::DeviceExt;
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::WindowExtWebSys};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, wgpu, wgpu::util::DeviceExt};
+use gpu_api::bytemuck;
 use gpu_api::{pipeline, model::create_model};
 use element::{Color, ElementCfg, create_element};
 
@@ -140,14 +141,14 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     
     let mut indices_count = indices.len() as u32;
 
-    let mut objects = vec![];    
+    //let mut objects = vec![];    
 
-    let model_data = model_load::load("../models/box/box.gltf");
+    //let model_data = model_load::load("../models/box/box.gltf");
     
-    let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
-    objects.push(object);    
+    //let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
+    //objects.push(object);    
 
-    run2(event_loop, move |event, _, control_flow| {        
+    event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
         
         match event {
@@ -305,8 +306,10 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             depth_stencil_attachment: None
                         }
                     );
+
+                    /*
                                         
-                    render_pass.set_pipeline(&model_pipeline.render_pipeline);
+                    render_pass.set_pipeline(&model_pipeline.render_pipeline);                    
 
                     for object in &objects {
                         render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
@@ -321,6 +324,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
                         }
                     }
+
+                    */
 
                     render_pass.set_pipeline(&element_pipeline.render_pipeline);
                     
@@ -338,13 +343,6 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             _ => {}
         }
     })
-}
-
-pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<'_, AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {    
-    #[cfg(target_arch = "wasm32")]
-    event_loop.spawn(event_handler);
-    #[cfg(not(target_arch = "wasm32"))]
-    event_loop.run(event_handler);
 }
 
 fn main() {
