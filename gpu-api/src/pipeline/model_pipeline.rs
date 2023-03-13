@@ -135,10 +135,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
             &camera_bind_group_layout
         ],
         push_constant_ranges: &[]
-    });
-
-    let swapchain_capabilities = surface.get_capabilities(&adapter);
-    let swapchain_format = swapchain_capabilities.formats[0];    
+    });    
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         multiview: None,
@@ -176,7 +173,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
             module: &shader,
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState {
-                format: swapchain_format,
+                format: TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState {
                     color: wgpu::BlendComponent {
                         src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -205,7 +202,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         camera_bind_group_layout,
         camera_bind_group,
         pipeline_layout,
-        swapchain_format,
+        swapchain_format: TextureFormat::Rgba8UnormSrgb,
         render_pipeline      
     })
 }
