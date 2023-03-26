@@ -6,7 +6,7 @@ use wgpu::util::DeviceExt;
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::bytemuck;
+use gpu_api::{bytemuck, pipeline::quad};
 use gpu_api::{pipeline, model::create_model};
 use element::{Color, ElementCfg, create_element};
 
@@ -36,8 +36,10 @@ pub struct Scene {
 }
 
 async fn run(event_loop: EventLoop<AppEvent>, window: Window) {    
-    let instance = wgpu::Instance::default();
-    let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
+    //let instance = wgpu::Instance::default();
+    //let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
+    let instance = wgpu::Instance::new(wgpu::Backends::all());
+    let surface = unsafe { instance.create_surface(&window) };
     let adapter = instance    
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -81,24 +83,41 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         cursor_physical_position: None        
     };    
         
-    let swapchain_capabilities = surface.get_capabilities(&adapter);
-    let swapchain_format = swapchain_capabilities.formats[0];
+    //let swapchain_capabilities = surface.get_capabilities(&adapter);
+    //let swapchain_format = swapchain_capabilities.formats[0];
 
     surface.configure(
         &device,
         &wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,            
-            format: swapchain_format,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             width: layout.size.width,
             height: layout.size.height,
             present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![]
+            //view_formats: vec![]
         }
     );
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;            
+    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let mut quad_pipeline = pipeline::quad::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
+
+    let tranformation = quad::Transformation::orthographic(layout.size.width, layout.size.height);    
+
+    let quads = vec![
+        quad::Quad {
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [10.0, 10.0, 10.0, 10.0],
+            color: [0.0, 0.5, 0.0, 1.0],
+            border_width: 3.0,
+            position: [100.0, 100.0],
+            size: [100.0, 100.0]
+        }
+    ];
+
+    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
+    
 
     let background_color = Color {
         r: 0.10196,
@@ -415,11 +434,15 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                     render_pass.set_bind_group(0, &element_pipeline.diffuse_bind_group, &[]); // Texture
                     render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                     render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                    render_pass.draw_indexed(0..indices_count, 0, 0..1);
-                }                
-                
+                    render_pass.draw_indexed(0..indices_count, 0, 0..1);                    
+                }
+
+                quad_pipeline.draw(&device, &mut staging_belt, &mut encoder, &quads, tranformation, scale_factor as f32, &view);
+
+                staging_belt.finish();                
                 queue.submit(Some(encoder.finish()));
-                frame.present();                
+                frame.present();
+                staging_belt.recall();          
             }
             Event::RedrawEventsCleared => {                                
             }        

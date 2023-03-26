@@ -15,7 +15,7 @@ gpu-api = { path = "../gpu-api" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "*"
-wgpu = "*"
+wgpu = "0.14.0"
 tokio = { version = "*", features = ["rt-multi-thread"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
