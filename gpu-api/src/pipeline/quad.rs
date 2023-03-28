@@ -1,16 +1,17 @@
 use std::mem;
 use std::ops::Mul;
-use wgpu::util::DeviceExt;
+use log::*;
+use wgpu::{util::DeviceExt, RenderPass};
 use glam::{Mat4, Vec3};
 
 #[derive(Debug)]
 pub struct Pipeline {
-    pipeline: wgpu::RenderPipeline,
-    constants: wgpu::BindGroup,
-    constants_buffer: wgpu::Buffer,
-    vertices: wgpu::Buffer,
-    indices: wgpu::Buffer,
-    instances: wgpu::Buffer,
+    pub pipeline: wgpu::RenderPipeline,
+    pub constants: wgpu::BindGroup,
+    pub constants_buffer: wgpu::Buffer,
+    pub vertices: wgpu::Buffer,
+    pub indices: wgpu::Buffer,
+    pub instances: wgpu::Buffer
 }
 
 impl Pipeline {
@@ -159,98 +160,30 @@ impl Pipeline {
         }
     }
 
-    pub fn draw(
-        &mut self,
-        device: &wgpu::Device,
-        staging_belt: &mut wgpu::util::StagingBelt,
-        encoder: &mut wgpu::CommandEncoder,
-        instances: &[Quad],
-        transformation: Transformation,
-        scale: f32,        
-        target: &wgpu::TextureView,
-    ) {        
-        let uniforms = Uniforms::new(transformation, scale);
+    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, amount: u32) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.constants, &[]);
+        render_pass.set_index_buffer(
+            self.indices.slice(..),
+            wgpu::IndexFormat::Uint32
+        );
+        render_pass.set_vertex_buffer(0, self.vertices.slice(..));
+        render_pass.set_vertex_buffer(1, self.instances.slice(..));
 
-        //println!("{:#?}", uniforms);
-        //println!("{:#?}", instances);
+        /*
+        render_pass.set_scissor_rect(
+            bounds.x,
+            bounds.y,
+            bounds.width,            
+            bounds.height,
+        );
+        */
 
-        {
-            let mut constants_buffer = staging_belt.write_buffer(
-                encoder,
-                &self.constants_buffer,
-                0,
-                wgpu::BufferSize::new(mem::size_of::<Uniforms>() as u64)
-                    .unwrap(),
-                device,
-            );
-
-            constants_buffer.copy_from_slice(bytemuck::bytes_of(&uniforms));
-        }
-
-        let mut i = 0;
-        let total = instances.len();
-
-        while i < total {
-            let end = (i + MAX_INSTANCES).min(total);
-            let amount = end - i;
-
-            let instance_bytes = bytemuck::cast_slice(&instances[i..end]);
-
-            let mut instance_buffer = staging_belt.write_buffer(
-                encoder,
-                &self.instances,
-                0,
-                wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
-                device,
-            );
-
-            instance_buffer.copy_from_slice(instance_bytes);            
-
-            {
-                let mut render_pass =
-                    encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("iced_wgpu::quad render pass"),
-                        color_attachments: &[Some(
-                            wgpu::RenderPassColorAttachment {
-                                view: target,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Load,
-                                    store: true,
-                                },
-                            },
-                        )],
-                        depth_stencil_attachment: None,
-                    });
-
-                render_pass.set_pipeline(&self.pipeline);
-                render_pass.set_bind_group(0, &self.constants, &[]);
-                render_pass.set_index_buffer(
-                    self.indices.slice(..),
-                    wgpu::IndexFormat::Uint16,
-                );
-                render_pass.set_vertex_buffer(0, self.vertices.slice(..));
-                render_pass.set_vertex_buffer(1, self.instances.slice(..));
-
-                /*
-                render_pass.set_scissor_rect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    // TODO: Address anti-aliasing adjustments properly
-                    bounds.height,
-                );
-                */
-
-                render_pass.draw_indexed(
-                    0..QUAD_INDICES.len() as u32,
-                    0,
-                    0..amount as u32,
-                );
-            }
-
-            i += MAX_INSTANCES;
-        }
+        render_pass.draw_indexed(
+            0..QUAD_INDICES.len() as u32,
+            0,
+            0..amount
+        );            
     }
 }
 
@@ -289,7 +222,7 @@ pub struct Vertex {
 unsafe impl bytemuck::Zeroable for Vertex {}
 unsafe impl bytemuck::Pod for Vertex {}
 
-const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
+const QUAD_INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
 const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
@@ -306,11 +239,11 @@ const QUAD_VERTS: [Vertex; 4] = [
     },
 ];
 
-const MAX_INSTANCES: usize = 100_000;
+pub const MAX_INSTANCES: usize = 100_000;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-struct Uniforms {
+pub struct Uniforms {
     transform: [f32; 16],
     scale: f32,
     // Uniforms must be aligned to their largest member,
@@ -322,7 +255,7 @@ unsafe impl bytemuck::Pod for Uniforms {}
 unsafe impl bytemuck::Zeroable for Uniforms {}
 
 impl Uniforms {
-    fn new(transformation: Transformation, scale: f32) -> Uniforms {
+    pub fn new(transformation: Transformation, scale: f32) -> Uniforms {
         Self {
             transform: *transformation.as_ref(),
             scale,

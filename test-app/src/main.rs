@@ -103,7 +103,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
     let mut quad_pipeline = pipeline::quad::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
-    let tranformation = quad::Transformation::orthographic(layout.size.width, layout.size.height);    
+    let transformation = quad::Transformation::orthographic(layout.size.width, layout.size.height);    
 
     let quads = vec![
         quad::Quad {
@@ -112,6 +112,14 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             color: [0.0, 0.5, 0.0, 1.0],
             border_width: 3.0,
             position: [100.0, 100.0],
+            size: [100.0, 100.0]
+        },
+        quad::Quad {
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [10.0, 10.0, 10.0, 10.0],
+            color: [0.0, 0.5, 0.0, 1.0],
+            border_width: 3.0,
+            position: [300.0, 100.0],
             size: [100.0, 100.0]
         }
     ];
@@ -381,7 +389,46 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                 // Get the next frame
                 let frame = surface.get_current_texture().expect("Get next frame");
-                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());                
+                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+                let uniforms = quad::Uniforms::new(transformation, scale_factor as f32);
+
+                //println!("{:#?}", uniforms);
+                //println!("{:#?}", instances);
+
+                {
+                    let mut constants_buffer = staging_belt.write_buffer(
+                        &mut encoder,
+                        &quad_pipeline.constants_buffer,
+                        0,
+                        wgpu::BufferSize::new(std::mem::size_of::<quad::Uniforms>() as u64)
+                            .unwrap(),
+                        &device
+                    );
+
+                    constants_buffer.copy_from_slice(bytemuck::bytes_of(&uniforms));
+                }
+                
+                let amount = {
+                    let i = 0;
+                    let total = quads.len();
+                    let end = (i + quad::MAX_INSTANCES).min(total);
+                    let res = end - i;
+
+                    let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
+
+                    let mut instance_buffer = staging_belt.write_buffer(
+                        &mut encoder,
+                        &quad_pipeline.instances,
+                        0,
+                        wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
+                        &device,
+                    );
+
+                    instance_buffer.copy_from_slice(instance_bytes);
+
+                    res
+                };
 
                 // Clear frame
                 {
@@ -435,11 +482,11 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                     render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                     render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                     render_pass.draw_indexed(0..indices_count, 0, 0..1);                    
+
+                    quad_pipeline.draw(&mut render_pass, amount as u32);
                 }
 
-                quad_pipeline.draw(&device, &mut staging_belt, &mut encoder, &quads, tranformation, scale_factor as f32, &view);
-
-                staging_belt.finish();                
+                staging_belt.finish();
                 queue.submit(Some(encoder.finish()));
                 frame.present();
                 staging_belt.recall();          
