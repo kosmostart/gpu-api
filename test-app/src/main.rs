@@ -6,7 +6,7 @@ use wgpu::util::DeviceExt;
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, pipeline::quad};
+use gpu_api::{bytemuck, pipeline::quad_pipeline};
 use gpu_api::{pipeline, model::create_model};
 use element::{Color, ElementCfg, create_element};
 
@@ -101,31 +101,40 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
     let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
-    let mut quad_pipeline = pipeline::quad::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
+    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
-    let transformation = quad::Transformation::orthographic(layout.size.width, layout.size.height);    
+    let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
+
+    let component_coordinates = [0.0, 0.0, 350.0, 350.0];
+    let has_overlay = 0;
+    let overlay_coordinates = [0.0, 0.0, 0.0, 0.0];
 
     let quads = vec![
-        quad::Quad {
+        quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
-            color: [0.0, 0.5, 0.0, 1.0],
+            color: [1.0, 0.0, 0.0, 1.0],
             border_width: 3.0,
             position: [100.0, 100.0],
-            size: [100.0, 100.0]
+            size: [100.0, 100.0],
+            component_coordinates,
+            has_overlay,
+            overlay_coordinates
         },
-        quad::Quad {
+        quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
-            color: [0.0, 0.5, 0.0, 1.0],
-            border_width: 3.0,
+            color: [1.0, 1.0, 1.0, 1.0],
+            border_width: 1.0,
             position: [300.0, 100.0],
-            size: [100.0, 100.0]
+            size: [100.0, 100.0],
+            component_coordinates,
+            has_overlay,
+            overlay_coordinates
         }
     ];
 
-    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
-    
+    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);    
 
     let background_color = Color {
         r: 0.10196,
@@ -391,7 +400,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 let frame = surface.get_current_texture().expect("Get next frame");
                 let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-                let uniforms = quad::Uniforms::new(transformation, scale_factor as f32);
+                let uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
                 //println!("{:#?}", uniforms);
                 //println!("{:#?}", instances);
@@ -401,7 +410,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         &mut encoder,
                         &quad_pipeline.constants_buffer,
                         0,
-                        wgpu::BufferSize::new(std::mem::size_of::<quad::Uniforms>() as u64)
+                        wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
                             .unwrap(),
                         &device
                     );
@@ -412,7 +421,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 let amount = {
                     let i = 0;
                     let total = quads.len();
-                    let end = (i + quad::MAX_INSTANCES).min(total);
+                    let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
                     let res = end - i;
 
                     let instance_bytes = bytemuck::cast_slice(&quads[i..end]);

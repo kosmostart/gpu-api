@@ -91,6 +91,9 @@ impl Pipeline {
                                 4 => Float32x4,
                                 5 => Float32x4,
                                 6 => Float32,
+                                7 => Float32x4,
+                                8 => Uint32,
+                                9 => Float32x4
                             ),
                         },
                     ],
@@ -189,24 +192,16 @@ impl Pipeline {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
-pub struct Quad {
-    /// The position of the [`Quad`].
-    pub position: [f32; 2],
-
-    /// The size of the [`Quad`].
-    pub size: [f32; 2],
-
-    /// The color of the [`Quad`], in __linear RGB__.
-    pub color: [f32; 4],
-
-    /// The border color of the [`Quad`], in __linear RGB__.
-    pub border_color: [f32; 4],
-
-    /// The border radius of the [`Quad`].
-    pub border_radius: [f32; 4],
-
-    /// The border width of the [`Quad`].
+pub struct Quad {    
+    pub position: [f32; 2],    
+    pub size: [f32; 2],    
+    pub color: [f32; 4],    
+    pub border_color: [f32; 4],    
+    pub border_radius: [f32; 4],    
     pub border_width: f32,
+    pub component_coordinates: [f32; 4],    
+    pub has_overlay: u32,
+    pub overlay_coordinates: [f32; 4]
 }
 
 unsafe impl bytemuck::Zeroable for Quad {}
