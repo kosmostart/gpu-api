@@ -223,12 +223,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     
     let mut indices_count = scene1.indices.len() as u32;
 
-    //let mut objects = vec![];    
+    let mut objects = vec![];    
 
-    //let model_data = model_load::load("../models/box/box.gltf");
+    let model_data = model_load::load("../models/box/box.gltf");
     
-    //let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
-    //objects.push(object);    
+    let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
+    objects.push(object);    
 
     run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
         *control_flow = ControlFlow::Wait;
@@ -474,9 +474,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             ],
                             depth_stencil_attachment: None
                         }
-                    );
-
-                    /*
+                    );                    
                                         
                     render_pass.set_pipeline(&model_pipeline.render_pipeline);                    
 
@@ -492,9 +490,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
                         }
-                    }
-
-                    */
+                    }                    
 
                     render_pass.set_pipeline(&element_pipeline.render_pipeline);
                     
