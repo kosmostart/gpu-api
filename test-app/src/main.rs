@@ -105,7 +105,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
 
-    let component_coordinates = [0.0, 0.0, 350.0, 350.0];
+    let component_coordinates = [0.0, 0.0, 950.0, 950.0];
     let has_overlay = 0;
     let overlay_coordinates = [0.0, 0.0, 0.0, 0.0];
 
@@ -114,9 +114,20 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
             color: [1.0, 0.0, 0.0, 1.0],
-            border_width: 3.0,
+            border_width: 0.0,
             position: [100.0, 100.0],
             size: [100.0, 100.0],
+            component_coordinates,
+            has_overlay,
+            overlay_coordinates
+        },
+        quad_pipeline::Quad {
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [15.0, 15.0, 15.0, 15.0],
+            color: [1.0, 0.0, 0.0, 1.0],
+            border_width: 0.0,
+            position: [300.0, 100.0],
+            size: [30.0, 30.0],
             component_coordinates,
             has_overlay,
             overlay_coordinates
@@ -126,7 +137,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             border_radius: [10.0, 10.0, 10.0, 10.0],
             color: [1.0, 1.0, 1.0, 1.0],
             border_width: 1.0,
-            position: [300.0, 100.0],
+            position: [500.0, 500.0],
             size: [100.0, 100.0],
             component_coordinates,
             has_overlay,
