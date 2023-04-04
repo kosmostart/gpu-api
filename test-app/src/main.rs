@@ -97,10 +97,10 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             //view_formats: vec![]
         }
-    );
+    );    
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (mut camera, mut camera_controller, mut camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let (mut camera, mut camera_controller, mut camera_uniform, dog2, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
@@ -227,8 +227,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let model_data = model_load::load("../models/box/box.gltf");
     
-    let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0);
-    objects.push(object);    
+    let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0, dog2);
+    objects.push(object);
 
     run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
         *control_flow = ControlFlow::Wait;
@@ -393,12 +393,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             Event::RedrawRequested { .. } => {
                 info!("Redraw requested");
 
-                camera_controller.update_camera(&mut camera);
-                camera_uniform.update_view_proj(&camera);
+                let dog_ref: &[f32; 16] = camera_uniform.as_ref();
+
                 queue.write_buffer(
                     &model_pipeline.camera_buffer,
                     0,
-                    bytemuck::cast_slice(&[camera_uniform])
+                    bytemuck::cast_slice(dog_ref)
                 );
 
                 // Get a command encoder for the current frame
