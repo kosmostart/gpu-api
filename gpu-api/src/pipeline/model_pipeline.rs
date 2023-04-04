@@ -232,15 +232,3 @@ fn generate_matrix(width: f32, height: f32) -> (glam::Mat4, glam::Mat4) {
 
     (projection, view)
 }
-
-fn generate_matrix2(width: f32, height: f32) -> glam::Mat4 {
-    let aspect_ratio = width / height;
-    let projection = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
-    
-    let view = glam::Mat4::look_at_rh(
-        glam::Vec3::new(1.5f32, -5.0, 3.0),
-        glam::Vec3::ZERO,
-        glam::Vec3::Z,
-    );
-    projection * view
-}
