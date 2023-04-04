@@ -37,7 +37,7 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     );
     
     var fragment_input: FragmentInput;
-    fragment_input.clip_position = camera.view_proj * model_matrix * vec4<f32>(vertex_input.position, 1.0); // Model, model camera
+    fragment_input.clip_position = camera.view_proj * model_matrix * vec4<f32>(vertex_input.position, 1.0);    
     fragment_input.texture_coordinates = vertex_input.texture_coordinates;
     fragment_input.normal = vertex_input.normal;
     return fragment_input;

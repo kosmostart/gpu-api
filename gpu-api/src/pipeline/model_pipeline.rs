@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use glam::Mat4;
 use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat};
 use wgpu::util::DeviceExt;
 use crate::texture::Texture;
@@ -27,7 +28,7 @@ pub struct Pipeline {
     pub render_pipeline: RenderPipeline    
 }
 
-pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, CameraController, CameraUniform, Pipeline) {
+pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, CameraController, Mat4, Mat4, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
@@ -90,13 +91,14 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         zfar: 100.0,
     };
 
-    let mut camera_uniform = CameraUniform::new();
-    camera_uniform.update_view_proj(&camera);
+    let (dog, dog2) = generate_matrix(width, height);
+
+    let dog_ref: &[f32; 16] = dog.as_ref();
 
     let camera_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
+            contents: bytemuck::cast_slice(dog_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         }
     );
@@ -194,7 +196,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         multisample: wgpu::MultisampleState::default()
     });
 
-    (camera, camera_controller, camera_uniform, Pipeline {
+    (camera, camera_controller, dog, dog2, Pipeline {
         shader,
         texture_bind_group_layout,
         texture_bind_group,
@@ -205,4 +207,40 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         swapchain_format: TextureFormat::Rgba8UnormSrgb,
         render_pipeline      
     })
+}
+
+fn generate_matrix(width: f32, height: f32) -> (glam::Mat4, glam::Mat4) {
+    let aspect_ratio = width / height;
+    let angle_xz = 0.2f32;
+    let angle_y = 0.2f32;
+    let dist = 20.0;
+    let model_center_x = 0.0;
+    let model_center_y = 2.0;
+    let projection = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 1.0, 50.0);
+    
+    let cam_pos = glam::Vec3::new(
+        angle_xz.cos() * angle_y.sin() * dist,
+        angle_xz.sin() * dist + model_center_y,
+        angle_xz.cos() * angle_y.cos() * dist
+    );
+
+    let view = glam::Mat4::look_at_rh(
+        cam_pos,
+        glam::Vec3::new(model_center_x, model_center_y, 0.0),
+        glam::Vec3::new(0.0, 1.0, 0.0)
+    );
+
+    (projection, view)
+}
+
+fn generate_matrix2(width: f32, height: f32) -> glam::Mat4 {
+    let aspect_ratio = width / height;
+    let projection = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
+    
+    let view = glam::Mat4::look_at_rh(
+        glam::Vec3::new(1.5f32, -5.0, 3.0),
+        glam::Vec3::ZERO,
+        glam::Vec3::Z,
+    );
+    projection * view
 }

@@ -63,7 +63,7 @@ impl Object {
     }
 }
 
-pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, y: f32, z: f32) -> Object {
+pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, y: f32, z: f32, dog2: glam::Mat4) -> Object {
     let mut meshes = vec![];
 
     for mesh in model_data.meshes {
@@ -94,8 +94,6 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        
-
         meshes.push(Mesh {
             name: "".to_owned(),
             vertex_buffer,
@@ -106,11 +104,12 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
     }    
 
     let instances = crate::instance::create_one(x, y, z);
-    let instance_data = instances.iter().map(crate::instance::Instance::to_raw).collect::<Vec<_>>();
+    let instance_data = instances.iter().map(crate::instance::Instance::to_raw).collect::<Vec<_>>();    
+
     let instance_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
+            contents: bytemuck::cast_slice(dog2.as_ref()),
             usage: wgpu::BufferUsages::VERTEX,
         }
     );
