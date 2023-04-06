@@ -392,15 +392,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             Event::UserEvent(_) => {                
             }           
             Event::RedrawRequested { .. } => {
-                info!("Redraw requested");
-
-                let dog_ref: &[f32; 16] = camera_uniform.as_ref();
-
-                queue.write_buffer(
-                    &model_pipeline.camera_buffer,
-                    0,
-                    bytemuck::cast_slice(dog_ref)
-                );
+                info!("Redraw requested");                
 
                 // Get a command encoder for the current frame
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -450,6 +442,31 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                     res
                 };
+
+                /*
+                let dog_ref: &[f32; 16] = camera_uniform.as_ref();
+
+                queue.write_buffer(
+                    &model_pipeline.camera_buffer,
+                    0,
+                    bytemuck::cast_slice(dog_ref)
+                );
+                */
+
+                {
+                    let dog_ref: &[f32; 16] = camera_uniform.as_ref();
+                
+                    let mut dog_buffer = staging_belt.write_buffer(
+                        &mut encoder,
+                        &model_pipeline.camera_buffer,
+                        0,
+                        wgpu::BufferSize::new(std::mem::size_of::<gpu_api::camera::CameraUniform>() as u64)
+                            .unwrap(),
+                        &device
+                    );
+
+                    dog_buffer.copy_from_slice(bytemuck::cast_slice(dog_ref));
+                }
 
                 // Clear frame
                 {
