@@ -100,7 +100,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     );    
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (mut camera, mut camera_controller, mut camera_uniform, dog2, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let (mut camera_uniform, dog2, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
@@ -328,9 +328,9 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             ElementState::Pressed => {
                                 match input.virtual_keycode {
                                     Some(virtual_keycode) => {
-                                        //info!("{:?}", virtual_keycode);
+                                        //warn!("{:?}", virtual_keycode);
 
-                                        
+                                        /*
                                         match virtual_keycode {
                                             winit::event::VirtualKeyCode::Up => {
                                                 camera_controller.is_forward_pressed = true;
@@ -349,7 +349,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                                                 window.request_redraw();
                                             }
                                             _ => {}
-                                        }                                                                                
+                                        }
+                                        */                                                                               
                                     }
                                     None => {}
                                 }
@@ -481,7 +482,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                     for object in &objects {
                         render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
                     
-                        let instances_range = 0..object.instances.len() as u32;
+                        //let instances_range = 0..object.instances.len() as u32;
+                        let instances_range = 0..1 as u32;
                         
                         for mesh in &object.meshes {                            
                             render_pass.set_bind_group(0, &model_pipeline.texture_bind_group, &[]); // Texture

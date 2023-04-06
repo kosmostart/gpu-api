@@ -1,6 +1,6 @@
 use serde_derive::{Serialize, Deserialize};
 use wgpu::{Device, Buffer, util::DeviceExt};
-use crate::{pipeline, instance::{Instance, InstanceRaw}};
+use crate::pipeline::model_pipeline;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ModelData {
@@ -39,28 +39,10 @@ pub struct Material {
 pub struct Object {
     pub name: String,
     pub meshes: Vec<Mesh>,
-    pub instances: Vec<Instance>,
-    pub instance_data: Vec<InstanceRaw>,
     pub instance_buffer: Buffer,
     pub x: f32,
     pub y: f32,
     pub z: f32
-}
-
-impl Object {
-    pub fn set_instance_buffer(&mut self, device: &Device) {
-        let instances = crate::instance::create_one(self.x, self.y, self.z);
-        let instance_data = instances.iter().map(crate::instance::Instance::to_raw).collect::<Vec<_>>();
-        let instance_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&instance_data),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
-
-        self.instance_buffer = instance_buffer;
-    }
 }
 
 pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, y: f32, z: f32, dog2: glam::Mat4) -> Object {
@@ -72,7 +54,7 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
 
         for mut primitive in mesh.primitives {
             for position in primitive.positions {
-                vertices.push(pipeline::model_pipeline::Vertex {
+                vertices.push(model_pipeline::Vertex {
                     position,
                     texture_coordinates: [0.0, 0.0],
                     normal: [1.0, 1.0, 1.0]                   
@@ -103,9 +85,6 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
         })
     }    
 
-    let instances = crate::instance::create_one(x, y, z);
-    let instance_data = instances.iter().map(crate::instance::Instance::to_raw).collect::<Vec<_>>();    
-
     let instance_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
@@ -116,9 +95,7 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
 
     Object {
         name: name.to_owned(),
-        meshes,
-        instances,
-        instance_data,
+        meshes,        
         instance_buffer,
         x,
         y,

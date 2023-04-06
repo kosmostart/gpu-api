@@ -14,5 +14,4 @@ serde = "*"
 serde_derive = "*"
 image = { version = "*", default-features = false, features = ["png", "jpeg"] }
 glam = "*"
-cgmath = "*"
 wgpu = "0.14.0"

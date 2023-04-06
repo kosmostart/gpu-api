@@ -2,8 +2,7 @@ use std::borrow::Cow;
 use glam::Mat4;
 use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat};
 use wgpu::util::DeviceExt;
-use crate::texture::Texture;
-use crate::camera::{CameraController, Camera, CameraUniform};
+use crate::camera::CameraUniform;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -28,7 +27,7 @@ pub struct Pipeline {
     pub render_pipeline: RenderPipeline    
 }
 
-pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, CameraController, Mat4, Mat4, Pipeline) {
+pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Mat4, Mat4, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
@@ -77,19 +76,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                 ],
                 label: Some("diffuse_bind_group"),
             }
-        );
-
-    let camera_controller = CameraController::new(0.2);
-
-    let camera = Camera {
-        eye: (0.0, 5.0, 20.0).into(),
-        target: (0.0, 0.0, 0.0).into(),
-        up: cgmath::Vector3::unit_y(),
-        aspect: width / height,
-        fovy: 45.0,
-        znear: 0.1,
-        zfar: 100.0,
-    };
+        );    
 
     let (dog, dog2) = generate_matrix(width, height);
 
@@ -196,7 +183,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         multisample: wgpu::MultisampleState::default()
     });
 
-    (camera, camera_controller, dog, dog2, Pipeline {
+    (dog, dog2, Pipeline {
         shader,
         texture_bind_group_layout,
         texture_bind_group,
