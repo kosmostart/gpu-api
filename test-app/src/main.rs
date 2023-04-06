@@ -226,7 +226,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let mut objects = vec![];    
 
-    let model_data = model_load::load("../models/box/box.gltf");
+    let model_data = model_load::load("../models/overlord/overlord.gltf");
     
     let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0, dog2);
     objects.push(object);
