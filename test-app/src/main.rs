@@ -467,6 +467,23 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                     dog_buffer.copy_from_slice(bytemuck::cast_slice(dog_ref));
                 }
+                
+                {
+                    let dog2_ref: &[f32; 16] = dog2.as_ref();
+
+                    for object in &objects {
+                        let mut dog_buffer = staging_belt.write_buffer(
+                            &mut encoder,
+                            &object.instance_buffer,
+                            0,
+                            wgpu::BufferSize::new(std::mem::size_of::<gpu_api::camera::CameraUniform>() as u64)
+                                .unwrap(),
+                            &device
+                        );
+    
+                        dog_buffer.copy_from_slice(bytemuck::cast_slice(dog2_ref));
+                    }
+                }
 
                 // Clear frame
                 {

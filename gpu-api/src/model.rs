@@ -83,15 +83,14 @@ pub fn create_model(device: &Device, name: &str, model_data: ModelData, x: f32, 
             num_elements: indices.len() as u32,
             material: 0
         })
-    }    
+    }        
 
-    let instance_buffer = device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(dog2.as_ref()),
-            usage: wgpu::BufferUsages::VERTEX,
-        }
-    );
+    let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Instance Buffer"),
+        size: (dog2.as_ref().len() * 100_000) as u64,
+        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false
+    });
 
     Object {
         name: name.to_owned(),

@@ -150,7 +150,7 @@ impl Pipeline {
             label: Some("iced_wgpu::quad instance buffer"),
             size: mem::size_of::<Quad>() as u64 * MAX_INSTANCES as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+            mapped_at_creation: false
         });
 
         Pipeline {
