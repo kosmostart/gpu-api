@@ -104,6 +104,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
+    let mut quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
     let component_coordinates = [0.0, 0.0, 950.0, 950.0];
     let has_overlay = 0;
@@ -244,7 +245,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         info!("Resized");
 
                         let scale_factor = window.scale_factor();
-                        info!("{:?}, {}", new_size, scale_factor);                    
+                        info!("{:?}, {}", new_size, scale_factor);
 
                         layout.size = new_size;
 
@@ -253,7 +254,9 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             y: layout.size.height as f32  / 2.0
                         };
                         
-                        info!("{:?}", layout.halfes);                                                                
+                        info!("{:?}", layout.halfes);
+
+                        quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
                     }
                     WindowEvent::CursorMoved { device_id: _, position, .. } => {                        
                         //info!("{:?}", position);
@@ -402,9 +405,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                 // Get the next frame
                 let frame = surface.get_current_texture().expect("Get next frame");
-                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-                let uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
+                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());                
 
                 //println!("{:#?}", uniforms);
                 //println!("{:#?}", instances);
@@ -419,7 +420,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         &device
                     );
 
-                    constants_buffer.copy_from_slice(bytemuck::bytes_of(&uniforms));
+                    constants_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
                 }
                 
                 let amount = {
