@@ -36,10 +36,8 @@ pub struct Scene {
 }
 
 async fn run(event_loop: EventLoop<AppEvent>, window: Window) {    
-    //let instance = wgpu::Instance::default();
-    //let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
-    let instance = wgpu::Instance::new(wgpu::Backends::all());
-    let surface = unsafe { instance.create_surface(&window) };
+    let instance = wgpu::Instance::default();
+    let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");    
     let adapter = instance    
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -95,7 +93,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             height: layout.size.height,
             present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            //view_formats: vec![]
+            view_formats: vec![]
         }
     );    
 
@@ -230,6 +228,11 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     
     let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0, dog2);
     objects.push(object);
+
+    //let model_data = model_load::load("../models/box/box.gltf");
+    
+    //let object = create_model(&device, "2", model_data, 0.0, 0.0, 0.0, dog2);
+    //objects.push(object);
 
     run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
         *control_flow = ControlFlow::Wait;

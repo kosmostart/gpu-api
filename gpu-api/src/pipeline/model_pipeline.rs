@@ -201,8 +201,8 @@ fn generate_matrix(width: f32, height: f32) -> (glam::Mat4, glam::Mat4) {
     let angle_xz = 0.2f32;
     let angle_y = 0.2f32;
     let dist = 20.0;
-    let model_center_x = 0.0;
-    let model_center_y = 2.0;
+    let model_center_x = 7.0;
+    let model_center_y = 7.0;
     
     let projection = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 1.0, 50.0);
     
@@ -219,6 +219,7 @@ fn generate_matrix(width: f32, height: f32) -> (glam::Mat4, glam::Mat4) {
     );
 
     let dog = glam::Mat4::from_scale(glam::Vec3::new(0.02, 0.02, 0.02));
+    //let dog = glam::Mat4::from_scale(glam::Vec3::new(0.2, 0.2, 0.2));
 
     (projection, view * dog)
 }
