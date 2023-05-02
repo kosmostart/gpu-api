@@ -199,7 +199,7 @@ pub struct Quad {
     pub border_color: [f32; 4],    
     pub border_radius: [f32; 4],    
     pub border_width: f32,
-    pub component_coordinates: [f32; 4],    
+    pub component_coordinates: [f32; 4],
     pub has_overlay: u32,
     pub overlay_coordinates: [f32; 4]
 }
