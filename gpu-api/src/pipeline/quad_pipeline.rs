@@ -211,7 +211,7 @@ unsafe impl bytemuck::Pod for Quad {}
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Vertex {
-    _position: [f32; 2],
+    _position: [f32; 2]
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {}
@@ -221,17 +221,17 @@ const QUAD_INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
 const QUAD_VERTS: [Vertex; 4] = [
     Vertex {
-        _position: [0.0, 0.0],
+        _position: [0.0, 0.0]
     },
     Vertex {
-        _position: [1.0, 0.0],
+        _position: [1.0, 0.0]
     },
     Vertex {
-        _position: [1.0, 1.0],
+        _position: [1.0, 1.0]
     },
     Vertex {
-        _position: [0.0, 1.0],
-    },
+        _position: [0.0, 1.0]
+    }
 ];
 
 pub const MAX_INSTANCES: usize = 100_000;
