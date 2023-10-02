@@ -4,5 +4,6 @@ resolver = "2"
 members = [
 	"gpu-api",
 	"test-app",
-	"test-server"
+	"test-server",
+	"model-data"
 ]

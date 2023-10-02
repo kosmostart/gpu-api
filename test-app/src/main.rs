@@ -515,7 +515,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         }
                     );                    
                                         
-                    render_pass.set_pipeline(&model_pipeline.render_pipeline);                    
+                    render_pass.set_pipeline(&model_pipeline.render_pipeline);
 
                     for object in &objects {
                         render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
@@ -530,7 +530,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
                         }
-                    }                    
+                    }
 
                     render_pass.set_pipeline(&element_pipeline.render_pipeline);
                     
