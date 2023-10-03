@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 use glam::Mat4;
-use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat};
+use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass};
 use wgpu::util::DeviceExt;
 use crate::camera::CameraUniform;
+use crate::model::Object;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -25,6 +26,27 @@ pub struct Pipeline {
     pub pipeline_layout: PipelineLayout,
     pub swapchain_format: TextureFormat,
     pub render_pipeline: RenderPipeline    
+}
+
+impl Pipeline {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, objects: &'a Vec<Object>) {
+        render_pass.set_pipeline(&self.render_pipeline);
+    
+        for object in objects {
+            render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
+        
+            //let instances_range = 0..object.instances.len() as u32;
+            let instances_range = 0..1 as u32;
+            
+            for mesh in &object.meshes {                            
+                render_pass.set_bind_group(0, &self.texture_bind_group, &[]); // Texture
+                render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
+                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
+            }
+        }
+    }
 }
 
 pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Mat4, Mat4, Pipeline) {
