@@ -6,8 +6,7 @@ use wgpu::util::DeviceExt;
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, pipeline::quad_pipeline};
-use gpu_api::{pipeline, model::create_model};
+use gpu_api::{bytemuck, pipeline::{self, quad_pipeline}, model::{self, create_object, ViewSource}};
 use element::{Color, ElementCfg, create_element};
 
 mod element;
@@ -98,7 +97,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     );    
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (mut camera_uniform, dog2, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let (camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
@@ -226,7 +225,19 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let model_data = model_load::load("../models/overlord/overlord.gltf");
     
-    let object = create_model(&device, "1", model_data, 0.0, 0.0, 0.0, dog2);
+    let view_source = ViewSource {
+        x: 5.0,
+        y: 7.0,
+        z: 0.0,
+        angle_xz: 0.2,
+        angle_y: 0.2,
+        dist: 20.0,
+        scale_x: 0.02,
+        scale_y: 0.02,
+        scale_z: 0.02
+    };
+    
+    let object = create_object(&device, "1", model_data, view_source);
     objects.push(object);
 
     //let model_data = model_load::load("../models/box/box.gltf");
@@ -458,34 +469,32 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 */
 
                 {
-                    let dog_ref: &[f32; 16] = camera_uniform.as_ref();
+                    let camera_ref: &[f32; 16] = camera_uniform.as_ref();
                 
-                    let mut dog_buffer = staging_belt.write_buffer(
+                    let mut camera_slice = staging_belt.write_buffer(
                         &mut encoder,
                         &model_pipeline.camera_buffer,
                         0,
-                        wgpu::BufferSize::new(std::mem::size_of::<gpu_api::camera::CameraUniform>() as u64)
-                            .unwrap(),
+                        wgpu::BufferSize::new(gpu_api::camera::CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
                         &device
                     );
 
-                    dog_buffer.copy_from_slice(bytemuck::cast_slice(dog_ref));
+                    camera_slice.copy_from_slice(bytemuck::cast_slice(camera_ref));
                 }
                 
                 {
-                    let dog2_ref: &[f32; 16] = dog2.as_ref();
-
                     for object in &objects {
-                        let mut dog_buffer = staging_belt.write_buffer(
+                        let mut view_slice = staging_belt.write_buffer(
                             &mut encoder,
                             &object.instance_buffer,
                             0,
-                            wgpu::BufferSize::new(std::mem::size_of::<gpu_api::camera::CameraUniform>() as u64)
-                                .unwrap(),
+                            wgpu::BufferSize::new(gpu_api::model::VIEW_MATRIX_SIZE).expect("Failed to allocate view slice"),
                             &device
                         );
+
+                        let view_ref: &[f32; 16] = object.view.as_ref();
     
-                        dog_buffer.copy_from_slice(bytemuck::cast_slice(dog2_ref));
+                        view_slice.copy_from_slice(bytemuck::cast_slice(view_ref));
                     }
                 }
 

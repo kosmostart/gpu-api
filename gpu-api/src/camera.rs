@@ -1,8 +1,9 @@
-#[repr(C)]
-// This is so we can store this in a buffer
-#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
-pub struct CameraUniform {
-    // We can't use cgmath with bytemuck directly so we'll have
-    // to convert the Matrix4 into a 4x4 f32 array
-    pub view_proj: [[f32; 4]; 4],
+pub const CAMERA_UNIFORM_SIZE: u64 = 64;
+
+pub fn generate_projection_matrix(width: f32, height: f32) -> glam::Mat4 {
+    let aspect_ratio = width / height;    
+    
+    let res = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 1.0, 50.0);        
+
+    res
 }
