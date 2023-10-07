@@ -1160,6 +1160,7 @@ dependencies = [
 name = "model-data"
 version = "0.1.0"
 dependencies = [
+ "env_logger",
  "gltf",
  "gpu-api",
  "log",

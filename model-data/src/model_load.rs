@@ -34,8 +34,8 @@ pub fn load(model_path: &str) -> ModelData {
 
         for primitive in mesh.primitives() {
             
-            info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
-            info!("{:#?}", primitive.attributes());
+            //info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
+            //info!("{:#?}", primitive.attributes());
 
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));            
 

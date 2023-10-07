@@ -61,7 +61,7 @@ pub struct Object {
     pub view: glam::Mat4
 }
 
-pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {        
+pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {
     let cam_pos = glam::Vec3::new(
         source.angle_xz.cos() * source.angle_y.sin() * source.dist,
         source.angle_xz.sin() * source.dist + source.y,
