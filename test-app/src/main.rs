@@ -228,10 +228,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let view_source = ViewSource {
         x: 5.0,
         y: 7.0,
-        z: 0.0,
-        angle_xz: 0.2,
-        angle_y: 0.2,
-        dist: 20.0,
+        z: 0.0,        
         scale_x: 0.02,
         scale_y: 0.02,
         scale_z: 0.02
