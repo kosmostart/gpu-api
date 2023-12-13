@@ -100,14 +100,13 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
             }
         );    
 
-    let projection_matrix = generate_projection_matrix(width, height);
-
-    let projection_matrix_ref: &[f32; 16] = projection_matrix.as_ref();
+    let camera_projection_matrix = generate_projection_matrix(width, height);
+    let camera_projection_matrix_ref: &[f32; 16] = camera_projection_matrix.as_ref();
 
     let camera_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(projection_matrix_ref),
+            contents: bytemuck::cast_slice(camera_projection_matrix_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         }
     );
@@ -205,7 +204,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         multisample: wgpu::MultisampleState::default()
     });
 
-    (projection_matrix, Pipeline {
+    (camera_projection_matrix, Pipeline {
         shader,
         texture_bind_group_layout,
         texture_bind_group,

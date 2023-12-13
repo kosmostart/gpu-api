@@ -44,10 +44,7 @@ pub struct Material {
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,
-    pub z: f32,
-    pub angle_xz: f32,
-    pub angle_y: f32,
-    pub dist: f32,
+    pub z: f32,    
     pub scale_x: f32,
     pub scale_y: f32,
     pub scale_z: f32
@@ -61,47 +58,11 @@ pub struct Object {
     pub view: glam::Mat4
 }
 
-pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {
-    let cam_pos = glam::Vec3::new(
-        source.angle_xz.cos() * source.angle_y.sin() * source.dist,
-        source.angle_xz.sin() * source.dist + source.y,
-        source.angle_xz.cos() * source.angle_y.cos() * source.dist
-    );
-
-    let view = glam::Mat4::look_at_rh(
-        cam_pos,
-        glam::Vec3::new(source.x, source.y, source.z),
-        glam::Vec3::new(0.0, 1.0, 0.0)
-    );
-
+pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {    
+    let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
     let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));
 
-    view * scale
-}
-
-pub fn generate_view_matrix_orig() -> glam::Mat4 {
-    let angle_xz = 0.2f32;
-    let angle_y = 0.2f32;
-    let dist = 20.0;
-    let model_center_x = 5.0;
-    let model_center_y = 7.0;
-    
-    let cam_pos = glam::Vec3::new(
-        angle_xz.cos() * angle_y.sin() * dist,
-        angle_xz.sin() * dist + model_center_y,
-        angle_xz.cos() * angle_y.cos() * dist
-    );
-
-    let view = glam::Mat4::look_at_rh(
-        cam_pos,
-        glam::Vec3::new(model_center_x, model_center_y, 0.0),
-        glam::Vec3::new(0.0, 1.0, 0.0)
-    );
-
-    let scale = glam::Mat4::from_scale(glam::Vec3::new(0.02, 0.02, 0.02));
-    //let scale = glam::Mat4::from_scale(glam::Vec3::new(0.2, 0.2, 0.2));
-
-    view * scale
+    translation * scale
 }
 
 pub fn create_object(device: &Device, name: &str, model_data: ModelData, view_source: ViewSource) -> Object {    
