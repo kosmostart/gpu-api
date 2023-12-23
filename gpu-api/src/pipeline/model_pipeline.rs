@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use glam::Mat4;
 use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass};
 use wgpu::util::DeviceExt;
-use crate::camera::generate_projection_matrix;
+use crate::camera::{Camera, create_camera};
 use crate::model::Object;
 
 #[repr(C)]
@@ -49,7 +48,7 @@ impl Pipeline {
     }
 }
 
-pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Mat4, Pipeline) {
+pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
@@ -100,8 +99,8 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
             }
         );    
 
-    let camera_projection_matrix = generate_projection_matrix(width, height);
-    let camera_projection_matrix_ref: &[f32; 16] = camera_projection_matrix.as_ref();
+    let camera = create_camera(width, height, 0.0, 0.0, 0.0);
+    let camera_projection_matrix_ref: &[f32; 16] = camera.projection.as_ref();
 
     let camera_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
@@ -204,7 +203,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         multisample: wgpu::MultisampleState::default()
     });
 
-    (camera_projection_matrix, Pipeline {
+    (camera, Pipeline {
         shader,
         texture_bind_group_layout,
         texture_bind_group,

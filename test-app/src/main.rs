@@ -97,7 +97,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     );    
 
     let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (camera_uniform, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
@@ -466,7 +466,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 */
 
                 {
-                    let camera_ref: &[f32; 16] = camera_uniform.as_ref();
+                    let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
                 
                     let mut camera_slice = staging_belt.write_buffer(
                         &mut encoder,
@@ -476,7 +476,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         &device
                     );
 
-                    camera_slice.copy_from_slice(bytemuck::cast_slice(camera_ref));
+                    camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
                 }
                 
                 {

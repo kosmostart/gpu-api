@@ -58,6 +58,12 @@ pub struct Object {
     pub view: glam::Mat4
 }
 
+impl Object {
+    pub fn update_view(&mut self) {
+        self.view = generate_view_matrix(&self.view_source);
+    }
+}
+
 pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {    
     let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
     let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));
