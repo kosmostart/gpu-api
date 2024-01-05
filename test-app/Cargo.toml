@@ -9,9 +9,10 @@ edition = "2021"
 
 log = "*"
 serde_json = "*"
-winit = "*"
+winit = "0.28.7"
 gltf = "*"
 gpu-api = { path = "../gpu-api" }
+model-load = { path = "../model-load" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "*"

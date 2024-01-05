@@ -1,3 +1,9 @@
+// Texture
+@group(0) @binding(0)
+var texture_data: texture_2d<f32>;
+@group(0) @binding(1)
+var texture_sampler: sampler;
+
 // Camera
 struct CameraUniform {
     view_proj: mat4x4<f32>
@@ -45,15 +51,9 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     return fragment_input;
 }
 
-// Texture
-@group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
-@group(0) @binding(1)
-var s_diffuse: sampler;
-
 // Fragment shader
 @fragment
 //@stage(fragment)
 fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, fragment_input.texture_coordinates); // Texture
+    return textureSample(texture_data, texture_sampler, fragment_input.texture_coordinates); // Texture
 }

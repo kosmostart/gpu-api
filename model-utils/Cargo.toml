@@ -1,5 +1,5 @@
 [package]
-name = "model-data"
+name = "model-utils"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,5 +10,4 @@ edition = "2021"
 log = "*"
 env_logger = "*"
 serde_json = "*"
-gltf = "*"
-gpu-api = { path = "../gpu-api" }
+model-load = { path = "../model-load" }

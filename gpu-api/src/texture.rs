@@ -1,11 +1,18 @@
-use std::num::NonZeroU32;
+use serde_derive::{Serialize, Deserialize};
 
 use image::{GenericImageView, ImageError};
 
 pub struct Texture {
     pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
+    pub view: wgpu::TextureView    
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TextureData {
+    pub format: String,
+    pub width: u32,
+    pub height: u32,
+    pub pixels: Vec<u8>
 }
 
 impl Texture {
@@ -23,6 +30,7 @@ impl Texture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
+        
         let texture = device.create_texture(
             &wgpu::TextureDescriptor {                
                 label,
@@ -52,18 +60,8 @@ impl Texture {
             size,
         );
 
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());            
         
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });    
-        
-        Ok(Texture { texture, view, sampler })
+        Ok(Texture { texture, view })
     }
 }

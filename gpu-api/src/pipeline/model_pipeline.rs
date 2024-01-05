@@ -1,8 +1,11 @@
+use std::num::NonZeroU32;
 use std::borrow::Cow;
-use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass};
+use log::warn;
+use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler, TextureView};
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, create_camera};
 use crate::model::Object;
+use crate::texture::TextureData;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -16,15 +19,15 @@ unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
 pub struct Pipeline {
-    pub shader: ShaderModule,    
-    pub texture_bind_group_layout: BindGroupLayout,    
+    pub shader: ShaderModule,
+    pub texture_bind_group_layout: BindGroupLayout,
     pub texture_bind_group: BindGroup,
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
-    pub camera_bind_group: BindGroup,    
+    pub camera_bind_group: BindGroup, 
     pub pipeline_layout: PipelineLayout,
     pub swapchain_format: TextureFormat,
-    pub render_pipeline: RenderPipeline    
+    pub render_pipeline: RenderPipeline
 }
 
 impl Pipeline {
@@ -48,7 +51,7 @@ impl Pipeline {
     }
 }
 
-pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, Pipeline) {
+pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32, texture_data: Vec<TextureData>) -> (Camera, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
@@ -65,13 +68,11 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                        count: None,
+                        count: None
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
+                        visibility: wgpu::ShaderStages::FRAGMENT,                        
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
@@ -79,25 +80,42 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                 label: Some("texture_bind_group_layout"),
             });
 
-        let diffuse_bytes = include_bytes!("../../../textures/happy-tree.png");
-        let diffuse_texture = crate::texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").expect("Failed to create texture");
+    let mut textures = vec![];
+    let mut texture_index = 0;
 
-        let texture_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                    }
-                ],
-                label: Some("diffuse_bind_group"),
-            }
-        );    
+    for texture_item in texture_data {
+        let texture_image = image::DynamicImage::ImageRgb8(image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels).expect("Failed to create image buffer"));
+        textures.push(crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &texture_index.to_string()))).expect("Failed to create texture"));
+        texture_index = texture_index + 1;
+    }
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {            
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,            
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+    
+    let texture_bind_group = device.create_bind_group(
+        &wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&textures[0].view),
+                    //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler)
+                }
+            ],
+            label: Some("texture_bind_group"),
+        }
+    );    
 
     let camera = create_camera(width, height, 0.0, 0.0, 0.0);
     let camera_projection_matrix_ref: &[f32; 16] = camera.projection.as_ref();
@@ -134,7 +152,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                 resource: camera_buffer.as_entire_binding(),
             }
         ],
-        label: Some("camera_bind_group"),
+        label: Some("camera_bind_group")
     });            
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

@@ -7,14 +7,36 @@ use glam::{Mat4, Vec3};
 #[derive(Debug)]
 pub struct Pipeline {
     pub pipeline: wgpu::RenderPipeline,
-    pub constants: wgpu::BindGroup,
-    pub constants_buffer: wgpu::Buffer,
-    pub vertices: wgpu::Buffer,
-    pub indices: wgpu::Buffer,
-    pub instances: wgpu::Buffer
+    pub uniform_bind_group: wgpu::BindGroup,
+    pub uniform_buffer: wgpu::Buffer,
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+    pub instance_buffer: wgpu::Buffer
 }
 
 impl Pipeline {
+    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, amount: u32) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_index_buffer(
+            self.index_buffer.slice(..),
+            wgpu::IndexFormat::Uint32
+        );
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+
+        /*
+        render_pass.set_scissor_rect(
+            bounds.x,
+            bounds.y,
+            bounds.width,            
+            bounds.height,
+        );
+        */
+
+        render_pass.draw_indexed(0..QUAD_INDICES.len() as u32, 0, 0..amount);
+    }
+
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Pipeline {
         let constant_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -132,22 +154,22 @@ impl Pipeline {
                 multiview: None,
             });
 
-        let vertices =
+        let vertex_buffer =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("iced_wgpu::quad vertex buffer"),
+                label: Some("Quad vertex buffer"),
                 contents: bytemuck::cast_slice(&QUAD_VERTS),
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
-        let indices =
+        let index_buffer =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("iced_wgpu::quad index buffer"),
+                label: Some("Quad index buffer"),
                 contents: bytemuck::cast_slice(&QUAD_INDICES),
                 usage: wgpu::BufferUsages::INDEX,
             });
 
-        let instances = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("iced_wgpu::quad instance buffer"),
+        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Quad instance buffer"),
             size: mem::size_of::<Quad>() as u64 * MAX_INSTANCES as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false
@@ -155,39 +177,13 @@ impl Pipeline {
 
         Pipeline {
             pipeline,
-            constants,
-            constants_buffer,
-            vertices,
-            indices,
-            instances,
+            uniform_bind_group: constants,
+            uniform_buffer: constants_buffer,
+            vertex_buffer,
+            index_buffer,
+            instance_buffer
         }
-    }
-
-    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, amount: u32) {
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.constants, &[]);
-        render_pass.set_index_buffer(
-            self.indices.slice(..),
-            wgpu::IndexFormat::Uint32
-        );
-        render_pass.set_vertex_buffer(0, self.vertices.slice(..));
-        render_pass.set_vertex_buffer(1, self.instances.slice(..));
-
-        /*
-        render_pass.set_scissor_rect(
-            bounds.x,
-            bounds.y,
-            bounds.width,            
-            bounds.height,
-        );
-        */
-
-        render_pass.draw_indexed(
-            0..QUAD_INDICES.len() as u32,
-            0,
-            0..amount
-        );            
-    }
+    }    
 }
 
 #[derive(Debug, Clone, Copy)]

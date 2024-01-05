@@ -1,8 +1,6 @@
 use std::io::Write;
 use log::*;
 
-mod model_load;
-
 fn main() {
     env_logger::init();
 

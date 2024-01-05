@@ -1,7 +1,6 @@
-use log::warn;
 use serde_derive::{Serialize, Deserialize};
 use wgpu::{Device, Buffer, util::DeviceExt};
-use crate::pipeline::model_pipeline;
+use crate::{pipeline::model_pipeline, texture::TextureData};
 
 pub const VIEW_MATRIX_SIZE: u64 = 64;
 pub const VIEW_MATRIX_LEN: u64 = 16;
@@ -9,7 +8,8 @@ pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ModelData {
-	pub meshes: Vec<MeshData>
+	pub meshes: Vec<MeshData>,
+    pub textures: Vec<TextureData>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -23,7 +23,8 @@ pub struct PrimitiveData {
 	pub indices: Vec<u32>,
 	pub normals: Vec<[f32; 3]>,
 	pub tangents: Vec<[f32; 3]>,
-	pub bitangents: Vec<[f32; 3]>
+	pub bitangents: Vec<[f32; 3]>,
+    pub texture_coordinates: Vec<[f32; 2]>
 }
 
 pub struct Mesh {
@@ -44,7 +45,7 @@ pub struct Material {
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,
-    pub z: f32,    
+    pub z: f32,
     pub scale_x: f32,
     pub scale_y: f32,
     pub scale_z: f32
@@ -55,7 +56,8 @@ pub struct Object {
     pub meshes: Vec<Mesh>,
     pub instance_buffer: Buffer,
     pub view_source: ViewSource,
-    pub view: glam::Mat4
+    pub view: glam::Mat4,
+    pub textures: Vec<TextureData>
 }
 
 impl Object {
@@ -79,12 +81,15 @@ pub fn create_object(device: &Device, name: &str, model_data: ModelData, view_so
 	    let mut indices = vec![];
 
         for mut primitive in mesh.primitives {
+            let mut index = 0;
             for position in primitive.positions {
                 vertices.push(model_pipeline::Vertex {
                     position,
-                    texture_coordinates: [0.0, 0.0],
+                    texture_coordinates: primitive.texture_coordinates[index],
                     normal: [1.0, 1.0, 1.0]                   
                 });
+
+                index = index + 1;
             }
 
             indices.append(&mut primitive.indices);
@@ -125,6 +130,7 @@ pub fn create_object(device: &Device, name: &str, model_data: ModelData, view_so
         meshes,        
         instance_buffer,
         view_source,
-        view
+        view,
+        textures: model_data.textures
     }
 }

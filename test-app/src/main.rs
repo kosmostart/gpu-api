@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use log::*;
 use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget, EventLoopBuilder}, window::Window, event::{Event, WindowEvent, ElementState}, dpi::{PhysicalPosition,  PhysicalSize}};
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
@@ -10,7 +10,6 @@ use gpu_api::{bytemuck, pipeline::{self, quad_pipeline}, model::{self, create_ob
 use element::{Color, ElementCfg, create_element};
 
 mod element;
-mod model_load;
 
 #[derive(Debug)]
 pub enum AppEvent {
@@ -36,7 +35,7 @@ pub struct Scene {
 
 async fn run(event_loop: EventLoop<AppEvent>, window: Window) {    
     let instance = wgpu::Instance::default();
-    let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");    
+    let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
     let adapter = instance    
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -49,10 +48,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let (device, queue) = adapter
         .request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),
-                //limits: wgpu::Limits::default(),
-                // WebGL doesn't support all of wgpu's features, so if
-                // we're building for the web we'll have to disable some.
+                features: wgpu::Features::empty(),                
                 limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
@@ -78,10 +74,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         size,
         halfes,        
         cursor_physical_position: None        
-    };    
-        
-    //let swapchain_capabilities = surface.get_capabilities(&adapter);
-    //let swapchain_format = swapchain_capabilities.formats[0];
+    };        
 
     surface.configure(
         &device,
@@ -94,10 +87,115 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![]
         }
-    );    
+    );
 
-    let element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue);
-    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let background_color = Color {
+        r: 0.10196,
+        g: 0.10196,
+        b: 0.10196,
+        a: 1.0
+    };
+
+    let border_color = Color {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0
+    };
+
+    let mut scene1 = Scene {
+        vertices: vec![],
+        indices: vec![],
+        element_index: 0
+    };
+
+    let mut scene2 = Scene {
+        vertices: vec![],
+        indices: vec![],
+        element_index: 0
+    };
+
+    while scene1.element_index < 100 {
+        let element_cfg = ElementCfg { 
+            x: scene1.element_index as i32 * 10 + 30,
+            y: 30, 
+            width: 30, 
+            height: 30,
+            background_color, 
+            border_color: Some(border_color)
+        };
+    
+        create_element(&layout, element_cfg, &mut scene1);
+
+        scene1.element_index = scene1.element_index + 1;
+    }
+
+    while scene2.element_index < 100 {
+        let element_cfg = ElementCfg { 
+            x: scene2.element_index as i32 * 10 + 30,
+            y: 130,
+            width: 30, 
+            height: 30,
+            background_color, 
+            border_color: Some(border_color)
+        };
+    
+        create_element(&layout, element_cfg, &mut scene2);
+
+        scene2.element_index = scene2.element_index + 1;
+    }
+    
+    let mut current_scene = "scene1".to_owned();
+
+    let mut indices_count = scene1.indices.len() as u32;
+
+    let mut element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue, &scene1.vertices, &scene1.indices);
+
+    let mut objects = vec![];    
+
+    let model_data = model_load::load("../models/overlord/overlord.gltf");
+    
+    let view_source = ViewSource {
+        x: 5.0,
+        y: 7.0,
+        z: 0.0,        
+        scale_x: 0.02,
+        scale_y: 0.02,
+        scale_z: 0.02
+    };
+    
+    let object = create_object(&device, "1", model_data, view_source);
+    objects.push(object);
+
+    let model_data = model_load::load("../models/duck/duck.gltf");
+    
+    let view_source = ViewSource {
+        x: 1.0,
+        y: 4.0,
+        z: 0.0,        
+        scale_x: 0.02,
+        scale_y: 0.02,
+        scale_z: 0.02
+    };
+    
+    let object = create_object(&device, "2", model_data, view_source);
+    objects.push(object);
+
+    let model_data = model_load::load("../models/plane/plane.gltf");
+    
+    let view_source = ViewSource {
+        x: 5.0,
+        y: 0.0,
+        z: 0.0,        
+        scale_x: 1.0,
+        scale_y: 1.0,
+        scale_z: 1.0
+    };
+    
+    let object = create_object(&device, "3", model_data, view_source);
+    objects.push(object);
+
+    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32, objects[2].textures.clone()).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
@@ -145,103 +243,6 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);    
 
-    let background_color = Color {
-        r: 0.10196,
-        g: 0.10196,
-        b: 0.10196,
-        a: 1.0
-    };
-
-    let border_color = Color {
-        r: 0.0,
-        g: 1.0,
-        b: 0.0,
-        a: 1.0
-    };    
-
-    let mut scene1 = Scene {
-        vertices: vec![],
-        indices: vec![],
-        element_index: 0
-    };
-
-    let mut scene2 = Scene {
-        vertices: vec![],
-        indices: vec![],
-        element_index: 0
-    };
-
-    while scene1.element_index < 100 {
-        let element_cfg = ElementCfg { 
-            x: scene1.element_index as i32 * 10 + 30,
-            y: 30, 
-            width: 30, 
-            height: 30,
-            background_color, 
-            border_color: Some(border_color)
-        };
-    
-        create_element(&layout, element_cfg, &mut scene1);
-
-        scene1.element_index = scene1.element_index + 1;
-    }
-
-    while scene2.element_index < 100 {
-        let element_cfg = ElementCfg { 
-            x: scene2.element_index as i32 * 10 + 30,
-            y: 130,
-            width: 30, 
-            height: 30,
-            background_color, 
-            border_color: Some(border_color)
-        };
-    
-        create_element(&layout, element_cfg, &mut scene2);
-
-        scene2.element_index = scene2.element_index + 1;
-    }
-    
-    let mut current_scene = "scene1".to_owned();
-
-    let mut vertex_buffer = device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&scene1.vertices),
-            usage: wgpu::BufferUsages::VERTEX
-        }
-    );
-
-    let mut index_buffer = device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&scene1.indices),
-            usage: wgpu::BufferUsages::INDEX
-        }
-    );
-    
-    let mut indices_count = scene1.indices.len() as u32;
-
-    let mut objects = vec![];    
-
-    let model_data = model_load::load("../models/overlord/overlord.gltf");
-    
-    let view_source = ViewSource {
-        x: 5.0,
-        y: 7.0,
-        z: 0.0,        
-        scale_x: 0.02,
-        scale_y: 0.02,
-        scale_z: 0.02
-    };
-    
-    let object = create_object(&device, "1", model_data, view_source);
-    objects.push(object);
-
-    //let model_data = model_load::load("../models/box/box.gltf");
-    
-    //let object = create_model(&device, "2", model_data, 0.0, 0.0, 0.0, dog2);
-    //objects.push(object);
-
     run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
         *control_flow = ControlFlow::Wait;
         
@@ -249,8 +250,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             Event::WindowEvent { event: window_event, window_id } => {
                 match window_event {
                     WindowEvent::CloseRequested => {                        
-                        info!("Event loop close requested");                        
-                        *control_flow = ControlFlow::Exit;
+                        info!("Event loop close requested");
+                        *control_flow = ControlFlow::Exit;                        
                     }
                     WindowEvent::Resized(new_size) => {                        
                         info!("Resized");
@@ -271,7 +272,6 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                     }
                     WindowEvent::CursorMoved { device_id: _, position, .. } => {                        
                         //info!("{:?}", position);
-
                         layout.cursor_physical_position = Some(position);
                     }
                     WindowEvent::MouseInput { device_id: _, state, button, .. } => {
@@ -281,7 +281,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             ElementState::Released => {
                                 match current_scene.as_ref() {
                                     "scene1" => {
-                                        vertex_buffer = device.create_buffer_init(
+                                        element_pipeline.vertex_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Vertex Buffer"),
                                                 contents: bytemuck::cast_slice(&scene1.vertices),
@@ -289,7 +289,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                                             }
                                         );
                                     
-                                        index_buffer = device.create_buffer_init(
+                                        element_pipeline.index_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Index Buffer"),
                                                 contents: bytemuck::cast_slice(&scene1.indices),
@@ -302,7 +302,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                                         current_scene = "scene2".to_owned();
                                     }
                                     "scene2" => {
-                                        vertex_buffer = device.create_buffer_init(
+                                        element_pipeline.vertex_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Vertex Buffer"),
                                                 contents: bytemuck::cast_slice(&scene2.vertices),
@@ -310,7 +310,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                                             }
                                         );
                                     
-                                        index_buffer = device.create_buffer_init(
+                                        element_pipeline.index_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Index Buffer"),
                                                 contents: bytemuck::cast_slice(&scene2.indices),
@@ -330,7 +330,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             }                            
                         }
                     }
-                    WindowEvent::MouseWheel { device_id: _, delta, phase: _, modifiers: _ } => {
+                    WindowEvent::MouseWheel { device_id: _, delta, phase: _, modifiers } => {
                         info!("{:?}", delta);
                     }
                     WindowEvent::ModifiersChanged(state) => {
@@ -416,22 +416,19 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                 // Get the next frame
                 let frame = surface.get_current_texture().expect("Get next frame");
-                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());                
-
-                //println!("{:#?}", uniforms);
-                //println!("{:#?}", instances);
+                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());                                
 
                 {
-                    let mut constants_buffer = staging_belt.write_buffer(
+                    let mut uniform_buffer = staging_belt.write_buffer(
                         &mut encoder,
-                        &quad_pipeline.constants_buffer,
+                        &quad_pipeline.uniform_buffer,
                         0,
                         wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
                             .unwrap(),
                         &device
                     );
 
-                    constants_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
+                    uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
                 }
                 
                 let amount = {
@@ -444,7 +441,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                     let mut instance_buffer = staging_belt.write_buffer(
                         &mut encoder,
-                        &quad_pipeline.instances,
+                        &quad_pipeline.instance_buffer,
                         0,
                         wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
                         &device,
@@ -454,16 +451,6 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                     res
                 };
-
-                /*
-                let dog_ref: &[f32; 16] = camera_uniform.as_ref();
-
-                queue.write_buffer(
-                    &model_pipeline.camera_buffer,
-                    0,
-                    bytemuck::cast_slice(dog_ref)
-                );
-                */
 
                 {
                     let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
@@ -513,38 +500,18 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                                                 a: 1.0
                                             },
                                         ),
-                                        store: true
+                                        store: StoreOp::Store
                                     }
                                 })
                             ],
-                            depth_stencil_attachment: None
+                            depth_stencil_attachment: None,
+                            timestamp_writes: None,
+                            occlusion_query_set: None
                         }
-                    );                    
-                                        
-                    render_pass.set_pipeline(&model_pipeline.render_pipeline);
+                    );                                                        
 
-                    for object in &objects {
-                        render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
-                    
-                        //let instances_range = 0..object.instances.len() as u32;
-                        let instances_range = 0..1 as u32;
-                        
-                        for mesh in &object.meshes {                            
-                            render_pass.set_bind_group(0, &model_pipeline.texture_bind_group, &[]); // Texture
-                            render_pass.set_bind_group(1, &model_pipeline.camera_bind_group, &[]); // Camera
-                            render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                            render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                            render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
-                        }
-                    }
-
-                    render_pass.set_pipeline(&element_pipeline.render_pipeline);
-                    
-                    render_pass.set_bind_group(0, &element_pipeline.diffuse_bind_group, &[]); // Texture
-                    render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                    render_pass.draw_indexed(0..indices_count, 0, 0..1);                    
-
+                    model_pipeline.draw(&mut render_pass, &objects);
+                    element_pipeline.draw(&mut render_pass, indices_count);
                     quad_pipeline.draw(&mut render_pass, amount as u32);
                 }
 
@@ -552,15 +519,13 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                 queue.submit(Some(encoder.finish()));
                 frame.present();
                 staging_belt.recall();          
-            }
-            Event::RedrawEventsCleared => {                                
-            }        
+            }            
             _ => {}
         }
     })
 }
 
-pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<'_, AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {
+pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {
     #[cfg(target_arch = "wasm32")]
     event_loop.spawn(event_handler);
     #[cfg(not(target_arch = "wasm32"))]

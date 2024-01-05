@@ -1,6 +1,6 @@
 use log::*;
-use gltf::{mesh::{util::ReadIndices, Mode}, Node};
-use gpu_api::model::{ModelData, MeshData, PrimitiveData};
+use gltf::{mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
+use gpu_api::{model::{ModelData, MeshData, PrimitiveData}, texture::TextureData};
 
 fn nodes(node: Node, node_level: usize) {
     info!("Node level: {}, node name: {:?}, node index: {}", node_level, node.name(), node.index());
@@ -15,7 +15,7 @@ fn nodes(node: Node, node_level: usize) {
 }
 
 pub fn load(model_path: &str) -> ModelData {        
-    let (gltf_data, buffers, _) = gltf::import(model_path).unwrap();
+    let (gltf_data, buffers, images) = gltf::import(model_path).unwrap();
 
     //let mut node_level = 0;
 
@@ -34,8 +34,8 @@ pub fn load(model_path: &str) -> ModelData {
 
         for primitive in mesh.primitives() {
             
-            info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
-            info!("{:#?}", primitive.attributes());
+            //info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
+            //info!("{:#?}", primitive.attributes());
 
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));            
 
@@ -80,7 +80,7 @@ pub fn load(model_path: &str) -> ModelData {
 
             match reader.read_normals() {
                 Some(iter) => {
-                    for q in iter {
+                    for q in iter {                        
                         normals.push(q);
                     }
                 }
@@ -120,43 +120,104 @@ pub fn load(model_path: &str) -> ModelData {
                 Some(iter) => {}
                 None => {}
             }
-            */            
-
-            /*
-            match reader.read_tex_coords() {
-                Some(iter) => {}
-                None => {}
-            }
             */
 
-            /*
-            match reader.read_colors() {
-                Some(iter) => {}
+            let mut texture_coordinates = vec![];
+            
+            match reader.read_tex_coords(0) {
+                Some(coords) => {
+                    match coords {
+                        ReadTexCoords::F32(iter) => {
+                            for q in iter {
+                                info!("set 0 f32 {:?}", q);
+                                texture_coordinates.push(q);
+                            }
+                        }
+                        ReadTexCoords::U8(iter) => {
+                            for q in iter {
+                                info!("set 0 u8 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U16(iter) => {
+                            for q in iter {
+                                info!("set 0 u16 {:?}", q);
+                            }
+                        }
+                    }
+                    
+                }
                 None => {}
             }
-            */
+
+            match reader.read_tex_coords(1) {
+                Some(coords) => {
+                    match coords {
+                        ReadTexCoords::F32(iter) => {
+                            for q in iter {
+                                info!("set 1 f32 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U8(iter) => {
+                            for q in iter {
+                                info!("set 1 u8 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U16(iter) => {
+                            for q in iter {
+                                info!("set 1 u16 {:?}", q);
+                            }
+                        }
+                    }
+                    
+                }
+                None => {}
+            }
+
+            /*
+            match reader.read_colors(0) {
+                Some(iter) => {}
+                None => {}
+            } 
+            */           
 
             info!("Positions total: {}", positions.len());
             info!("Indices total: {}", indices.len());
             info!("Normals total: {}", normals.len());
             info!("Tangents total: {}", tangents.len());
             info!("Bitangents total: {}", bitangents.len());
+            info!("Texture coordinates total: {}", texture_coordinates.len());            
 
             primitives.push(PrimitiveData {
                 positions,
                 indices,
                 normals,
                 tangents,
-                bitangents
+                bitangents,
+                texture_coordinates
             });
         }
 
         meshes.push(MeshData {            
             primitives
+        });        
+    }
+
+    info!("Images total: {}", images.len());
+
+    let mut textures = vec![];
+
+    for image in images {
+        info!("Image format {:?}, width {}, height {}", image.format, image.width, image.height);        
+        textures.push(TextureData {
+            format: format!("{:?}", image.format),
+            width: image.width,
+            height: image.height,
+            pixels: image.pixels
         });
-    }    
+    }
 
     ModelData {
-        meshes: meshes
+        meshes,
+        textures
     }
 }

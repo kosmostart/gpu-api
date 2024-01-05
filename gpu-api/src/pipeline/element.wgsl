@@ -45,17 +45,17 @@ fn vs_main(vertex_input: VertexInput) -> FragmentInput {
 }
 
 @group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
+var texture_data: texture_2d<f32>;
 @group(0) @binding(1)
-var s_diffuse: sampler;
+var texture_sampler: sampler;
 
 // Fragment shader
 @fragment
 //@stage(fragment)
 fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> {
     switch fragment_input.vertex_type {
-        case 1u: {
-            return textureSampleLevel(t_diffuse, s_diffuse, fragment_input.texture_coordinates, 0.0);
+        case 1u: {            
+            return textureSample(texture_data, texture_sampler, fragment_input.texture_coordinates); // Texture
         }
         default: {
             if (

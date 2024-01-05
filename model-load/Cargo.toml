@@ -1,5 +1,5 @@
 [package]
-name = "test-server"
+name = "model-load"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,5 +9,6 @@ edition = "2021"
 
 log = "*"
 env_logger = "*"
-tokio = { version = "*", features = ["rt-multi-thread"] }
-warp = "*"
+serde_json = "*"
+gltf = "*"
+gpu-api = { path = "../gpu-api" }

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, mem::size_of};
-use log::*;
-use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat};
+use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass};
+use wgpu::util::DeviceExt;
 use crate::texture::Texture;
 
 #[repr(C)]
@@ -23,19 +23,47 @@ unsafe impl bytemuck::Zeroable for Vertex {}
 
 pub struct Pipeline {
     pub shader: ShaderModule,
-    pub diffuse_texture: Texture,
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+    pub texture: Texture,
     pub texture_bind_group_layout: BindGroupLayout,
-    pub diffuse_bind_group: BindGroup,    
-    pub pipeline_layout: PipelineLayout,
-    pub swapchain_format: TextureFormat,
+    pub texture_bind_group: BindGroup,    
+    pub pipeline_layout: PipelineLayout,    
     pub render_pipeline: RenderPipeline
 }
 
-pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue) -> Pipeline {
+impl Pipeline {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, indices_count: u32) {
+        render_pass.set_pipeline(&self.render_pipeline);
+    
+        render_pass.set_bind_group(0, &self.texture_bind_group, &[]); // Texture
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.draw_indexed(0..indices_count, 0, 0..1);
+    }
+}
+
+pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, vertices: &Vec<Vertex>, indices: &Vec<u32>) -> Pipeline {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader1"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("element.wgsl")))
     });
+
+    let vertex_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX
+        }
+    );
+
+    let index_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&indices),
+            usage: wgpu::BufferUsages::INDEX
+        }
+    );    
 
     let diffuse_bytes = include_bytes!("../../../textures/happy-tree.png");
     let diffuse_texture = crate::texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
@@ -65,6 +93,15 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue)
                 label: Some("texture_bind_group_layout"),
             });
 
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {            
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
     
     let diffuse_bind_group = device.create_bind_group(
         &wgpu::BindGroupDescriptor {
@@ -76,7 +113,7 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue)
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                    resource: wgpu::BindingResource::Sampler(&sampler),
                 }
             ],
             label: Some("diffuse_bind_group"),
@@ -257,11 +294,12 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue)
 
     Pipeline {
         shader,
-        diffuse_texture,
+        vertex_buffer,
+        index_buffer,
+        texture: diffuse_texture,
         texture_bind_group_layout,
-        diffuse_bind_group,        
-        pipeline_layout,
-        swapchain_format: TextureFormat::Rgba8UnormSrgb,
+        texture_bind_group: diffuse_bind_group,        
+        pipeline_layout,        
         render_pipeline
     }
 }

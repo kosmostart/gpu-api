@@ -5,5 +5,6 @@ members = [
 	"gpu-api",
 	"test-app",
 	"test-server",
-	"model-data"
+	"model-utils",
+	"model-load"
 ]
