@@ -21,7 +21,7 @@ unsafe impl bytemuck::Zeroable for Vertex {}
 pub struct Pipeline {
     pub shader: ShaderModule,
     pub texture_bind_group_layout: BindGroupLayout,
-    pub texture_bind_group: BindGroup,
+    pub texture_bind_groups: Vec<BindGroup>,
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
     pub camera_bind_group: BindGroup, 
@@ -33,6 +33,8 @@ pub struct Pipeline {
 impl Pipeline {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, objects: &'a Vec<Object>) {
         render_pass.set_pipeline(&self.render_pipeline);
+
+        let mut index = 0;
     
         for object in objects {
             render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
@@ -41,12 +43,14 @@ impl Pipeline {
             let instances_range = 0..1 as u32;
             
             for mesh in &object.meshes {                            
-                render_pass.set_bind_group(0, &self.texture_bind_group, &[]); // Texture
+                render_pass.set_bind_group(0, &self.texture_bind_groups[index], &[]); // Texture
                 render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                 render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
             }
+
+            index = index + 1;
         }
     }
 }
@@ -80,14 +84,8 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
                 label: Some("texture_bind_group_layout"),
             });
 
-    let mut textures = vec![];
+    let mut texture_bind_groups = vec![];
     let mut texture_index = 0;
-
-    for texture_item in texture_data {
-        let texture_image = image::DynamicImage::ImageRgb8(image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels).expect("Failed to create image buffer"));
-        textures.push(crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &texture_index.to_string()))).expect("Failed to create texture"));
-        texture_index = texture_index + 1;
-    }
 
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {            
         address_mode_u: wgpu::AddressMode::Repeat,
@@ -98,24 +96,33 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
         mipmap_filter: wgpu::FilterMode::Linear,
         ..Default::default()
     });
-    
-    let texture_bind_group = device.create_bind_group(
-        &wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&textures[0].view),
-                    //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler)
-                }
-            ],
-            label: Some("texture_bind_group"),
-        }
-    );    
+
+    for texture_item in texture_data {
+        let index_str = texture_index.to_string();
+        let texture_image = image::DynamicImage::ImageRgb8(image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels).expect("Failed to create image buffer"));
+        let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");        
+
+        let texture_bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &texture_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
+                        //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler)
+                    }
+                ],
+                label: Some(&("texture_bind_group_".to_owned() + &index_str)),
+            }
+        );
+
+        texture_bind_groups.push(texture_bind_group);
+        texture_index = texture_index + 1;
+    }
 
     let camera = create_camera(width, height, 0.0, 0.0, 0.0);
     let camera_projection_matrix_ref: &[f32; 16] = camera.projection.as_ref();
@@ -224,7 +231,7 @@ pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &
     (camera, Pipeline {
         shader,
         texture_bind_group_layout,
-        texture_bind_group,
+        texture_bind_groups,
         camera_buffer,
         camera_bind_group_layout,
         camera_bind_group,

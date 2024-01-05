@@ -14,7 +14,8 @@ fn nodes(node: Node, node_level: usize) {
     }
 }
 
-pub fn load(model_path: &str) -> ModelData {        
+pub fn load(model_path: &str) -> ModelData {
+    info!("Loading model from path {}", model_path);
     let (gltf_data, buffers, images) = gltf::import(model_path).unwrap();
 
     //let mut node_level = 0;
@@ -128,19 +129,18 @@ pub fn load(model_path: &str) -> ModelData {
                 Some(coords) => {
                     match coords {
                         ReadTexCoords::F32(iter) => {
-                            for q in iter {
-                                info!("set 0 f32 {:?}", q);
+                            for q in iter {                                
                                 texture_coordinates.push(q);
                             }
                         }
                         ReadTexCoords::U8(iter) => {
                             for q in iter {
-                                info!("set 0 u8 {:?}", q);
+                                warn!("set 0 u8 {:?}", q);
                             }
                         }
                         ReadTexCoords::U16(iter) => {
                             for q in iter {
-                                info!("set 0 u16 {:?}", q);
+                                warn!("set 0 u16 {:?}", q);
                             }
                         }
                     }
@@ -154,17 +154,17 @@ pub fn load(model_path: &str) -> ModelData {
                     match coords {
                         ReadTexCoords::F32(iter) => {
                             for q in iter {
-                                info!("set 1 f32 {:?}", q);
+                                warn!("set 1 f32 {:?}", q);
                             }
                         }
                         ReadTexCoords::U8(iter) => {
                             for q in iter {
-                                info!("set 1 u8 {:?}", q);
+                                warn!("set 1 u8 {:?}", q);
                             }
                         }
                         ReadTexCoords::U16(iter) => {
                             for q in iter {
-                                info!("set 1 u16 {:?}", q);
+                                warn!("set 1 u16 {:?}", q);
                             }
                         }
                     }
@@ -180,12 +180,12 @@ pub fn load(model_path: &str) -> ModelData {
             } 
             */           
 
-            info!("Positions total: {}", positions.len());
-            info!("Indices total: {}", indices.len());
-            info!("Normals total: {}", normals.len());
-            info!("Tangents total: {}", tangents.len());
-            info!("Bitangents total: {}", bitangents.len());
-            info!("Texture coordinates total: {}", texture_coordinates.len());            
+            info!("{} positions total: {}", model_path, positions.len());
+            info!("{} indices total: {}", model_path, indices.len());
+            info!("{} normals total: {}", model_path, normals.len());
+            info!("{} tangents total: {}", model_path, tangents.len());
+            info!("{} bitangents total: {}", model_path, bitangents.len());
+            info!("{} texture coordinates total: {}", model_path, texture_coordinates.len());
 
             primitives.push(PrimitiveData {
                 positions,
@@ -202,12 +202,13 @@ pub fn load(model_path: &str) -> ModelData {
         });        
     }
 
-    info!("Images total: {}", images.len());
+    info!("{} meshes total: {}", model_path, meshes.len());
+    info!("{} images total: {}", model_path, images.len());
 
     let mut textures = vec![];
 
     for image in images {
-        info!("Image format {:?}, width {}, height {}", image.format, image.width, image.height);        
+        info!("{} image format {:?}, width {}, height {}", model_path, image.format, image.width, image.height);        
         textures.push(TextureData {
             format: format!("{:?}", image.format),
             width: image.width,

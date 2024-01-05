@@ -156,12 +156,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let model_data = model_load::load("../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
-        x: 5.0,
-        y: 7.0,
+        x: -5.0,
+        y: 0.0,
         z: 0.0,        
-        scale_x: 0.02,
-        scale_y: 0.02,
-        scale_z: 0.02
+        scale_x: 0.05,
+        scale_y: 0.05,
+        scale_z: 0.05
     };
     
     let object = create_object(&device, "1", model_data, view_source);
@@ -195,7 +195,11 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let object = create_object(&device, "3", model_data, view_source);
     objects.push(object);
 
-    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32, objects[2].textures.clone()).await;
+    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32, vec![
+        objects[0].textures[3].clone(),
+        objects[1].textures[0].clone(),
+        objects[2].textures[0].clone()
+    ]).await;
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
