@@ -150,10 +150,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let mut indices_count = scene1.indices.len() as u32;
 
     let mut element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue, &scene1.vertices, &scene1.indices);
+    
+    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
 
-    let mut objects = vec![];    
+    let mut objects = vec![];
 
-    let model_data = model_load::load("../models/overlord/overlord.gltf");
+    let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
         x: -5.0,
@@ -164,10 +166,10 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 0.05
     };
     
-    let object = create_object(&device, "1", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "1", model_data, view_source);
     objects.push(object);
 
-    let model_data = model_load::load("../models/duck/duck.gltf");
+    let model_data = model_load::load("duck", "../models/duck/duck.gltf");
     
     let view_source = ViewSource {
         x: 1.0,
@@ -178,10 +180,10 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 0.02
     };
     
-    let object = create_object(&device, "2", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "2", model_data, view_source);
     objects.push(object);
 
-    let model_data = model_load::load("../models/plane/plane.gltf");
+    let model_data = model_load::load("plane", "../models/plane/plane.gltf");
     
     let view_source = ViewSource {
         x: 5.0,
@@ -192,14 +194,9 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, "3", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, view_source);
     objects.push(object);
-
-    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32, vec![
-        objects[0].textures[3].clone(),
-        objects[1].textures[0].clone(),
-        objects[2].textures[0].clone()
-    ]).await;
+    
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);

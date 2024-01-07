@@ -1,3 +1,4 @@
+use std::io::{Write, Read};
 use log::*;
 use gltf::{mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
 use gpu_api::{model::{ModelData, MeshData, PrimitiveData}, texture::TextureData};
@@ -14,9 +15,9 @@ fn nodes(node: Node, node_level: usize) {
     }
 }
 
-pub fn load(model_path: &str) -> ModelData {
-    info!("Loading model from path {}", model_path);
-    let (gltf_data, buffers, images) = gltf::import(model_path).unwrap();
+pub fn load(model_name: &str, model_path: &str) -> ModelData {
+    info!("Loading model {} from path {}", model_name, model_path);
+    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");
 
     //let mut node_level = 0;
 
@@ -180,12 +181,12 @@ pub fn load(model_path: &str) -> ModelData {
             } 
             */           
 
-            info!("{} positions total: {}", model_path, positions.len());
-            info!("{} indices total: {}", model_path, indices.len());
-            info!("{} normals total: {}", model_path, normals.len());
-            info!("{} tangents total: {}", model_path, tangents.len());
-            info!("{} bitangents total: {}", model_path, bitangents.len());
-            info!("{} texture coordinates total: {}", model_path, texture_coordinates.len());
+            info!("{} positions total: {}", model_name, positions.len());
+            info!("{} indices total: {}", model_name, indices.len());
+            info!("{} normals total: {}", model_name, normals.len());
+            info!("{} tangents total: {}", model_name, tangents.len());
+            info!("{} bitangents total: {}", model_name, bitangents.len());
+            info!("{} texture coordinates total: {}", model_name, texture_coordinates.len());
 
             primitives.push(PrimitiveData {
                 positions,
@@ -202,22 +203,38 @@ pub fn load(model_path: &str) -> ModelData {
         });        
     }
 
-    info!("{} meshes total: {}", model_path, meshes.len());
-    info!("{} images total: {}", model_path, images.len());
+    info!("{} meshes total: {}", model_name, meshes.len());
+    info!("{} images total: {}", model_name, images.len());
 
     let mut textures = vec![];
+    //let mut image_index = 0;
 
     for image in images {
-        info!("{} image format {:?}, width {}, height {}", model_path, image.format, image.width, image.height);        
+        info!("{} image format {:?}, width {}, height {}", model_name, image.format, image.width, image.height);            
+
+        //let mut file = std::fs::File::create(&image_index.to_string()).expect("Failed to image create file");
+
+        //file.write_all(&image.pixels).expect("Failed to write image pixes to file");
+
+        //image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer")
+        
+        //let mut file = std::fs::File::open(&image_index.to_string()).expect("Failed to open image file");
+        //let mut q = vec![];
+
+        //file.read_to_end(&mut q).unwrap();
+        
         textures.push(TextureData {
             format: format!("{:?}", image.format),
             width: image.width,
             height: image.height,
-            pixels: image.pixels
+            pixels: Some(image.pixels)
         });
+        
+        //image_index = image_index + 1;
     }
 
     ModelData {
+        name: model_name.to_owned(),
         meshes,
         textures
     }

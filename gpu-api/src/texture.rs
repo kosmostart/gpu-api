@@ -12,7 +12,7 @@ pub struct TextureData {
     pub format: String,
     pub width: u32,
     pub height: u32,
-    pub pixels: Vec<u8>
+    pub pixels: Option<Vec<u8>>    
 }
 
 impl Texture {
