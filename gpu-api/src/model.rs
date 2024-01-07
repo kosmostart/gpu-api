@@ -1,3 +1,5 @@
+use image::{ImageBuffer, DynamicImage};
+use log::warn;
 use serde_derive::{Serialize, Deserialize};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use crate::{pipeline::model_pipeline, texture::TextureData};
@@ -127,9 +129,20 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     let mut texture_bind_groups = vec![];
     let mut texture_index = 0;
 
-    for texture_item in model_data.textures {
-        let index_str = texture_index.to_string();
-        let texture_image = image::DynamicImage::ImageRgb8(image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer"));
+    for texture_item in model_data.textures {        
+        let index_str = texture_index.to_string();        
+
+        let texture_image = match texture_item.format.as_ref() {
+            "R8G8B8A8" => {
+                let image_buffer = ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer");
+                DynamicImage::ImageRgba8(image_buffer)
+            }
+            _ => {
+                let image_buffer = ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer");                
+                DynamicImage::ImageRgb8(image_buffer)
+            }
+        };
+
         let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
 
         let texture_bind_group = device.create_bind_group(
