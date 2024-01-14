@@ -60,7 +60,8 @@ pub struct Object {
     pub view_sources: Vec<ViewSource>,
     pub texture_bind_groups: Vec<BindGroup>,
     pub views: Vec<f32>,
-    pub views_size: u64
+    pub views_size: u64,
+    pub views_amount: u32
 }
 
 impl Object {
@@ -73,6 +74,7 @@ impl Object {
         }
 
         self.views_size = self.views.len() as u64 * VIEW_MATRIX_ELEMENT_SIZE;
+        self.views_amount = self.view_sources.len() as u32;
     }
 }
 
@@ -183,6 +185,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let views_size = views.len() as u64 * VIEW_MATRIX_ELEMENT_SIZE;
 
+    let views_amount = view_sources.len() as u32;
+
     Object {
         name: name.to_owned(),
         meshes,        
@@ -190,6 +194,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         texture_bind_groups,
         view_sources,
         views,
-        views_size
+        views_size,
+        views_amount
     }
 }

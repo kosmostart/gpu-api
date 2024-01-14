@@ -38,9 +38,8 @@ impl Pipeline {
     
         for object in objects {
             render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
-        
-            //let instances_range = 0..object.instances.len() as u32;
-            let instances_range = 0..1 as u32;
+                    
+            let instances_range = 0..object.views_amount;
             
             for mesh in &object.meshes {                            
                 render_pass.set_bind_group(0, &object.texture_bind_groups[0], &[]); // Texture
