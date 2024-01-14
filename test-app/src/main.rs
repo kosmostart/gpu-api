@@ -486,7 +486,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         let mut view_slice = staging_belt.write_buffer(
                             &mut encoder,
                             &object.instance_buffer,
-                            0,                            
+                            0,
                             wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
                             &device
                         );
