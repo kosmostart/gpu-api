@@ -166,7 +166,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 0.05
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "1", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "1", model_data, vec![view_source]);
     objects.push(object);
 
     let model_data = model_load::load("duck", "../models/duck/duck.gltf");
@@ -180,7 +180,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 0.02
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "2", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "2", model_data, vec![view_source]);
     objects.push(object);
 
     let model_data = model_load::load("plane", "../models/plane/plane.gltf");
@@ -194,7 +194,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, vec![view_source]);
     objects.push(object);
 
     let model_data = model_load::load("plane", "../models/box/box.glb");
@@ -208,7 +208,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, view_source);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, vec![view_source]);
     objects.push(object);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
@@ -431,7 +431,7 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
                 // Get the next frame
                 let frame = surface.get_current_texture().expect("Get next frame");
-                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());                                
+                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());       
 
                 {
                     let mut uniform_buffer = staging_belt.write_buffer(
@@ -486,14 +486,12 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                         let mut view_slice = staging_belt.write_buffer(
                             &mut encoder,
                             &object.instance_buffer,
-                            0,
-                            wgpu::BufferSize::new(gpu_api::model::VIEW_MATRIX_SIZE).expect("Failed to allocate view slice"),
+                            0,                            
+                            wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
                             &device
                         );
-
-                        let view_ref: &[f32; 16] = object.view.as_ref();
     
-                        view_slice.copy_from_slice(bytemuck::cast_slice(view_ref));
+                        view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
                     }
                 }
 
