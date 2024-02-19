@@ -115,7 +115,10 @@ impl Pipeline {
                                 6 => Float32,
                                 7 => Float32x4,
                                 8 => Uint32,
-                                9 => Float32x4
+                                9 => Float32x4,
+                                10 => Float32x4,
+                                11 => Float32x2,
+                                12 => Float32
                             ),
                         },
                     ],
@@ -157,7 +160,7 @@ impl Pipeline {
         let vertex_buffer =
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Quad vertex buffer"),
-                contents: bytemuck::cast_slice(&QUAD_VERTS),
+                contents: bytemuck::cast_slice(&QUAD_VERTICES),
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
@@ -189,15 +192,18 @@ impl Pipeline {
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Quad {    
-    pub position: [f32; 2],    
-    pub size: [f32; 2],    
-    pub color: [f32; 4],    
-    pub border_color: [f32; 4],    
-    pub border_radius: [f32; 4],    
+    pub position: [f32; 2],
+    pub size: [f32; 2],
+    pub color: [f32; 4],
+    pub border_color: [f32; 4],
+    pub border_radius: [f32; 4],
     pub border_width: f32,
     pub component_coordinates: [f32; 4],
     pub has_overlay: u32,
-    pub overlay_coordinates: [f32; 4]
+    pub overlay_coordinates: [f32; 4],
+    pub shadow_color: [f32; 4],
+    pub shadow_offset: [f32; 2],
+    pub shadow_blur_radius: f32
 }
 
 unsafe impl bytemuck::Zeroable for Quad {}
@@ -215,7 +221,7 @@ unsafe impl bytemuck::Pod for Vertex {}
 
 const QUAD_INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
-const QUAD_VERTS: [Vertex; 4] = [
+const QUAD_VERTICES: [Vertex; 4] = [
     Vertex {
         _position: [0.0, 0.0]
     },

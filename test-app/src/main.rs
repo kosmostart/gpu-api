@@ -230,6 +230,10 @@ async fn run() {
     let has_overlay = 0;
     let overlay_coordinates = [0.0, 0.0, 0.0, 0.0];
 
+    let shadow_color = [0.0, 0.0, 0.0, 0.0];
+    let shadow_offset = [0.0, 0.0];
+    let shadow_blur_radius = 0.0;
+
     let quads = vec![
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -240,7 +244,10 @@ async fn run() {
             size: [100.0, 100.0],
             component_coordinates,
             has_overlay,
-            overlay_coordinates
+            overlay_coordinates,
+            shadow_color,
+            shadow_offset,
+            shadow_blur_radius
         },
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -251,7 +258,10 @@ async fn run() {
             size: [30.0, 30.0],
             component_coordinates,
             has_overlay,
-            overlay_coordinates
+            overlay_coordinates,
+            shadow_color,
+            shadow_offset,
+            shadow_blur_radius
         },
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -262,7 +272,10 @@ async fn run() {
             size: [100.0, 100.0],
             component_coordinates,
             has_overlay,
-            overlay_coordinates
+            overlay_coordinates,
+            shadow_color,
+            shadow_offset,
+            shadow_blur_radius
         }
     ];
 
@@ -270,7 +283,7 @@ async fn run() {
 
     event_loop.run(move |event, target| {        
         target.set_control_flow(ControlFlow::Wait);
-                
+
         match event {
             Event::WindowEvent { event: window_event, window_id } => {
                 match window_event {
@@ -486,15 +499,6 @@ async fn run() {
         }
     }).unwrap();
 }
-
-/*
-pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {
-    #[cfg(target_arch = "wasm32")]
-    event_loop.spawn(event_handler);
-    #[cfg(not(target_arch = "wasm32"))]
-    event_loop.run(event_handler);
-}
-*/
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]

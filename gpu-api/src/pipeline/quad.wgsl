@@ -15,7 +15,10 @@ struct VertexInput {
     @location(6) border_width: f32,
     @location(7) component_coordinates: vec4<f32>,    
     @location(8) @interpolate(flat) has_overlay: u32,
-    @location(9) overlay_coordinates: vec4<f32>
+    @location(9) overlay_coordinates: vec4<f32>,
+    @location(10) shadow_color: vec4<f32>,
+    @location(11) shadow_offset: vec2<f32>,
+    @location(12) shadow_blur_radius: f32
 }
 
 struct VertexOutput {
@@ -28,23 +31,35 @@ struct VertexOutput {
     @location(5) border_width: f32,
     @location(6) component_coordinates: vec4<f32>,    
     @location(7) @interpolate(flat) has_overlay: u32,
-    @location(8) overlay_coordinates: vec4<f32>
+    @location(8) overlay_coordinates: vec4<f32>,
+    @location(9) shadow_color: vec4<f32>,
+    @location(10) shadow_offset: vec2<f32>,
+    @location(11) shadow_blur_radius: f32
 }
 
-fn distance_alg(frag_coord: vec2<f32>, position: vec2<f32>, size: vec2<f32>, radius: f32) -> f32 {
-    var inner_size: vec2<f32> = size - vec2<f32>(radius, radius) * 2.0;
+// Compute the normalized quad coordinates based on the vertex index.
+fn vertex_position(vertex_index: u32) -> vec2<f32> {
+    // #: 0 1 2 3 4 5
+    // x: 1 1 0 0 0 1
+    // y: 1 0 0 0 1 1
+    return vec2<f32>((vec2(1u, 2u) + vertex_index) % vec2(6u) < vec2(3u));
+}
+
+fn distance_alg(
+    frag_coord: vec2<f32>,
+    position: vec2<f32>,
+    size: vec2<f32>,
+    radius: f32
+) -> f32 {
+    var inner_half_size: vec2<f32> = (size - vec2<f32>(radius, radius) * 2.0) / 2.0;
     var top_left: vec2<f32> = position + vec2<f32>(radius, radius);
-    var bottom_right: vec2<f32> = top_left + inner_size;
+    return rounded_box_sdf(frag_coord - top_left - inner_half_size, inner_half_size, 0.0);
+}
 
-    var top_left_distance: vec2<f32> = top_left - frag_coord;
-    var bottom_right_distance: vec2<f32> = frag_coord - bottom_right;
-
-    var dist: vec2<f32> = vec2<f32>(
-        max(max(top_left_distance.x, bottom_right_distance.x), 0.0),
-        max(max(top_left_distance.y, bottom_right_distance.y), 0.0)
-    );
-
-    return sqrt(dist.x * dist.x + dist.y * dist.y);
+// Given a vector from a point to the center of a rounded rectangle of the given `size` and
+// border `radius`, determines the point's distance from the nearest edge of the rounded rectangle
+fn rounded_box_sdf(to_center: vec2<f32>, size: vec2<f32>, radius: f32) -> f32 {
+    return length(max(abs(to_center) - size + vec2<f32>(radius, radius), vec2<f32>(0.0, 0.0))) - radius;
 }
 
 // Based on the fragement position and the center of the quad, select one of the 4 radi.
@@ -63,8 +78,8 @@ fn select_border_radius(radi: vec4<f32>, position: vec2<f32>, center: vec2<f32>)
 fn vs_main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    var pos: vec2<f32> = input.pos * globals.scale;
-    var scale: vec2<f32> = input.scale * globals.scale;
+    var pos: vec2<f32> = (input.pos + min(input.shadow_offset, vec2<f32>(0.0, 0.0)) - input.shadow_blur_radius) * globals.scale;
+    var scale: vec2<f32> = (input.scale + vec2<f32>(abs(input.shadow_offset.x), abs(input.shadow_offset.y)) + input.shadow_blur_radius * 2.0) * globals.scale;
 
     var min_border_radius = min(input.scale.x, input.scale.y) * 0.5;
     var border_radius: vec4<f32> = vec4<f32>(
@@ -91,6 +106,9 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     out.component_coordinates = input.component_coordinates;    
     out.has_overlay = input.has_overlay;
     out.overlay_coordinates = input.overlay_coordinates;
+    out.shadow_color = input.shadow_color;
+    out.shadow_offset = input.shadow_offset * globals.scale;
+    out.shadow_blur_radius = input.shadow_blur_radius * globals.scale;
 
     return out;
 }
@@ -157,21 +175,36 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
         dist
     );
 
-    return vec4<f32>(mixed_color.x, mixed_color.y, mixed_color.z, mixed_color.w * radius_alpha);
+    let quad_color = vec4<f32>(mixed_color.x, mixed_color.y, mixed_color.z, mixed_color.w * radius_alpha);
+
+    if input.shadow_color.a > 0.0 {
+        let shadow_distance = rounded_box_sdf(input.position.xy - input.pos - input.shadow_offset - (input.scale / 2.0), input.scale / 2.0, border_radius);
+        let shadow_alpha = 1.0 - smoothstep(-input.shadow_blur_radius, input.shadow_blur_radius, shadow_distance);
+        let shadow_color = input.shadow_color;
+        let base_color = select(
+            vec4<f32>(shadow_color.x, shadow_color.y, shadow_color.z, 0.0),
+            quad_color,
+            quad_color.a > 0.0
+        );
+
+        return mix(base_color, shadow_color, (1.0 - radius_alpha) * shadow_alpha);
+    } else {
+        return quad_color;
+    }
 }
 
 struct GradientVertexInput {
-    @location(0) v_pos: vec2<f32>,
-    @location(1) @interpolate(flat) colors_1: vec4<u32>,
-    @location(2) @interpolate(flat) colors_2: vec4<u32>,
-    @location(3) @interpolate(flat) colors_3: vec4<u32>,
-    @location(4) @interpolate(flat) colors_4: vec4<u32>,
-    @location(5) @interpolate(flat) offsets: vec4<u32>,
-    @location(6) direction: vec4<f32>,
-    @location(7) position_and_scale: vec4<f32>,
-    @location(8) border_color: vec4<f32>,
-    @location(9) border_radius: vec4<f32>,
-    @location(10) border_width: f32,
+    @builtin(vertex_index) vertex_index: u32,
+    @location(0) @interpolate(flat) colors_1: vec4<u32>,
+    @location(1) @interpolate(flat) colors_2: vec4<u32>,
+    @location(2) @interpolate(flat) colors_3: vec4<u32>,
+    @location(3) @interpolate(flat) colors_4: vec4<u32>,
+    @location(4) @interpolate(flat) offsets: vec4<u32>,
+    @location(5) direction: vec4<f32>,
+    @location(6) position_and_scale: vec4<f32>,
+    @location(7) border_color: vec4<f32>,
+    @location(8) border_radius: vec4<f32>,
+    @location(9) border_width: f32,
 }
 
 struct GradientVertexOutput {
@@ -186,6 +219,10 @@ struct GradientVertexOutput {
     @location(8) border_color: vec4<f32>,
     @location(9) border_radius: vec4<f32>,
     @location(10) border_width: f32,
+}
+
+fn interpolate_color(from_: vec4<f32>, to_: vec4<f32>, factor: f32) -> vec4<f32> {
+    return mix(from_, to_, factor);
 }
 
 @vertex
@@ -210,7 +247,7 @@ fn gradient_vs_main(input: GradientVertexInput) -> GradientVertexOutput {
         vec4<f32>(pos - vec2<f32>(0.5, 0.5), 0.0, 1.0)
     );
 
-    out.position = globals.transform * transform * vec4<f32>(input.v_pos, 0.0, 1.0);
+    out.position = globals.transform * transform * vec4<f32>(vertex_position(input.vertex_index), 0.0, 1.0);
     out.colors_1 = input.colors_1;
     out.colors_2 = input.colors_2;
     out.colors_3 = input.colors_3;
@@ -365,36 +402,3 @@ fn unpack_u32(color: vec2<u32>) -> vec4<f32> {
 
     return vec4<f32>(rg.y, rg.x, ba.y, ba.x);
 }
-
-fn interpolate_color(from_: vec4<f32>, to_: vec4<f32>, factor: f32) -> vec4<f32> {
-    return mix(from_, to_, factor);
-}
-
-/*
-const to_lms = mat3x4<f32>(
-    vec4<f32>(0.4121656120,  0.2118591070,  0.0883097947, 0.0),
-    vec4<f32>(0.5362752080,  0.6807189584,  0.2818474174, 0.0),
-    vec4<f32>(0.0514575653,  0.1074065790,  0.6302613616, 0.0),
-);
-
-const to_rgb = mat3x4<f32>(
-    vec4<f32>( 4.0767245293, -3.3072168827,  0.2307590544, 0.0),
-    vec4<f32>(-1.2681437731,  2.6093323231, -0.3411344290, 0.0),
-    vec4<f32>(-0.0041119885, -0.7034763098,  1.7068625689, 0.0),
-);
-
-fn interpolate_color(from_: vec4<f32>, to_: vec4<f32>, factor: f32) -> vec4<f32> {
-    // To Oklab
-    let lms_a = pow(from_ * to_lms, vec3<f32>(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));
-    let lms_b = pow(to_ * to_lms, vec3<f32>(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));
-    let mixed = mix(lms_a, lms_b, factor);
-
-    // Back to linear RGB
-    var color = to_rgb * (mixed * mixed * mixed);
-
-    // Alpha interpolation
-    color.a = mix(from_.a, to_.a, factor);
-
-    return color;
-}
-*/
