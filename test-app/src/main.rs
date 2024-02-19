@@ -1,6 +1,7 @@
+use std::sync::Arc;
 use std::collections::HashMap;
 use log::*;
-use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget, EventLoopBuilder}, window::Window, event::{Event, WindowEvent, ElementState}, dpi::{PhysicalPosition,  PhysicalSize}};
+use winit::{dpi::{LogicalSize, PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
 use wgpu::{util::DeviceExt, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
@@ -33,9 +34,17 @@ pub struct Scene {
     element_index: u32
 }
 
-async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
+async fn run() {
+    let event_loop: EventLoop<AppEvent> = EventLoopBuilder::with_user_event().build().expect("Failed to create event loop");
+    let window = Arc::new(
+        WindowBuilder::new()
+        .with_inner_size(LogicalSize::new(1500 as f64, 900 as f64))
+        .with_title("Test application")
+        .build(&event_loop)
+        .expect("Failed to create window")
+    );
     let instance = wgpu::Instance::default();
-    let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
+    let surface = instance.create_surface(window.clone()).expect("Failed to create surface");
     let adapter = instance    
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -259,15 +268,15 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);    
 
-    run2(event_loop, move |event, _: &EventLoopWindowTarget<AppEvent>, control_flow: &mut ControlFlow| {
-        *control_flow = ControlFlow::Wait;
-        
+    event_loop.run(move |event, target| {        
+        target.set_control_flow(ControlFlow::Wait);
+                
         match event {
             Event::WindowEvent { event: window_event, window_id } => {
                 match window_event {
                     WindowEvent::CloseRequested => {                        
                         info!("Event loop close requested");
-                        *control_flow = ControlFlow::Exit;                        
+                        target.exit();
                     }
                     WindowEvent::Resized(new_size) => {                        
                         info!("Resized");
@@ -346,217 +355,155 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
                             }                            
                         }
                     }
-                    WindowEvent::MouseWheel { device_id: _, delta, phase: _, modifiers } => {
+                    WindowEvent::MouseWheel { device_id: _, delta, phase: _ } => {
                         info!("{:?}", delta);
                     }
                     WindowEvent::ModifiersChanged(state) => {
                         info!("Modifiers changed");                        
                     }
-                    WindowEvent::KeyboardInput { device_id: _, input, is_synthetic } => {
-                        //info!("old shift is: {}", input.modifiers.shift());                        
-                        match input.state {
-                            ElementState::Pressed => {
-                                match input.virtual_keycode {
-                                    Some(virtual_keycode) => {
-                                        //warn!("{:?}", virtual_keycode);
-
-                                        /*
-                                        match virtual_keycode {
-                                            winit::event::VirtualKeyCode::Up => {
-                                                camera_controller.is_forward_pressed = true;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Down => {
-                                                camera_controller.is_backward_pressed = true;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Left => {
-                                                camera_controller.is_left_pressed = true;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Right => {
-                                                camera_controller.is_right_pressed = true;
-                                                window.request_redraw();
-                                            }
-                                            _ => {}
-                                        }
-                                        */                                                                               
-                                    }
-                                    None => {}
-                                }
+                    WindowEvent::KeyboardInput { device_id: _, event, is_synthetic } => {
+                        warn!("{:?}", event);                    
+                    }
+                    WindowEvent::RedrawRequested => {
+                        info!("Redraw requested");                
+        
+                        // Get a command encoder for the current frame
+                        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                                label: Some("Redraw")
                             }
-                            ElementState::Released => {
-                                /*
-                                match input.virtual_keycode {
-                                    Some(virtual_keycode) => {
-                                        //info!("{:?}", virtual_keycode);
-                                        match virtual_keycode {
-                                            winit::event::VirtualKeyCode::Up => {
-                                                camera_controller.is_forward_pressed = false;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Down => {
-                                                camera_controller.is_backward_pressed = false;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Left => {
-                                                camera_controller.is_left_pressed = false;
-                                                window.request_redraw();
-                                            }
-                                            winit::event::VirtualKeyCode::Right => {
-                                                camera_controller.is_right_pressed = false;
-                                                window.request_redraw();
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                                    None => {}
-                                }
-                                */
+                        );
+        
+                        // Get the next frame
+                        let frame = surface.get_current_texture().expect("Get next frame");
+                        let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());       
+        
+                        {
+                            let mut uniform_buffer = staging_belt.write_buffer(
+                                &mut encoder,
+                                &quad_pipeline.uniform_buffer,
+                                0,
+                                wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
+                                    .unwrap(),
+                                &device
+                            );
+        
+                            uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
+                        }
+                        
+                        let amount = {
+                            let i = 0;
+                            let total = quads.len();
+                            let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
+                            let res = end - i;
+        
+                            let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
+        
+                            let mut instance_buffer = staging_belt.write_buffer(
+                                &mut encoder,
+                                &quad_pipeline.instance_buffer,
+                                0,
+                                wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
+                                &device,
+                            );
+        
+                            instance_buffer.copy_from_slice(instance_bytes);
+        
+                            res
+                        };
+        
+                        {
+                            let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
+                        
+                            let mut camera_slice = staging_belt.write_buffer(
+                                &mut encoder,
+                                &model_pipeline.camera_buffer,
+                                0,
+                                wgpu::BufferSize::new(gpu_api::camera::CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
+                                &device
+                            );
+        
+                            camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
+                        }
+                        
+                        {
+                            for object in &objects {
+                                let mut view_slice = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &object.instance_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
+                                    &device
+                                );
+            
+                                view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
                             }
-                        }                        
-                    }                    
+                        }
+        
+                        // Clear frame
+                        {
+                            let mut render_pass = encoder.begin_render_pass(
+                                &wgpu::RenderPassDescriptor {
+                                    label: Some("Render pass"),
+                                    color_attachments: &[
+                                        Some(wgpu::RenderPassColorAttachment {
+                                            view,
+                                            resolve_target: None,
+                                            ops: wgpu::Operations {
+                                                load: wgpu::LoadOp::Clear(
+                                                    wgpu::Color {
+                                                        r: 1.0,
+                                                        g: 1.0,
+                                                        b: 1.0,
+                                                        a: 1.0
+                                                    },
+                                                ),
+                                                store: StoreOp::Store
+                                            }
+                                        })
+                                    ],
+                                    depth_stencil_attachment: None,
+                                    timestamp_writes: None,
+                                    occlusion_query_set: None
+                                }
+                            );                                                        
+        
+                            model_pipeline.draw(&mut render_pass, &objects);
+                            element_pipeline.draw(&mut render_pass, indices_count);
+                            quad_pipeline.draw(&mut render_pass, amount as u32);
+                        }
+        
+                        staging_belt.finish();
+                        queue.submit(Some(encoder.finish()));
+                        frame.present();
+                        staging_belt.recall();          
+                    }              
                     _ => {}
                 }
             }
             Event::UserEvent(_) => {                
-            }           
-            Event::RedrawRequested { .. } => {
-                info!("Redraw requested");                
-
-                // Get a command encoder for the current frame
-                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Redraw")
-                    }
-                );
-
-                // Get the next frame
-                let frame = surface.get_current_texture().expect("Get next frame");
-                let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());       
-
-                {
-                    let mut uniform_buffer = staging_belt.write_buffer(
-                        &mut encoder,
-                        &quad_pipeline.uniform_buffer,
-                        0,
-                        wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
-                            .unwrap(),
-                        &device
-                    );
-
-                    uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
-                }
-                
-                let amount = {
-                    let i = 0;
-                    let total = quads.len();
-                    let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
-                    let res = end - i;
-
-                    let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
-
-                    let mut instance_buffer = staging_belt.write_buffer(
-                        &mut encoder,
-                        &quad_pipeline.instance_buffer,
-                        0,
-                        wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
-                        &device,
-                    );
-
-                    instance_buffer.copy_from_slice(instance_bytes);
-
-                    res
-                };
-
-                {
-                    let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
-                
-                    let mut camera_slice = staging_belt.write_buffer(
-                        &mut encoder,
-                        &model_pipeline.camera_buffer,
-                        0,
-                        wgpu::BufferSize::new(gpu_api::camera::CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
-                        &device
-                    );
-
-                    camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
-                }
-                
-                {
-                    for object in &objects {
-                        let mut view_slice = staging_belt.write_buffer(
-                            &mut encoder,
-                            &object.instance_buffer,
-                            0,
-                            wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
-                            &device
-                        );
-    
-                        view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
-                    }
-                }
-
-                // Clear frame
-                {
-                    let mut render_pass = encoder.begin_render_pass(
-                        &wgpu::RenderPassDescriptor {
-                            label: Some("Render pass"),
-                            color_attachments: &[
-                                Some(wgpu::RenderPassColorAttachment {
-                                    view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(
-                                            wgpu::Color {
-                                                r: 1.0,
-                                                g: 1.0,
-                                                b: 1.0,
-                                                a: 1.0
-                                            },
-                                        ),
-                                        store: StoreOp::Store
-                                    }
-                                })
-                            ],
-                            depth_stencil_attachment: None,
-                            timestamp_writes: None,
-                            occlusion_query_set: None
-                        }
-                    );                                                        
-
-                    model_pipeline.draw(&mut render_pass, &objects);
-                    element_pipeline.draw(&mut render_pass, indices_count);
-                    quad_pipeline.draw(&mut render_pass, amount as u32);
-                }
-
-                staging_belt.finish();
-                queue.submit(Some(encoder.finish()));
-                frame.present();
-                staging_belt.recall();          
-            }            
+            }                        
             _ => {}
         }
-    })
+    }).unwrap();
 }
 
+/*
 pub fn run2<F>(event_loop: EventLoop<AppEvent>, event_handler: F) where F: 'static + FnMut(Event<AppEvent>, &EventLoopWindowTarget<AppEvent>, &mut ControlFlow) {
     #[cfg(target_arch = "wasm32")]
     event_loop.spawn(event_handler);
     #[cfg(not(target_arch = "wasm32"))]
     event_loop.run(event_handler);
 }
+*/
 
 fn main() {
-    let event_loop = EventLoopBuilder::with_user_event().build();
-    let window = Window::new(&event_loop).unwrap();
-
     #[cfg(not(target_arch = "wasm32"))]
     {        
         env_logger::init();
 
         let rt = Runtime::new().expect("Failed to create runtime");
         
-        rt.block_on(run(event_loop, window));
+        rt.block_on(run());
     }
     #[cfg(target_arch = "wasm32")]
     {
