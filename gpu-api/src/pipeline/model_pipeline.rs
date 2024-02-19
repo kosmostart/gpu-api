@@ -37,6 +37,10 @@ impl Pipeline {
         let mut index = 0;
     
         for object in objects {
+            if object.views_amount == 0 {
+                continue;
+            }
+            
             render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
                     
             let instances_range = 0..object.views_amount;
@@ -54,7 +58,7 @@ impl Pipeline {
     }
 }
 
-pub async fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, Pipeline) {
+pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))

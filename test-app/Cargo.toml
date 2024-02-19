@@ -9,7 +9,7 @@ edition = "2021"
 
 log = "*"
 serde_json = "*"
-winit = "0.28.7"
+winit = {version = "*", features = ["rwh_05"] }
 gltf = "*"
 gpu-api = { path = "../gpu-api" }
 model-load = { path = "../model-load" }

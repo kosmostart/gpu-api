@@ -1,6 +1,7 @@
 pub use bytemuck;
 pub use bytemuck_derive;
 pub use glam;
+pub use image;
 pub use wgpu;
 
 pub mod texture;

@@ -33,7 +33,7 @@ pub struct Scene {
     element_index: u32
 }
 
-async fn run(event_loop: EventLoop<AppEvent>, window: Window) {    
+async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let instance = wgpu::Instance::default();
     let surface = unsafe { instance.create_surface(&window) }.expect("Failed to create surface");
     let adapter = instance    
@@ -48,13 +48,13 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
     let (device, queue) = adapter
         .request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),                
-                limits: if cfg!(target_arch = "wasm32") {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
                     wgpu::Limits::default()
-                },                
-                label: None
+                }                
             }, None)
         .await
         .expect("Failed to create device");
@@ -85,7 +85,8 @@ async fn run(event_loop: EventLoop<AppEvent>, window: Window) {
             height: layout.size.height,
             present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![]
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2
         }
     );
 

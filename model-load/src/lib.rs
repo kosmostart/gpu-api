@@ -17,7 +17,7 @@ fn nodes(node: Node, node_level: usize) {
 
 pub fn load(model_name: &str, model_path: &str) -> ModelData {
     info!("Loading model {} from path {}", model_name, model_path);
-    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");
+    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");    
 
     //let mut node_level = 0;
 
