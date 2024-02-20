@@ -497,7 +497,7 @@ async fn run() {
             }                        
             _ => {}
         }
-    }).unwrap();
+    }).expect("Event loop failed");
 }
 
 fn main() {
