@@ -152,7 +152,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
             }
         };
 
-        let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+        let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");        
 
         let texture_bind_group = device.create_bind_group(
             &wgpu::BindGroupDescriptor {

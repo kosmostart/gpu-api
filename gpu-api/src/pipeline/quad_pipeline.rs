@@ -88,7 +88,7 @@ impl Pipeline {
 
         let pipeline =
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("iced_wgpu::quad pipeline"),
+                label: Some("Quad pipeline"),
                 layout: Some(&layout),
                 vertex: wgpu::VertexState {
                     module: &shader,

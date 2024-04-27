@@ -85,19 +85,15 @@ async fn run() {
         cursor_physical_position: None        
     };        
 
-    surface.configure(
-        &device,
-        &wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,            
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            width: layout.size.width,
-            height: layout.size.height,
-            present_mode: wgpu::PresentMode::AutoVsync,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![],
-            desired_maximum_frame_latency: 2
-        }
-    );
+    let mut config = surface
+    .get_default_config(&adapter, layout.size.width, layout.size.height)
+    .expect("Surface isn't supported by the adapter.");
+
+    config.format = wgpu::TextureFormat::Rgba8UnormSrgb;
+
+    warn!("{:?}", config.format);            
+
+    surface.configure(&device, &config);
 
     let background_color = Color {
         r: 0.10196,

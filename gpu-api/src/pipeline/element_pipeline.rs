@@ -130,7 +130,7 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue,
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         multiview: None,
-        label: None,
+        label: Some("Element pipeline"),
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,

@@ -146,7 +146,7 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         multiview: None,
-        label: None,
+        label: Some("Model pipeline"),
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
