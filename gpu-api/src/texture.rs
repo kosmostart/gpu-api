@@ -60,7 +60,7 @@ impl Texture {
             size,
         );
         
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());        
         
         Ok(Texture { texture, view })
     }

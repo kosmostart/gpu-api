@@ -89,9 +89,8 @@ async fn run() {
     .get_default_config(&adapter, layout.size.width, layout.size.height)
     .expect("Surface isn't supported by the adapter.");
 
-    config.format = wgpu::TextureFormat::Rgba8UnormSrgb;
-
-    warn!("{:?}", config.format);            
+    config.format = wgpu::TextureFormat::Rgba8Unorm;
+    config.view_formats.push(wgpu::TextureFormat::Rgba8UnormSrgb);
 
     surface.configure(&device, &config);
 
@@ -303,6 +302,8 @@ async fn run() {
                         info!("{:?}", layout.halfes);
 
                         quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
+
+                        surface.configure(&device, &config);
                     }
                     WindowEvent::CursorMoved { device_id: _, position, .. } => {                        
                         //info!("{:?}", position);
@@ -383,8 +384,10 @@ async fn run() {
                         );
         
                         // Get the next frame
-                        let frame = surface.get_current_texture().expect("Get next frame");
-                        let view = &frame.texture.create_view(&wgpu::TextureViewDescriptor::default());       
+                        let frame = surface.get_current_texture().expect("Get next frame");                        
+                        let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
+                        texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
+                        let view = &frame.texture.create_view(&texture_view_descriptor);
         
                         {
                             let mut uniform_buffer = staging_belt.write_buffer(
