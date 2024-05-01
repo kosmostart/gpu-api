@@ -34,9 +34,34 @@ pub struct Scene {
     element_index: u32
 }
 
-async fn run() {
-    let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");
-    let window = Arc::new(event_loop.create_window(Window::default_attributes()).expect("Failed to create window"));
+async fn run() {    
+    let mut window_attributes = Window::default_attributes();
+
+    window_attributes = window_attributes
+        .with_title("Test application")
+        .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0));
+        
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::JsCast;        
+        use winit::platform::web::WindowAttributesExtWebSys;
+
+        let canvas = web_sys::window()
+            .expect("Failed to get window")
+            .document()
+            .expect("Failed to get window")
+            .get_element_by_id("canvas")
+            .expect("Failed to get canvas element")
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .expect("Failed to cast canvas");
+
+        let _ = canvas.set_attribute("style", "width: 800px;height: 600px;outline: none;");
+
+        window_attributes = window_attributes.with_canvas(Some(canvas));
+    }
+
+    let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");    
+    let window = Arc::new(event_loop.create_window(window_attributes).expect("Failed to create window"));
     let instance = wgpu::Instance::default();
     let surface = instance.create_surface(window.clone()).expect("Failed to create surface");
     let adapter = instance    
@@ -506,21 +531,6 @@ fn main() {
     {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
         console_log::init_with_level(log::Level::Warn).expect("Could not initialize logger");
-                
-        let canvas = web_sys::Element::from(window.canvas());        
-        let _ = canvas.set_attribute("width", "1500px");
-        let _ = canvas.set_attribute("height", "900px");
-        let _ = canvas.set_attribute("style", "width: 1500px;height: 900px;outline: none;");
-
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| doc.body())
-            .and_then(|body| {
-                body.append_child(&canvas)
-                    .ok()
-            })
-            .expect("Couldn't append canvas to document body");
-
-        wasm_bindgen_futures::spawn_local(run(event_loop, window));        
+        wasm_bindgen_futures::spawn_local(run(event_loop, window));
     }
 }
