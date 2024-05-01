@@ -135,6 +135,7 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue,
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
+            compilation_options: Default::default(),
             buffers: &[
                 wgpu::VertexBufferLayout {
                     array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
@@ -270,6 +271,7 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue,
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",
+            compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState {

@@ -147,10 +147,11 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         multiview: None,
         label: Some("Model pipeline"),
-        layout: Some(&pipeline_layout),
+        layout: Some(&pipeline_layout),        
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
+            compilation_options: Default::default(),
             buffers: &[
                 wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -179,6 +180,7 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",
+            compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState {

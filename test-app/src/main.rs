@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 use log::*;
-use winit::{dpi::{LogicalSize, PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
+use winit::{dpi::{LogicalSize, PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::Window};
 use wgpu::{util::DeviceExt, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
@@ -35,14 +35,8 @@ pub struct Scene {
 }
 
 async fn run() {
-    let event_loop: EventLoop<AppEvent> = EventLoopBuilder::with_user_event().build().expect("Failed to create event loop");
-    let window = Arc::new(
-        WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(1500 as f64, 900 as f64))
-        .with_title("Test application")
-        .build(&event_loop)
-        .expect("Failed to create window")
-    );
+    let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");
+    let window = Arc::new(event_loop.create_window(Window::default_attributes()).expect("Failed to create window"));
     let instance = wgpu::Instance::default();
     let surface = instance.create_surface(window.clone()).expect("Failed to create surface");
     let adapter = instance    
