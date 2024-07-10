@@ -16,8 +16,8 @@ fn nodes(node: Node, node_level: usize) {
 }
 
 pub fn load(model_name: &str, model_path: &str) -> ModelData {
-    info!("Loading model {} from path {}", model_name, model_path);
-    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");    
+    info!("Loading model {} from path {}", model_name, model_path);    
+    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");
 
     //let mut node_level = 0;
 
@@ -27,7 +27,9 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
 
     //return;
 
-    let mut meshes = vec![];
+    info!("Found {} nodes", gltf_data.nodes().count());
+
+    let mut meshes = vec![];    
 
     for mesh in gltf_data.meshes() {
         info!("Mesh {:?}, index {}", mesh.name(), mesh.index());
@@ -209,6 +211,10 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
     let mut textures = vec![];
     //let mut image_index = 0;
 
+    for texture in gltf_data.textures() {
+        info!("Found texture");
+    }    
+
     for image in images {
         info!("{} image format {:?}, width {}, height {}", model_name, image.format, image.width, image.height);            
 
@@ -231,6 +237,10 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
         });
         
         //image_index = image_index + 1;
+    }
+
+    for animation in gltf_data.animations() {
+        info!("Found animation {} {}", animation.channels().count(), animation.samplers().count());
     }
 
     ModelData {

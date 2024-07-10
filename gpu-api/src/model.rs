@@ -138,8 +138,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     let mut texture_bind_groups = vec![];
     let mut texture_index = 0;
 
-    for texture_item in model_data.textures {        
-        let index_str = texture_index.to_string();        
+    for texture_item in model_data.textures {
+        let index_str = texture_index.to_string();
 
         let texture_image = match texture_item.format.as_ref() {
             "R8G8B8A8" => {
