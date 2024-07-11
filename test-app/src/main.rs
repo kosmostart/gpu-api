@@ -190,9 +190,23 @@ async fn run() {
         scale_z: 0.05
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "1", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
     objects.push(object);
-
+/*
+    let model_data = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
+    
+    let view_source = ViewSource {
+        x: 10.0,
+        y: 8.0,
+        z: 0.0,        
+        scale_x: 1.0,
+        scale_y: 1.0,
+        scale_z: 1.0
+    };
+    
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "helm", model_data, vec![view_source]);
+    objects.push(object);
+*/
     let model_data = model_load::load("duck", "../models/duck/duck.gltf");
     
     let view_source = ViewSource {
@@ -204,7 +218,7 @@ async fn run() {
         scale_z: 0.02
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "2", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "duck", model_data, vec![view_source]);
     objects.push(object);
 
     let model_data = model_load::load("plane", "../models/plane/plane.gltf");
@@ -218,10 +232,10 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "plane", model_data, vec![view_source]);
     objects.push(object);
 
-    let model_data = model_load::load("plane", "../models/box/box.glb");
+    let model_data = model_load::load("box", "../models/box/box.glb");
     
     let view_source = ViewSource {
         x: -10.0,
@@ -232,7 +246,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "3", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, vec![view_source]);
     objects.push(object);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
