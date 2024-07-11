@@ -9,6 +9,7 @@ pub struct Texture {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TextureData {
+    pub index: usize,
     pub format: String,
     pub width: u32,
     pub height: u32,

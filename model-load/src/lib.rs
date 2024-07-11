@@ -17,7 +17,7 @@ fn nodes(node: Node, node_level: usize) {
 
 pub fn load(model_name: &str, model_path: &str) -> ModelData {
     info!("Loading model {} from path {}", model_name, model_path);    
-    let (gltf_data, buffers, images) = gltf::import(model_path).expect("Model import failed");
+    let (document, buffers, images) = gltf::import(model_path).expect("Model import failed");
 
     //let mut node_level = 0;
 
@@ -27,19 +27,19 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
 
     //return;
 
-    info!("Found {} nodes", gltf_data.nodes().count());
+    info!("Found {} nodes", document.nodes().count());
 
     let mut meshes = vec![];    
 
-    for mesh in gltf_data.meshes() {
-        info!("Mesh {:?}, index {}", mesh.name(), mesh.index());
+    for mesh in document.meshes() {
+        info!("Mesh {:?}, index {}", mesh.name(), mesh.index());        
 
         let mut primitives = vec![];
 
         for primitive in mesh.primitives() {
             
             //info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
-            //info!("{:#?}", primitive.attributes());
+            //info!("{:#?}", primitive.attributes());            
 
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));            
 
@@ -126,6 +126,59 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
             }
             */
 
+            let mut base_color_texture_index = None;
+            let mut metallic_roughness_texture_index = None;
+            let mut normal_texture_index = None;
+            let mut occlusion_texture_index = None;
+            let mut emmisive_texture_index = None;
+
+            match primitive.material().index() {
+                Some(material_index) => {
+                    let material = document.materials().nth(material_index).expect("Failed to get material by index");                    
+                    info!("Found material");
+
+                    let pbr_metallic_roughness = material.pbr_metallic_roughness();
+                    match pbr_metallic_roughness.base_color_texture() {
+                        Some(base_color_texture) => {
+                            info!("Found base color texture");
+                            base_color_texture_index = Some(base_color_texture.texture().index());
+                        }
+                        None => {}
+                    }
+                    match pbr_metallic_roughness.metallic_roughness_texture() {
+                        Some(metallic_roughness_texture) => {
+                            info!("Found metallic roughness texture");
+                            metallic_roughness_texture_index = Some(metallic_roughness_texture.texture().index());
+                        }
+                        None => {}
+                    }
+                    match material.normal_texture() {
+                        Some(normal_texture) => {
+                            info!("Found normal texture");
+                            normal_texture_index = Some(normal_texture.texture().index());
+                        }
+                        None => {}
+                    }
+                    match material.occlusion_texture() {
+                        Some(occlusion_texture) => {
+                            info!("Found occlusion texture");
+                            occlusion_texture_index = Some(occlusion_texture.texture().index());
+                        }
+                        None => {}
+                    }
+                    match material.emissive_texture() {
+                        Some(emmisive_texture) => {
+                            info!("Found emmisive texture");
+                            emmisive_texture_index = Some(emmisive_texture.texture().index());
+                        }
+                        None => {}
+                    }                    
+                }
+                None => {
+                    info!("Primitive material index is empty");
+                }
+            }
+
             let mut texture_coordinates = vec![];
             
             match reader.read_tex_coords(0) {
@@ -196,7 +249,12 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
                 normals,
                 tangents,
                 bitangents,
-                texture_coordinates
+                texture_coordinates,
+                base_color_texture_index,
+                metallic_roughness_texture_index,
+                normal_texture_index,
+                occlusion_texture_index,
+                emmisive_texture_index
             });
         }
 
@@ -206,21 +264,22 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
     }
 
     info!("{} meshes total: {}", model_name, meshes.len());
-    info!("{} images total: {}", model_name, images.len());
+    info!("{} images total: {}", model_name, images.len());    
 
     let mut textures = vec![];
-    //let mut image_index = 0;
+    let mut texture_index = 0;
 
-    for texture in gltf_data.textures() {
+    for texture in document.textures() {
         info!("Found texture");
-    }    
+        let image = texture.source();
+        info!("Image name {:?}, index {}", image.name(), image.index());
+        let image_gltf_data = &images[image.index()];
 
-    for image in images {
-        info!("{} image format {:?}, width {}, height {}", model_name, image.format, image.width, image.height);            
+        info!("Model {} image, format {:?}, width {}, height {}", model_name, image_gltf_data.format, image_gltf_data.width, image_gltf_data.height);
 
         //let mut file = std::fs::File::create(&image_index.to_string()).expect("Failed to image create file");
 
-        //file.write_all(&image.pixels).expect("Failed to write image pixes to file");
+        //file.write_all(&image_gltf_data.pixels).expect("Failed to write image pixes to file");
 
         //image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer")
         
@@ -230,16 +289,17 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
         //file.read_to_end(&mut q).unwrap();
         
         textures.push(TextureData {
-            format: format!("{:?}", image.format),
-            width: image.width,
-            height: image.height,
-            pixels: Some(image.pixels)
+            index: texture_index,
+            format: format!("{:?}", image_gltf_data.format),
+            width: image_gltf_data.width,
+            height: image_gltf_data.height,
+            pixels: Some(image_gltf_data.pixels.clone())
         });
-        
-        //image_index = image_index + 1;
+
+        texture_index = texture_index + 1;
     }
 
-    for animation in gltf_data.animations() {
+    for animation in document.animations() {
         info!("Found animation {} {}", animation.channels().count(), animation.samplers().count());
     }
 

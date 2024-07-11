@@ -26,7 +26,12 @@ pub struct PrimitiveData {
 	pub normals: Vec<[f32; 3]>,
 	pub tangents: Vec<[f32; 3]>,
 	pub bitangents: Vec<[f32; 3]>,
-    pub texture_coordinates: Vec<[f32; 2]>
+    pub texture_coordinates: Vec<[f32; 2]>,
+    pub base_color_texture_index: Option<usize>,
+    pub metallic_roughness_texture_index: Option<usize>,
+    pub normal_texture_index: Option<usize>,
+    pub occlusion_texture_index: Option<usize>,
+    pub emmisive_texture_index: Option<usize>
 }
 
 pub struct Mesh {
