@@ -51,10 +51,32 @@ impl Pipeline {
                         Some(base_color_texture_index) => {
                             render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
                         }
-                        None => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[0], &[]); // Texture
+                        None => {}
+                    }
+                    match primitive.metallic_roughness_texture_index {
+                        Some(metallic_roughness_texture_index) => {
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[metallic_roughness_texture_index], &[]); // Texture
                         }
-                    }                    
+                        None => {}
+                    }
+                    match primitive.normal_texture_index {
+                        Some(normal_texture_index) => {
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[normal_texture_index], &[]); // Texture
+                        }
+                        None => {}
+                    }
+                    match primitive.occlusion_texture_index {
+                        Some(occlusion_texture_index) => {
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[occlusion_texture_index], &[]); // Texture
+                        }
+                        None => {}
+                    }
+                    match primitive.emmisive_texture_index {
+                        Some(emmisive_texture_index) => {
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[emmisive_texture_index], &[]); // Texture
+                        }
+                        None => {}
+                    }
                     render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
                     render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
                     render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
