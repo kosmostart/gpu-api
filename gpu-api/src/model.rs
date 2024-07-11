@@ -36,6 +36,11 @@ pub struct PrimitiveData {
 
 pub struct Mesh {
     pub name: String,
+    pub primitives: Vec<Primitive>
+}
+
+pub struct Primitive {
+    pub name: String,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub num_elements: u32,
@@ -94,11 +99,12 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     let mut meshes = vec![];
 
     for mesh in model_data.meshes {
-        let mut vertices = vec![];
-	    let mut indices = vec![];
+        let mut primitives = vec![];
 
         for mut primitive in mesh.primitives {
             let mut index = 0;
+            let mut vertices = vec![];	        
+
             for position in primitive.positions {
                 vertices.push(model_pipeline::Vertex {
                     position,
@@ -107,30 +113,33 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                 });
 
                 index = index + 1;
-            }
+            }            
 
-            indices.append(&mut primitive.indices);
+            let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{} Vertex Buffer", "dog")),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+    
+            let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{} Index Buffer", "dog")),
+                contents: bytemuck::cast_slice(&primitive.indices),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+    
+            primitives.push(Primitive {
+                name: "".to_owned(),
+                vertex_buffer,
+                index_buffer,
+                num_elements: primitive.indices.len() as u32,
+                material: 0
+            })
         }
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{} Vertex Buffer", "dog")),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{} Index Buffer", "dog")),
-            contents: bytemuck::cast_slice(&indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
 
         meshes.push(Mesh {
             name: "".to_owned(),
-            vertex_buffer,
-            index_buffer,
-            num_elements: indices.len() as u32,
-            material: 0
-        })
+            primitives
+        });
     }        
 
     let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {

@@ -45,12 +45,14 @@ impl Pipeline {
                     
             let instances_range = 0..object.views_amount;
             
-            for mesh in &object.meshes {                            
-                render_pass.set_bind_group(0, &object.texture_bind_groups[0], &[]); // Texture
-                render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
-                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.draw_indexed(0..mesh.num_elements, 0, instances_range.clone());
+            for mesh in &object.meshes {
+                for primitive in &mesh.primitives {
+                    render_pass.set_bind_group(0, &object.texture_bind_groups[0], &[]); // Texture
+                    render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
+                    render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                    render_pass.draw_indexed(0..primitive.num_elements, 0, instances_range.clone());
+                }                
             }
 
             index = index + 1;
