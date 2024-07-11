@@ -45,6 +45,11 @@ pub struct Primitive {
     pub index_buffer: wgpu::Buffer,
     pub num_elements: u32,
     pub material: usize,
+    pub base_color_texture_index: Option<usize>,
+    pub metallic_roughness_texture_index: Option<usize>,
+    pub normal_texture_index: Option<usize>,
+    pub occlusion_texture_index: Option<usize>,
+    pub emmisive_texture_index: Option<usize>
 }
 
 pub struct Material {
@@ -101,7 +106,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     for mesh in model_data.meshes {
         let mut primitives = vec![];
 
-        for mut primitive in mesh.primitives {
+        for primitive in mesh.primitives {
             let mut index = 0;
             let mut vertices = vec![];	        
 
@@ -132,8 +137,13 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                 vertex_buffer,
                 index_buffer,
                 num_elements: primitive.indices.len() as u32,
-                material: 0
-            })
+                material: 0,
+                base_color_texture_index: primitive.base_color_texture_index,
+                metallic_roughness_texture_index: primitive.metallic_roughness_texture_index,
+                normal_texture_index: primitive.normal_texture_index,
+                occlusion_texture_index: primitive.occlusion_texture_index,
+                emmisive_texture_index: primitive.emmisive_texture_index
+            });
         }
 
         meshes.push(Mesh {
@@ -149,11 +159,10 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         mapped_at_creation: false
     });
 
-    let mut texture_bind_groups = vec![];
-    let mut texture_index = 0;
+    let mut texture_bind_groups = vec![];    
 
     for texture_item in model_data.textures {
-        let index_str = texture_index.to_string();
+        let index_str = texture_item.index.to_string();        
 
         let texture_image = match texture_item.format.as_ref() {
             "R8G8B8A8" => {
@@ -186,8 +195,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
             }
         );
 
-        texture_bind_groups.push(texture_bind_group);
-        texture_index = texture_index + 1;
+        texture_bind_groups.push(texture_bind_group);        
     }
 
     let mut views = vec![];
