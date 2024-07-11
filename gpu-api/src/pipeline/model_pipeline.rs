@@ -1,6 +1,6 @@
 use std::num::NonZeroU32;
 use std::borrow::Cow;
-use log::warn;
+use log::*;
 use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler, TextureView};
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, create_camera};
@@ -61,7 +61,7 @@ impl Pipeline {
                     }
                     match primitive.normal_texture_index {
                         Some(normal_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[normal_texture_index], &[]); // Texture
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[normal_texture_index], &[]); // Texture                            
                         }
                         None => {}
                     }

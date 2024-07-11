@@ -140,35 +140,35 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
                     let pbr_metallic_roughness = material.pbr_metallic_roughness();
                     match pbr_metallic_roughness.base_color_texture() {
                         Some(base_color_texture) => {
-                            info!("Found base color texture");
+                            info!("Found base color texture, index {}", base_color_texture.texture().index());
                             base_color_texture_index = Some(base_color_texture.texture().index());
                         }
                         None => {}
                     }
                     match pbr_metallic_roughness.metallic_roughness_texture() {
                         Some(metallic_roughness_texture) => {
-                            info!("Found metallic roughness texture");
+                            info!("Found metallic roughness texture, index {}", metallic_roughness_texture.texture().index());
                             metallic_roughness_texture_index = Some(metallic_roughness_texture.texture().index());
                         }
                         None => {}
                     }
                     match material.normal_texture() {
                         Some(normal_texture) => {
-                            info!("Found normal texture");
+                            info!("Found normal texture, index {}", normal_texture.texture().index());
                             normal_texture_index = Some(normal_texture.texture().index());
                         }
                         None => {}
                     }
                     match material.occlusion_texture() {
                         Some(occlusion_texture) => {
-                            info!("Found occlusion texture");
+                            info!("Found occlusion texture, index occlusion_texture.texture().index()");
                             occlusion_texture_index = Some(occlusion_texture.texture().index());
                         }
                         None => {}
                     }
                     match material.emissive_texture() {
                         Some(emmisive_texture) => {
-                            info!("Found emmisive texture");
+                            info!("Found emmisive texture, index {}", emmisive_texture.texture().index());
                             emmisive_texture_index = Some(emmisive_texture.texture().index());
                         }
                         None => {}
