@@ -32,13 +32,13 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
     let mut meshes = vec![];    
 
     for mesh in document.meshes() {
-        info!("Mesh {:?}, index {}", mesh.name(), mesh.index());        
+        info!("Found Mesh {:?}, index {}", mesh.name(), mesh.index());
 
         let mut primitives = vec![];
 
         for primitive in mesh.primitives() {
             
-            //info!("Primitive {}, mode {:?}", primitive.index(), primitive.mode());
+            info!("Found primitive {}, mode {:?}", primitive.index(), primitive.mode());
             //info!("{:#?}", primitive.attributes());            
 
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));            
@@ -126,6 +126,8 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
             }
             */
 
+            let mut pbr_specular_glossiness_diffuse_texture_index = None;
+            let mut pbr_specular_glossiness_texture_index = None;
             let mut base_color_texture_index = None;
             let mut metallic_roughness_texture_index = None;
             let mut normal_texture_index = None;
@@ -136,6 +138,26 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
                 Some(material_index) => {
                     let material = document.materials().nth(material_index).expect("Failed to get material by index");                    
                     info!("Found material");
+                    
+                    match material.pbr_specular_glossiness() {
+                        Some(pbr_specular_glossiness) => {
+                            match pbr_specular_glossiness.diffuse_texture() {
+                                Some(diffuse_texture) => {
+                                    info!("Found pbr specular glossiness diffuse texture, index {}", diffuse_texture.texture().index());
+                                    pbr_specular_glossiness_diffuse_texture_index = Some(diffuse_texture.texture().index());
+                                }
+                                None => {}
+                            }
+                            match pbr_specular_glossiness.specular_glossiness_texture() {
+                                Some(specular_glossiness_texture) => {
+                                    info!("Found pbr specular glossiness specular glossiness texture, index {}", specular_glossiness_texture.texture().index());
+                                    pbr_specular_glossiness_texture_index = Some(specular_glossiness_texture.texture().index());
+                                }
+                                None => {}
+                            }
+                        }
+                        None => {}
+                    }
 
                     let pbr_metallic_roughness = material.pbr_metallic_roughness();
                     match pbr_metallic_roughness.base_color_texture() {
@@ -250,6 +272,8 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
                 tangents,
                 bitangents,
                 texture_coordinates,
+                pbr_specular_glossiness_diffuse_texture_index,
+                pbr_specular_glossiness_texture_index,
                 base_color_texture_index,
                 metallic_roughness_texture_index,
                 normal_texture_index,
