@@ -291,7 +291,8 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue,
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
-        multisample: wgpu::MultisampleState::default()
+        multisample: wgpu::MultisampleState::default(),
+        cache: None
     });
 
     Pipeline {

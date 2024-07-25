@@ -233,7 +233,8 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
-        multisample: wgpu::MultisampleState::default()
+        multisample: wgpu::MultisampleState::default(),
+        cache: None
     });
 
     (camera, Pipeline {

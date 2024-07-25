@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use log::*;
 use winit::{dpi::{LogicalSize, PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::Window};
-use wgpu::{util::DeviceExt, StoreOp};
+use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
@@ -65,7 +65,7 @@ async fn run() {
     let instance = wgpu::Instance::default();
     let surface = instance.create_surface(window.clone()).expect("Failed to create surface");
     let adapter = instance    
-        .request_adapter(&wgpu::RequestAdapterOptions {
+        .request_adapter(&RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
             force_fallback_adapter: false,            
             compatible_surface: Some(&surface),
@@ -74,15 +74,16 @@ async fn run() {
         .expect("Failed to find an appropriate adapter");
     
     let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
+        .request_device(        
+            &DeviceDescriptor {
                 label: None,
                 required_features: wgpu::Features::empty(),
                 required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
                     wgpu::Limits::default()
-                }                
+                },
+                memory_hints: MemoryHints::Performance
             }, None)
         .await
         .expect("Failed to create device");
