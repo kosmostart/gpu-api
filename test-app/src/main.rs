@@ -249,6 +249,20 @@ async fn run() {
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, vec![view_source]);
     objects.push(object);
+
+    let model_data = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
+    
+    let view_source = ViewSource {
+        x: 8.0,
+        y: 7.0,
+        z: 0.0,        
+        scale_x: 1.0,
+        scale_y: 1.0,
+        scale_z: 1.0
+    };
+    
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, vec![view_source]);
+    objects.push(object);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
 

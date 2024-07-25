@@ -324,7 +324,47 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
     }
 
     for animation in document.animations() {
-        info!("Found animation {} {}", animation.channels().count(), animation.samplers().count());
+        info!("Found animation, channels {}, samplers {}", animation.channels().count(), animation.samplers().count());
+        
+        for channel in animation.channels() {
+            let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
+
+            match reader.read_inputs() {
+                Some(inputs) => {
+                    match inputs {
+                        gltf::accessor::Iter::Standard(times) => {
+                            let times: Vec<f32> = times.collect();
+                            info!("Time: {}", times.len());                        
+                        }
+                        gltf::accessor::Iter::Sparse(_) => {
+                            info!("Sparse keyframes not supported");
+                        }
+                    }
+                }
+                None => {}                
+            };
+    
+            let mut keyframes_vec = vec![];
+
+            match reader.read_outputs() {
+                Some(outputs) => {
+                    match outputs {
+                        gltf::animation::util::ReadOutputs::Translations(translation) => {
+                            translation.for_each(|tr| {                                
+                                let vector: Vec<f32> = tr.into();
+                                keyframes_vec.push(vector);
+                            });
+                        }                        
+                        gltf::animation::util::ReadOutputs::Rotations(_) => {}
+                        gltf::animation::util::ReadOutputs::Scales(_) => {}
+                        gltf::animation::util::ReadOutputs::MorphTargetWeights(_) => {}
+                    }
+                }
+                None => {}
+            };
+    
+            info!("Keyframes: {}", keyframes_vec.len());
+        }
     }
 
     ModelData {
