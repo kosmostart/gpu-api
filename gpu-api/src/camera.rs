@@ -39,7 +39,7 @@ pub fn generate_projection_view(width: f32, height: f32) -> Mat4 {
     let center_z = 0.0;
     let angle_xz = 0.7f32;
     let angle_y = 0.4f32;
-    let dist = 30.0;
+    let dist = 40.0;
 
     let cam_pos = glam::Vec3::new(
         angle_xz.cos() * angle_y.sin() * dist,

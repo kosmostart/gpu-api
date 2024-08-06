@@ -211,8 +211,8 @@ async fn run() {
     let model_data = model_load::load("duck", "../models/duck/duck.gltf");
     
     let view_source = ViewSource {
-        x: 1.0,
-        y: 4.0,
+        x: -20.0,
+        y: -15.0,
         z: 0.0,        
         scale_x: 0.02,
         scale_y: 0.02,
