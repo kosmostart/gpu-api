@@ -1,25 +1,24 @@
+use rkyv::{archived_root, Archive, Serialize, Deserialize, Infallible};
 use image::{ImageBuffer, DynamicImage};
-use log::warn;
-use serde_derive::{Serialize, Deserialize};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use crate::{pipeline::model_pipeline, texture::TextureData};
 
 pub const VIEW_MATRIX_ELEMENT_SIZE: u64 = 4;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct ModelData {
     pub name: String,
 	pub meshes: Vec<MeshData>,
     pub textures: Vec<TextureData>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct MeshData {
 	pub primitives: Vec<PrimitiveData>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct PrimitiveData {
 	pub positions: Vec<[f32; 3]>,
 	pub indices: Vec<u32>,
@@ -62,7 +61,7 @@ pub struct Material {
     pub bind_group: wgpu::BindGroup,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde_derive::Serialize, serde_derive::Deserialize, Debug, Clone)]
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,
@@ -225,4 +224,10 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         views_size,
         views_amount
     }
+}
+
+pub fn deserialize_model_data(buf: &[u8]) -> ModelData {
+    let archived = unsafe { archived_root::<ModelData>(buf) };
+
+    archived.deserialize(&mut rkyv::Infallible).expect("Failed to deserialize model data")
 }

@@ -2,6 +2,7 @@ use std::io::{Write, Read};
 use log::*;
 use gltf::{mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
 use gpu_api::{model::{ModelData, MeshData, PrimitiveData}, texture::TextureData};
+pub use gpu_api;
 
 fn nodes(node: Node, node_level: usize) {
     info!("Node level: {}, node name: {:?}, node index: {}", node_level, node.name(), node.index());

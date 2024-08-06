@@ -1,5 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
-
+use rkyv::{Archive, Serialize, Deserialize};
 use image::{GenericImageView, ImageError};
 
 pub struct Texture {
@@ -7,7 +6,7 @@ pub struct Texture {
     pub view: wgpu::TextureView    
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct TextureData {
     pub index: usize,
     pub format: String,
