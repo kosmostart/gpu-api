@@ -7,7 +7,8 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, pipeline::{self, quad_pipeline}, model::{self, create_object, ViewSource}};
+use gpu_api::{bytemuck, pipeline::{self, quad_pipeline}, model::{self, create_object}};
+use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
 mod element;

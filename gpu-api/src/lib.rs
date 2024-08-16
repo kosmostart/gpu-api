@@ -1,7 +1,7 @@
 pub use bytemuck;
 pub use bytemuck_derive;
 pub use glam;
-pub use rkyv;
+pub use gpu_api_dto;
 pub use image;
 pub use wgpu;
 

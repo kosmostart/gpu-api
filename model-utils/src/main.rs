@@ -1,5 +1,5 @@
 use std::io::Write;
-use model_load::gpu_api::rkyv::ser::{Serializer, serializers::AllocSerializer};
+use model_load::gpu_api_dto::rkyv::ser::{Serializer, serializers::AllocSerializer};
 use log::*;
 
 fn main() {

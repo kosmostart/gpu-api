@@ -1,8 +1,8 @@
 use std::io::{Write, Read};
 use log::*;
 use gltf::{mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
-use gpu_api::{model::{ModelData, MeshData, PrimitiveData}, texture::TextureData};
-pub use gpu_api;
+use gpu_api_dto::{ModelData, MeshData, PrimitiveData, TextureData};
+pub use gpu_api_dto;
 
 fn nodes(node: Node, node_level: usize) {
     info!("Node level: {}, node name: {:?}, node index: {}", node_level, node.name(), node.index());

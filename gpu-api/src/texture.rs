@@ -1,18 +1,9 @@
-use rkyv::{Archive, Serialize, Deserialize};
+use gpu_api_dto::rkyv::{Archive, Serialize, Deserialize};
 use image::{GenericImageView, ImageError};
 
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView    
-}
-
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
-pub struct TextureData {
-    pub index: usize,
-    pub format: String,
-    pub width: u32,
-    pub height: u32,
-    pub pixels: Option<Vec<u8>>    
 }
 
 impl Texture {

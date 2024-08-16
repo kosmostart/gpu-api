@@ -948,12 +948,21 @@ dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "glam",
+ "gpu-api-dto",
  "image",
  "log",
- "rkyv",
  "serde",
  "serde_derive",
  "wgpu",
+]
+
+[[package]]
+name = "gpu-api-dto"
+version = "0.1.0"
+dependencies = [
+ "rkyv",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -1398,7 +1407,7 @@ name = "model-load"
 version = "0.1.0"
 dependencies = [
  "gltf",
- "gpu-api",
+ "gpu-api-dto",
  "log",
 ]
 

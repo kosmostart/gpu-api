@@ -1,5 +1,5 @@
 [package]
-name = "model-load"
+name = "gpu-api-dto"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 
-log = "*"
-gltf = { version = "*", features = ["KHR_materials_pbrSpecularGlossiness"] }
-gpu-api-dto = { path = "../gpu-api-dto" }
+rkyv = "*"
+serde = "*"
+serde_derive = "*"

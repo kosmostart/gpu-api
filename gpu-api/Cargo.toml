@@ -10,9 +10,9 @@ edition = "2021"
 log = "*"
 bytemuck = "*"
 bytemuck_derive = "*"
-rkyv = "*"
 serde = "*"
 serde_derive = "*"
 image = { version = "*", default-features = false, features = ["png", "jpeg"] }
 glam = "*"
 wgpu = "*"
+gpu-api-dto = { path = "../gpu-api-dto" }

@@ -5,7 +5,6 @@ use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, S
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, create_camera};
 use crate::model::Object;
-use crate::texture::TextureData;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

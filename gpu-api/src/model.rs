@@ -1,39 +1,10 @@
-use rkyv::{archived_root, Archive, Serialize, Deserialize, Infallible};
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use crate::{pipeline::model_pipeline, texture::TextureData};
+use gpu_api_dto::{ModelData, ViewSource};
+use crate::{pipeline::model_pipeline};
 
 pub const VIEW_MATRIX_ELEMENT_SIZE: u64 = 4;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
-
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
-pub struct ModelData {
-    pub name: String,
-	pub meshes: Vec<MeshData>,
-    pub textures: Vec<TextureData>
-}
-
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
-pub struct MeshData {
-	pub primitives: Vec<PrimitiveData>
-}
-
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
-pub struct PrimitiveData {
-	pub positions: Vec<[f32; 3]>,
-	pub indices: Vec<u32>,
-	pub normals: Vec<[f32; 3]>,
-	pub tangents: Vec<[f32; 3]>,
-	pub bitangents: Vec<[f32; 3]>,
-    pub texture_coordinates: Vec<[f32; 2]>,
-    pub pbr_specular_glossiness_diffuse_texture_index: Option<usize>,
-    pub pbr_specular_glossiness_texture_index: Option<usize>,
-    pub base_color_texture_index: Option<usize>,
-    pub metallic_roughness_texture_index: Option<usize>,
-    pub normal_texture_index: Option<usize>,
-    pub occlusion_texture_index: Option<usize>,
-    pub emmisive_texture_index: Option<usize>
-}
 
 pub struct Mesh {
     pub name: String,
@@ -59,16 +30,6 @@ pub struct Material {
     pub name: String,
     pub diffuse_texture: crate::texture::Texture,
     pub bind_group: wgpu::BindGroup,
-}
-
-#[derive(serde_derive::Serialize, serde_derive::Deserialize, Debug, Clone)]
-pub struct ViewSource {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub scale_x: f32,
-    pub scale_y: f32,
-    pub scale_z: f32
 }
 
 pub struct Object {
@@ -224,10 +185,4 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         views_size,
         views_amount
     }
-}
-
-pub fn deserialize_model_data(buf: &[u8]) -> ModelData {
-    let archived = unsafe { archived_root::<ModelData>(buf) };
-
-    archived.deserialize(&mut rkyv::Infallible).expect("Failed to deserialize model data")
 }
