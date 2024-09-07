@@ -5,7 +5,7 @@ use log::*;
 fn main() {
     env_logger::init();
 
-    let model_name = "plane";
+    let model_name = "swamp";
     let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.gltf", model_name));
     let mut texture_index = 0;
 

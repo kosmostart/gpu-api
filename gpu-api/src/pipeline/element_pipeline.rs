@@ -1,5 +1,5 @@
 use std::{borrow::Cow, mem::size_of};
-use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass};
+use wgpu::{Adapter, BindGroup, BindGroupLayout, DepthStencilState, Device, PipelineLayout, Queue, RenderPass, RenderPipeline, ShaderModule, Surface, TextureFormat};
 use wgpu::util::DeviceExt;
 use crate::texture::Texture;
 
@@ -43,7 +43,7 @@ impl Pipeline {
     }
 }
 
-pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue, vertices: &Vec<Vertex>, indices: &Vec<u32>) -> Pipeline {
+pub fn new(device: &Device, queue: &Queue, vertices: &Vec<Vertex>, indices: &Vec<u32>, depth_stencil: Option<DepthStencilState>) -> Pipeline {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader1"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("element.wgsl")))
@@ -290,7 +290,7 @@ pub fn new(surface: &Surface, device: &Device, adapter: &Adapter, queue: &Queue,
             })],
         }),
         primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: None,
+        depth_stencil,
         multisample: wgpu::MultisampleState::default(),
         cache: None
     });

@@ -1,7 +1,7 @@
 use std::mem;
 use std::ops::Mul;
 use log::*;
-use wgpu::{util::DeviceExt, RenderPass};
+use wgpu::{util::DeviceExt, DepthStencilState, RenderPass};
 use glam::{Mat4, Vec3};
 
 #[derive(Debug)]
@@ -37,7 +37,7 @@ impl Pipeline {
         render_pass.draw_indexed(0..QUAD_INDICES.len() as u32, 0, 0..amount);
     }
 
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Pipeline {
+    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, depth_stencil: Option<DepthStencilState>) -> Pipeline {
         let constant_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("iced_wgpu::quad uniforms layout"),
@@ -150,12 +150,8 @@ impl Pipeline {
                     front_face: wgpu::FrontFace::Cw,
                     ..Default::default()
                 },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
+                depth_stencil,
+                multisample: wgpu::MultisampleState::default(),
                 multiview: None,
                 cache: None
             });

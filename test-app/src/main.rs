@@ -175,22 +175,38 @@ async fn run() {
 
     let mut indices_count = scene1.indices.len() as u32;
 
-    let mut element_pipeline = pipeline::element_pipeline::new(&surface, &device, &adapter, &queue, &scene1.vertices, &scene1.indices);
+    let depth_stencil_state = Some(wgpu::DepthStencilState {
+        format: wgpu::TextureFormat::Depth32Float,
+        depth_write_enabled: true,
+        depth_compare: wgpu::CompareFunction::Always,
+        stencil: wgpu::StencilState::default(),
+        bias: wgpu::DepthBiasState::default()
+    });
+
+    let model_depth_stencil_state = Some(wgpu::DepthStencilState {
+        format: wgpu::TextureFormat::Depth32Float,
+        depth_write_enabled: true,
+        depth_compare: wgpu::CompareFunction::Less,
+        stencil: wgpu::StencilState::default(),
+        bias: wgpu::DepthBiasState::default()
+    });
+
+    let mut element_pipeline = pipeline::element_pipeline::new(&device, &queue, &scene1.vertices, &scene1.indices, depth_stencil_state.clone());
     
-    let (camera, model_pipeline) = pipeline::model_pipeline::new(&surface, &device, &adapter, &queue, layout.size.width as f32, layout.size.height as f32).await;
+    let (camera, model_pipeline) = pipeline::model_pipeline::new(&device, &config, layout.size.width as f32, layout.size.height as f32, model_depth_stencil_state).await;
 
     let mut objects = vec![];
-
+    
     let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
-        x: -5.0,
-        y: 0.0,
+        x: 15.0,
+        y: -7.0,
         z: 0.0,        
-        scale_x: 0.05,
-        scale_y: 0.05,
-        scale_z: 0.05
-    };
+        scale_x: 0.07,
+        scale_y: 0.07,
+        scale_z: 0.07
+    };    
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
     objects.push(object);
@@ -226,7 +242,7 @@ async fn run() {
     let model_data = model_load::load("plane", "../models/plane/plane.gltf");
     
     let view_source = ViewSource {
-        x: 5.0,
+        x: -5.0,
         y: 0.0,
         z: 0.0,        
         scale_x: 1.0,
@@ -265,7 +281,7 @@ async fn run() {
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, vec![view_source]);
     objects.push(object);
     
-    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
+    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
     let mut quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
@@ -278,7 +294,7 @@ async fn run() {
     let shadow_offset = [0.0, 0.0];
     let shadow_blur_radius = 0.0;
 
-    let quads = vec![
+    let quads = vec![        
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
@@ -320,7 +336,7 @@ async fn run() {
             shadow_color,
             shadow_offset,
             shadow_blur_radius
-        }
+        }        
     ];
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);    
@@ -522,13 +538,20 @@ async fn run() {
                                             }
                                         })
                                     ],
-                                    depth_stencil_attachment: None,
+                                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                                        view: &model_pipeline.depth_texture.view,
+                                        depth_ops: Some(wgpu::Operations {
+                                            load: wgpu::LoadOp::Clear(1.0),
+                                            store: wgpu::StoreOp::Store,
+                                        }),
+                                        stencil_ops: None,
+                                    }),
                                     timestamp_writes: None,
                                     occlusion_query_set: None
                                 }
                             );                                                        
         
-                            model_pipeline.draw(&mut render_pass, &objects);
+                            model_pipeline.draw(&mut render_pass, &objects);                            
                             element_pipeline.draw(&mut render_pass, indices_count);
                             quad_pipeline.draw(&mut render_pass, amount as u32);
                         }

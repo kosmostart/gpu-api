@@ -5,6 +5,7 @@ use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, S
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, create_camera};
 use crate::model::Object;
+use crate::texture::Texture;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -21,6 +22,8 @@ pub struct Pipeline {
     pub shader: ShaderModule,
     pub texture_bind_group_layout: BindGroupLayout,
     pub sampler: Sampler,
+    pub depth_texture: Texture,
+    pub depth_sampler: Sampler,
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
     pub camera_bind_group: BindGroup, 
@@ -46,6 +49,20 @@ impl Pipeline {
             
             for mesh in &object.meshes {
                 for primitive in &mesh.primitives {
+                    match primitive.base_color_texture_index {
+                        Some(base_color_texture_index) => {
+                            render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
+                        }
+                        None => {
+                            match primitive.pbr_specular_glossiness_diffuse_texture_index {
+                                Some(pbr_specular_glossiness_diffuse_texture_index) => {
+                                    render_pass.set_bind_group(0, &object.texture_bind_groups[pbr_specular_glossiness_diffuse_texture_index], &[]); // Texture                            
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                    /*
                     match primitive.base_color_texture_index {
                         Some(base_color_texture_index) => {
                             render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
@@ -76,6 +93,7 @@ impl Pipeline {
                         }
                         None => {}
                     }
+                    */
                     render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
                     render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
                     render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
@@ -88,7 +106,7 @@ impl Pipeline {
     }
 }
 
-pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queue: &Queue, width: f32, height: f32) -> (Camera, Pipeline) {
+pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f32, height: f32, depth_stencil: Option<wgpu::DepthStencilState>) -> (Camera, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader2"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
@@ -231,10 +249,13 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
             ],
         }),
         primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: None,
+        depth_stencil,
         multisample: wgpu::MultisampleState::default(),
         cache: None
     });
+
+    let depth_texture = Texture::create_depth_texture(device, config, "Depth texture");
+    let depth_sampler = Texture::create_depth_samper(device);
 
     (camera, Pipeline {
         shader,
@@ -242,6 +263,8 @@ pub async fn new(surface: &Surface<'_>, device: &Device, adapter: &Adapter, queu
         camera_buffer,
         camera_bind_group_layout,
         sampler,
+        depth_texture,
+        depth_sampler,
         camera_bind_group,
         pipeline_layout,
         swapchain_format: TextureFormat::Rgba8UnormSrgb,
