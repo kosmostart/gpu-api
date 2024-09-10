@@ -40,7 +40,8 @@ pub struct Object {
     pub texture_bind_groups: Vec<BindGroup>,
     pub views: Vec<f32>,
     pub views_size: u64,
-    pub views_amount: u32
+    pub views_amount: u32,
+    pub test_point: [f32; 3]
 }
 
 impl Object {
@@ -66,6 +67,8 @@ pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {
 
 pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, name: &str, model_data: ModelData, view_sources: Vec<ViewSource>) -> Object {
     let mut meshes = vec![];
+
+    let test_point = model_data.meshes[0].primitives[0].positions[0];
 
     for mesh in model_data.meshes {
         let mut primitives = vec![];
@@ -183,6 +186,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         view_sources,
         views,
         views_size,
-        views_amount
+        views_amount,
+        test_point
     }
 }

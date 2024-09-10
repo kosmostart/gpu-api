@@ -1,8 +1,10 @@
 pub use bytemuck;
 pub use bytemuck_derive;
 pub use glam;
+use glam::Vec4Swizzles;
 pub use gpu_api_dto;
 pub use image;
+use log::warn;
 pub use wgpu;
 
 pub mod texture;
@@ -16,29 +18,34 @@ pub mod pipeline {
 }
 
 
-pub fn screen_to_world(q: &glam::Mat4, width: f32, height: f32, x: f32, y: f32, z: f32) {
-    let inverted = q.inverse();
+pub fn screen_to_world(projection: &glam::Mat4, width: f32, height: f32, x: f32, y: f32) -> glam::Vec4 {
+    let x = 769.49225;
+    let y = 412.0217;
 
     let x_ndc = (2.0 * x / width) - 1.0;
-    let y_ndc = (2.0 * y / height) - 1.0;
-    let z_ndc = (2.0 * z) - 1.0;    
+    let y_ndc = 1.0 - (2.0 * y / height);
+    //let z_ndc = (2.0 * z) - 1.0;
+    let z_ndc = 1.0;
 
-    let x_world = x_ndc * inverted.x_axis[0] + y_ndc * inverted.x_axis[1] + z_ndc * inverted.x_axis[2] + inverted.x_axis[3];
-    let y_world = x_ndc * inverted.y_axis[0] + y_ndc * inverted.y_axis[1] + z_ndc * inverted.y_axis[2] + inverted.y_axis[3];
-    let z_world = x_ndc * inverted.z_axis[0] + y_ndc * inverted.z_axis[1] + z_ndc * inverted.x_axis[2] + inverted.z_axis[3];
-    
+    let ndc_space = glam::vec4(x_ndc, y_ndc, z_ndc, 1.0);
 
-    /*
-    local inv = vmath.inv(self.projection * self.view)
+    warn!("ndc space is {:?}", ndc_space);    
 
-    x = (2 * x / render.get_width()) - 1
-    y = (2 * y / render.get_height()) - 1
-    z = (2 * z) - 1
-    
-    local x1 = x * inv.m00 + y * inv.m01 + z * inv.m02 + inv.m03
-    local y1 = x * inv.m10 + y * inv.m11 + z * inv.m12 + inv.m13
-    local z1 = x * inv.m20 + y * inv.m21 + z * inv.m22 + inv.m23
-    
-    return x1, y1, z1    
-    */
+    let w = 39.406364;
+
+    let mut clip_space = ndc_space * w;
+
+    clip_space.z = 39.345707;
+
+    let q = projection.inverse();
+
+    warn!("clip_space orig is {:?}", clip_space);
+    warn!("world space orig is {:?}", q * clip_space);
+
+    let clip_space2 = glam::vec4(1.0241574, 3.3257487, 39.345707, 39.406364);
+    warn!("clip_space 2 is {:?}", clip_space2);
+    let world_space = q * clip_space2;
+    warn!("world space 2 is {:?}", world_space);
+
+    world_space
 }

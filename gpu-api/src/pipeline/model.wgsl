@@ -6,7 +6,7 @@ var texture_sampler: sampler;
 
 // Camera
 struct CameraUniform {
-    view_proj: mat4x4<f32>
+    projection: mat4x4<f32>
 };
 
 @group(1) @binding(0)
@@ -44,7 +44,7 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     
     var fragment_input: FragmentInput;
 
-    fragment_input.clip_position = camera.view_proj * model_matrix * vec4<f32>(vertex_input.position, 1.0);
+    fragment_input.clip_position = camera.projection * model_matrix * vec4<f32>(vertex_input.position, 1.0);
     fragment_input.texture_coordinates = vertex_input.texture_coordinates;
     fragment_input.normal = vertex_input.normal;
     

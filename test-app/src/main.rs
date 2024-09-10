@@ -195,7 +195,7 @@ async fn run() {
     
     let (camera, model_pipeline) = pipeline::model_pipeline::new(&device, &config, layout.size.width as f32, layout.size.height as f32, model_depth_stencil_state).await;
 
-    let mut objects = vec![];
+    let mut object_group = vec![];
     
     let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
@@ -209,7 +209,8 @@ async fn run() {
     };    
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
-    objects.push(object);
+    object_group.push(object);
+    
 /*
     let model_data = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
     
@@ -237,7 +238,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "duck", model_data, vec![view_source]);
-    objects.push(object);
+    object_group.push(object);
 
     let model_data = model_load::load("plane", "../models/plane/plane.gltf");
     
@@ -251,7 +252,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "plane", model_data, vec![view_source]);
-    objects.push(object);
+    object_group.push(object);
 
     let model_data = model_load::load("box", "../models/box/box.glb");
     
@@ -265,7 +266,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, vec![view_source]);
-    objects.push(object);
+    object_group.push(object);
 
     let model_data = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
     
@@ -279,7 +280,10 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, vec![view_source]);
-    objects.push(object);
+    object_group.push(object);
+
+    let mut objects = vec![];
+    objects.push(object_group);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
 
@@ -503,16 +507,22 @@ async fn run() {
                         }
                         
                         {
-                            for object in &objects {
-                                let mut view_slice = staging_belt.write_buffer(
-                                    &mut encoder,
-                                    &object.instance_buffer,
-                                    0,
-                                    wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
-                                    &device
-                                );
-            
-                                view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
+                            for object_group in &objects {
+                                for object in object_group {
+                                    if object.views_amount == 0 {
+                                        continue;
+                                    }
+                                    
+                                    let mut view_slice = staging_belt.write_buffer(
+                                        &mut encoder,
+                                        &object.instance_buffer,
+                                        0,
+                                        wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
+                                        &device
+                                    );
+                
+                                    view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
+                                }
                             }
                         }
         

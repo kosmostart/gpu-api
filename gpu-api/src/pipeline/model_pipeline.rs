@@ -33,76 +33,74 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, objects: &'a Vec<Object>) {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, objects: &'a Vec<Vec<Object>>) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let mut index = 0;
-    
-        for object in objects {
-            if object.views_amount == 0 {
-                continue;
-            }
-            
-            render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
-                    
-            let instances_range = 0..object.views_amount;
-            
-            for mesh in &object.meshes {
-                for primitive in &mesh.primitives {
-                    match primitive.base_color_texture_index {
-                        Some(base_color_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
-                        }
-                        None => {
-                            match primitive.pbr_specular_glossiness_diffuse_texture_index {
-                                Some(pbr_specular_glossiness_diffuse_texture_index) => {
-                                    render_pass.set_bind_group(0, &object.texture_bind_groups[pbr_specular_glossiness_diffuse_texture_index], &[]); // Texture                            
+        for object_group in objects {
+            for object in object_group {
+                if object.views_amount == 0 {
+                    continue;
+                }
+                
+                render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
+                        
+                let instances_range = 0..object.views_amount;
+                
+                for mesh in &object.meshes {
+                    for primitive in &mesh.primitives {
+                        match primitive.base_color_texture_index {
+                            Some(base_color_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
+                            }
+                            None => {
+                                match primitive.pbr_specular_glossiness_diffuse_texture_index {
+                                    Some(pbr_specular_glossiness_diffuse_texture_index) => {
+                                        render_pass.set_bind_group(0, &object.texture_bind_groups[pbr_specular_glossiness_diffuse_texture_index], &[]); // Texture                            
+                                    }
+                                    None => {}
                                 }
-                                None => {}
                             }
                         }
-                    }
-                    /*
-                    match primitive.base_color_texture_index {
-                        Some(base_color_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
+                        /*
+                        match primitive.base_color_texture_index {
+                            Some(base_color_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[base_color_texture_index], &[]); // Texture
+                            }
+                            None => {}
                         }
-                        None => {}
-                    }
-                    match primitive.metallic_roughness_texture_index {
-                        Some(metallic_roughness_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[metallic_roughness_texture_index], &[]); // Texture
+                        match primitive.metallic_roughness_texture_index {
+                            Some(metallic_roughness_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[metallic_roughness_texture_index], &[]); // Texture
+                            }
+                            None => {}
                         }
-                        None => {}
-                    }
-                    match primitive.normal_texture_index {
-                        Some(normal_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[normal_texture_index], &[]); // Texture                            
+                        match primitive.normal_texture_index {
+                            Some(normal_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[normal_texture_index], &[]); // Texture                            
+                            }
+                            None => {}
                         }
-                        None => {}
-                    }
-                    match primitive.occlusion_texture_index {
-                        Some(occlusion_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[occlusion_texture_index], &[]); // Texture
+                        match primitive.occlusion_texture_index {
+                            Some(occlusion_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[occlusion_texture_index], &[]); // Texture
+                            }
+                            None => {}
                         }
-                        None => {}
-                    }
-                    match primitive.emmisive_texture_index {
-                        Some(emmisive_texture_index) => {
-                            render_pass.set_bind_group(0, &object.texture_bind_groups[emmisive_texture_index], &[]); // Texture
+                        match primitive.emmisive_texture_index {
+                            Some(emmisive_texture_index) => {
+                                render_pass.set_bind_group(0, &object.texture_bind_groups[emmisive_texture_index], &[]); // Texture
+                            }
+                            None => {}
                         }
-                        None => {}
-                    }
-                    */
-                    render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
-                    render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                    render_pass.draw_indexed(0..primitive.num_elements, 0, instances_range.clone());
-                }                
+                        */
+                        render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
+                        render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        render_pass.draw_indexed(0..primitive.num_elements, 0, instances_range.clone());
+                    }                
+                }                    
             }
-
-            index = index + 1;
-        }
+        }            
     }
 }
 

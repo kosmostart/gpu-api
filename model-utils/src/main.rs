@@ -5,14 +5,14 @@ use log::*;
 fn main() {
     env_logger::init();
 
-    let model_name = "swamp";
+    let model_name = "instance-room-1";
     let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.gltf", model_name));
     let mut texture_index = 0;
 
     for texture in &mut model_data.textures {
         match texture.pixels.take() {
             Some(pixels) => {                
-                let mut file = std::fs::File::create(&format!("{}_{}", model_name, &texture_index.to_string())).expect("Failed to create texture file");
+                let mut file = std::fs::File::create(&format!("{}_{}.pixels", model_name, &texture_index.to_string())).expect("Failed to create texture file");
                 file.write_all(&pixels).expect("Failed to write texture pixes to file");                
             }
             None => {
@@ -23,7 +23,7 @@ fn main() {
         texture_index = texture_index + 1;
     }
     
-    let mut file = std::fs::File::create(&format!("{}.raw", model_name)).expect("Failed to create file");
+    let mut file = std::fs::File::create(&format!("{}.model", model_name)).expect("Failed to create file");
         
 
     let mut serializer = AllocSerializer::<1024>::default();
