@@ -4,7 +4,7 @@ use log::*;
 use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler, TextureView};
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, create_camera};
-use crate::model::Object;
+use crate::model::{Object, ObjectGroup};
 use crate::texture::Texture;
 
 #[repr(C)]
@@ -33,11 +33,15 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, objects: &'a Vec<Vec<Object>>) {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, object_groups: &'a Vec<ObjectGroup>) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        for object_group in objects {
-            for object in object_group {
+        for object_group in object_groups {
+            if object_group.active == false {
+                continue;
+            }
+            
+            for object in &object_group.objects {
                 if object.views_amount == 0 {
                     continue;
                 }

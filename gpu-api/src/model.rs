@@ -1,9 +1,10 @@
+use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use gpu_api_dto::{ModelData, ViewSource};
 use crate::{pipeline::model_pipeline};
 
-pub const VIEW_MATRIX_ELEMENT_SIZE: u64 = 4;
+pub const MODEL_MATRIX_ELEMENT_SIZE: u64 = 4;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
 pub struct Mesh {
@@ -32,11 +33,17 @@ pub struct Material {
     pub bind_group: wgpu::BindGroup,
 }
 
+pub struct ObjectGroup {
+    pub active: bool,
+    pub objects: Vec<Object>
+}
+
 pub struct Object {
     pub name: String,
     pub meshes: Vec<Mesh>,
     pub instance_buffer: Buffer,
     pub view_sources: Vec<ViewSource>,
+    pub model_matrices: Vec<Mat4>,
     pub texture_bind_groups: Vec<BindGroup>,
     pub views: Vec<f32>,
     pub views_size: u64,
@@ -47,18 +54,20 @@ pub struct Object {
 impl Object {
     pub fn update_view(&mut self) {
         self.views.clear();
+        self.model_matrices.clear();
 
         for view_source in &self.view_sources {
-            let view_matrix = generate_view_matrix(view_source);
-            self.views.extend_from_slice(&view_matrix.to_cols_array());
+            let model_matrix = generate_model_matrix(view_source);
+            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.model_matrices.push(model_matrix);
         }
 
-        self.views_size = self.views.len() as u64 * VIEW_MATRIX_ELEMENT_SIZE;
+        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
         self.views_amount = self.view_sources.len() as u32;
     }
 }
 
-pub fn generate_view_matrix(source: &ViewSource) -> glam::Mat4 {    
+pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {    
     let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
     let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));
 
@@ -123,7 +132,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Instance Buffer"),
-        size: VIEW_MATRIX_ELEMENT_SIZE * MAX_MODEL_AMOUNT,
+        size: MODEL_MATRIX_ELEMENT_SIZE * MAX_MODEL_AMOUNT,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false
     });
@@ -168,13 +177,15 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     }
 
     let mut views = vec![];
+    let mut model_matrices = vec![];
 
     for view_source in &view_sources {
-        let view_matrix = generate_view_matrix(view_source);
-        views.extend_from_slice(&view_matrix.to_cols_array());
+        let model_matrix = generate_model_matrix(view_source);
+        views.extend_from_slice(&model_matrix.to_cols_array());
+        model_matrices.push(model_matrix);
     }
 
-    let views_size = views.len() as u64 * VIEW_MATRIX_ELEMENT_SIZE;
+    let views_size = views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
 
     let views_amount = view_sources.len() as u32;
 
@@ -184,6 +195,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         instance_buffer,
         texture_bind_groups,
         view_sources,
+        model_matrices,
         views,
         views_size,
         views_amount,

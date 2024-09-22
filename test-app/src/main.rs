@@ -7,7 +7,7 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, pipeline::{self, quad_pipeline}, model::{self, create_object}};
+use gpu_api::{bytemuck, model::{self, create_object, ObjectGroup}, pipeline::{self, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -195,7 +195,10 @@ async fn run() {
     
     let (camera, model_pipeline) = pipeline::model_pipeline::new(&device, &config, layout.size.width as f32, layout.size.height as f32, model_depth_stencil_state).await;
 
-    let mut object_group = vec![];
+    let mut object_group = ObjectGroup {
+        active: true,
+        objects: vec![]
+    };
     
     let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
@@ -209,7 +212,7 @@ async fn run() {
     };    
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
-    object_group.push(object);
+    object_group.objects.push(object);    
     
 /*
     let model_data = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
@@ -238,7 +241,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "duck", model_data, vec![view_source]);
-    object_group.push(object);
+    object_group.objects.push(object);
 
     let model_data = model_load::load("plane", "../models/plane/plane.gltf");
     
@@ -252,7 +255,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "plane", model_data, vec![view_source]);
-    object_group.push(object);
+    object_group.objects.push(object);
 
     let model_data = model_load::load("box", "../models/box/box.glb");
     
@@ -266,7 +269,7 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, vec![view_source]);
-    object_group.push(object);
+    object_group.objects.push(object);
 
     let model_data = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
     
@@ -280,10 +283,10 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, vec![view_source]);
-    object_group.push(object);
+    object_group.objects.push(object);
 
-    let mut objects = vec![];
-    objects.push(object_group);
+    let mut object_groups = vec![];
+    object_groups.push(object_group);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
 
@@ -507,8 +510,12 @@ async fn run() {
                         }
                         
                         {
-                            for object_group in &objects {
-                                for object in object_group {
+                            for object_group in &object_groups {
+                                for object in &object_group.objects {
+                                    if object_group.active == false {
+                                        continue;
+                                    }
+                                    
                                     if object.views_amount == 0 {
                                         continue;
                                     }
@@ -561,7 +568,7 @@ async fn run() {
                                 }
                             );                                                        
         
-                            model_pipeline.draw(&mut render_pass, &objects);                            
+                            model_pipeline.draw(&mut render_pass, &object_groups);                            
                             element_pipeline.draw(&mut render_pass, indices_count);
                             quad_pipeline.draw(&mut render_pass, amount as u32);
                         }

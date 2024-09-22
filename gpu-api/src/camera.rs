@@ -40,7 +40,7 @@ pub fn create_camera(width: f32, height: f32, x: f32, y: f32, z: f32) -> Camera 
 pub fn generate_projection_view(width: f32, height: f32) -> (Mat4, Mat4, Mat4) {
     let aspect_ratio = width / height;    
     
-    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 100.0);        
+    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
 
     let center_x = 0.0;
     let center_y = 0.0;

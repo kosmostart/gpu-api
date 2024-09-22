@@ -5,7 +5,7 @@ use log::*;
 fn main() {
     env_logger::init();
 
-    let model_name = "instance-room-1";
+    let model_name = "plane";
     let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.gltf", model_name));
     let mut texture_index = 0;
 
