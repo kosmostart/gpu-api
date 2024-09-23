@@ -1,4 +1,4 @@
-use rkyv::{archived_root, Archive, Serialize, Deserialize, Infallible};
+use rkyv::{Archive, Serialize, Deserialize};
 pub use rkyv;
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone)]
@@ -50,6 +50,6 @@ pub struct ViewSource {
 }
 
 pub fn deserialize_model_data(buf: &[u8]) -> ModelData {
-    let archived = unsafe { archived_root::<ModelData>(buf) };
-    archived.deserialize(&mut Infallible).expect("Failed to deserialize model data")
+    let archived = unsafe { rkyv::access_unchecked::<ArchivedModelData>(buf) };
+    rkyv::deserialize::<ModelData, rkyv::rancor::Error>(archived).expect("Failed to deserialize model data")
 }

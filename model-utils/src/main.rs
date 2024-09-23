@@ -1,6 +1,6 @@
 use std::io::Write;
-use model_load::gpu_api_dto::rkyv::ser::{Serializer, serializers::AllocSerializer};
 use log::*;
+use model_load::gpu_api_dto::rkyv;
 
 fn main() {
     env_logger::init();
@@ -23,12 +23,9 @@ fn main() {
         texture_index = texture_index + 1;
     }
     
-    let mut file = std::fs::File::create(&format!("{}.model", model_name)).expect("Failed to create file");
-        
+    let mut file = std::fs::File::create(&format!("{}.model", model_name)).expect("Failed to create file");    
 
-    let mut serializer = AllocSerializer::<1024>::default();
-    serializer.serialize_value(&model_data).expect("Failed to serialize model data");
-    let bytes = serializer.into_serializer().into_inner();
+    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&model_data).expect("Failed to serialize model data");
 
     let res = file.write_all(&bytes).expect("Failed to write model data to file");
     info!("{:?}", res);
