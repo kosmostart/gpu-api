@@ -1,4 +1,4 @@
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 
 pub const CAMERA_UNIFORM_SIZE: u64 = 64;
 
@@ -6,6 +6,7 @@ pub struct Camera {
     pub x: f32, 
     pub y: f32, 
     pub z: f32,
+    pub camera_position: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,
     pub projection_view: Mat4,
@@ -22,13 +23,14 @@ impl Camera {
 }
 
 pub fn create_camera(width: f32, height: f32, x: f32, y: f32, z: f32) -> Camera {
-    let (projection_source, view, projection_view) = generate_projection_view(width, height);
+    let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height);
     let (translation, projection) = generate_projection(&projection_view, x, y, z);
 
     Camera {
         x,
         y,
         z,
+        camera_position,
         projection_source,
         view,
         projection_view,
@@ -37,7 +39,7 @@ pub fn create_camera(width: f32, height: f32, x: f32, y: f32, z: f32) -> Camera 
     }
 }
 
-pub fn generate_projection_view(width: f32, height: f32) -> (Mat4, Mat4, Mat4) {
+pub fn generate_projection_view(width: f32, height: f32) -> (Vec3, Mat4, Mat4, Mat4) {
     let aspect_ratio = width / height;    
     
     let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
@@ -61,7 +63,7 @@ pub fn generate_projection_view(width: f32, height: f32) -> (Mat4, Mat4, Mat4) {
         glam::Vec3::new(0.0, 1.0, 0.0)
     );    
 
-    (projection_source, view, projection_source * view)
+    (cam_pos, projection_source, view, projection_source * view)
 }
 
 pub fn generate_projection(projection_view: &Mat4, x: f32, y: f32, z: f32) -> (Mat4, Mat4) {

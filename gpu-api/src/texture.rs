@@ -76,7 +76,7 @@ impl Texture {
         };
         let texture = device.create_texture(&desc);
 
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());        
         
         Texture { 
             texture, 

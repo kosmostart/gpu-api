@@ -5,14 +5,17 @@ use model_load::gpu_api_dto::rkyv;
 fn main() {
     env_logger::init();
 
-    let model_name = "plane";
+    process_model("plane");    
+}
+
+fn process_model(model_name: &str) {    
     let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.gltf", model_name));
     let mut texture_index = 0;
 
     for texture in &mut model_data.textures {
         match texture.pixels.take() {
             Some(pixels) => {                
-                let mut file = std::fs::File::create(&format!("{}_{}.pixels", model_name, &texture_index.to_string())).expect("Failed to create texture file");
+                let mut file = std::fs::File::create(&format!("{}_{}.texture", model_name, &texture_index.to_string())).expect("Failed to create texture file");
                 file.write_all(&pixels).expect("Failed to write texture pixes to file");                
             }
             None => {

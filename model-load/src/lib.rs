@@ -35,6 +35,14 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
     for mesh in document.meshes() {
         info!("Found Mesh {:?}, index {}", mesh.name(), mesh.index());
 
+        if mesh.name() == Some("Body_low.003") {
+            //Cloth_low.003
+            //"Belt1_low.003"
+            //"Body_low.002"
+            //"Body_low.003"
+            continue;
+        }
+
         let mut primitives = vec![];
 
         for primitive in mesh.primitives() {
