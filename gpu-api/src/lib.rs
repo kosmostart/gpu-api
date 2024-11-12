@@ -1,3 +1,5 @@
+use core::f32;
+
 pub use bytemuck;
 pub use bytemuck_derive;
 use camera::Camera;
@@ -26,26 +28,26 @@ pub fn screen_to_ndc(width: f32, height: f32, x: f32, y: f32) -> [f32; 3] {
     [x_ndc, y_ndc, z_ndc]
 }
 
-pub fn screen_to_ray(camera: &Camera, width: f32, height: f32, x: f32, y: f32, point: glam::Vec3) -> f32 {
+pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f32, point: glam::Vec3) -> f32 {
     let x_ndc = (2.0 * x / width) - 1.0;
     let y_ndc = 1.0 - (2.0 * y / height);    
 
-    let ray_near = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
-    let ray_far = glam::vec4(x_ndc, y_ndc, 1.0, 1.0);
+    let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
+    let ray_far_ndc = glam::vec4(x_ndc, y_ndc, 1.0, 1.0);
 
-    let ray_eye_near = camera.projection_source.inverse() * ray_near;
-    let ray_eye_far = camera.projection_source.inverse() * ray_far;
+    let ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;
+    let ray_far_eye = camera.projection_source.inverse() * ray_far_ndc;
 
-    let ray_world_near = camera.view.inverse() * ray_eye_near;    
-    let ray_world_far = camera.view.inverse() * ray_eye_far;
+    let ray_near_world = camera.view.inverse() * ray_near_eye;
+    let ray_far_world = camera.view.inverse() * ray_far_eye;
     
-    let ray_world_near3 = glam::vec3(ray_world_near.x / ray_world_near.w, ray_world_near.y  / ray_world_near.w, ray_world_near.z  / ray_world_near.w);
-    let ray_world_far3 = glam::vec3(ray_world_far.x / ray_world_far.w, ray_world_far.y  / ray_world_far.w, ray_world_far.z  / ray_world_far.w);    
+    let ray_near_world3 = glam::vec3(ray_near_world.x / ray_near_world.w, ray_near_world.y  / ray_near_world.w, ray_near_world.z  / ray_near_world.w);
+    let ray_far_world3 = glam::vec3(ray_far_world.x / ray_far_world.w, ray_far_world.y  / ray_far_world.w, ray_far_world.z  / ray_far_world.w);    
     
-    let point_near = point - ray_world_near3;
-    let point_far = point - ray_world_far3;    
+    let point_near = point - ray_near_world3;
+    let point_far = point - ray_far_world3;    
     let q1 = point_near.cross(point_far);
-    let q2 = ray_world_far3 - ray_world_near3;
+    let q2 = ray_far_world3 - ray_near_world3;
 
     //warn!("q1 {:?} {}", q1, q1.length());
     //warn!("q2 {:?} {}", q2, q2.length());
@@ -53,7 +55,89 @@ pub fn screen_to_ray(camera: &Camera, width: f32, height: f32, x: f32, y: f32, p
     q1.length() / q2.length()
 }
 
-pub fn screen_to_ray_2(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> (glam::Vec4, glam::Vec3) {
+pub fn screen_to_ray_direction(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> glam::Vec3 {
+    let x_ndc = (2.0 * x / width) - 1.0;
+    let y_ndc = 1.0 - (2.0 * y / height);    
+
+    let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);    
+
+    let mut ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;    
+    ray_near_eye.w = 0.0;
+
+    let ray_near_world = camera.view.inverse() * ray_near_eye;        
+    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);    
+    
+    //warn!("ray_near_world3 {:?}", ray_near_world3);    
+
+    ray_near_world3.normalize()
+}
+
+pub fn ray_aabb_intersection(ray_origin: &glam::Vec3, ray_direction_inv: &glam::Vec3, box0: &glam::Vec3, box1: &glam::Vec3) -> bool {    
+    let mut tmin = 0.0;
+    let mut tmax = f32::INFINITY;    
+
+    fn min(x: f32, y: f32) -> f32 {
+        if x < y {
+            x 
+        } else {
+            y
+        }
+    }
+    
+    fn max(x: f32, y: f32) -> f32 {
+        if x > y {
+            x
+        } else {
+            y
+        }
+    }
+
+    let t1 = (box0.x - ray_origin.x) * ray_direction_inv.x;
+    let t2 = (box1.x - ray_origin.x) * ray_direction_inv.x;
+    
+    tmin = min(max(t1, tmin), max(t2, tmin));
+    tmax = max(min(t1, tmax), min(t2, tmax));
+
+    let t1 = (box0.y - ray_origin.y) * ray_direction_inv.y;
+    let t2 = (box1.y - ray_origin.y) * ray_direction_inv.y;
+    
+    tmin = min(max(t1, tmin), max(t2, tmin));
+    tmax = max(min(t1, tmax), min(t2, tmax));
+
+    let t1 = (box0.z - ray_origin.z) * ray_direction_inv.z;
+    let t2 = (box1.z - ray_origin.z) * ray_direction_inv.z;
+    
+    tmin = min(max(t1, tmin), max(t2, tmin));
+    tmax = max(min(t1, tmax), min(t2, tmax));
+
+    return tmin < tmax;
+}
+
+pub fn ray_aabb_intersection2(ray_origin: &glam::Vec3, ray_direction_inv: &glam::Vec3, box0: &glam::Vec3, box1: &glam::Vec3) -> bool {    
+    // Absolute distances to lower and upper box coordinates
+    let t_lower = (box0 - ray_origin) * ray_direction_inv;
+    let t_upper = (box1 - ray_origin)* ray_direction_inv;
+
+    //warn!("t_lower {}, t_upper {}", t_lower, t_upper);
+
+    let ray_tmin = 0.0;
+    let ray_tmax = f32::INFINITY;
+
+    // The four t-intervals (for x -/ y- /z -slabs , and ray p(t))    
+
+    let t_mins = t_lower.min(t_upper);
+    let t_maxes = t_lower.max(t_upper);
+
+    let t_mins = glam::vec4(t_mins.x, t_mins.y, t_mins.z, ray_tmin);
+    let t_maxes = glam::vec4(t_maxes.x, t_maxes.y, t_maxes.z, ray_tmax);    
+
+    let t_box_min = t_mins.max_element();
+    let t_box_max = t_maxes.min_element();
+
+    return t_box_min <= t_box_max;
+}
+
+pub fn screen_to_ray_orig(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> (glam::Vec4, glam::Vec3) {
     let x_ndc = (2.0 * x / width) - 1.0;
     let y_ndc = 1.0 - (2.0 * y / height);    
 
@@ -88,4 +172,3 @@ pub fn screen_to_world(camera: &Camera, width: f32, height: f32, x: f32, y: f32)
 
     world_space
 }
-

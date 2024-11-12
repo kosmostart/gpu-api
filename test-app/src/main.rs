@@ -206,13 +206,28 @@ async fn run() {
         x: 15.0,
         y: -7.0,
         z: 0.0,        
-        scale_x: 5.07,
-        scale_y: 5.07,
-        scale_z: 5.07
+        scale_x: 5.0,
+        scale_y: 5.0,
+        scale_z: 5.0
+    };
+    
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "knight", model_data, vec![view_source]);
+    object_group.objects.push(object);
+
+    let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
+    
+    let view_source = ViewSource {
+        x: -25.0,
+        y: -20.0,
+        z: 10.0,        
+        scale_x: 0.1,
+        scale_y: 0.1,
+        scale_z: 0.1
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
-    object_group.objects.push(object);    
+    object_group.objects.push(object);
+
     
 /*
     let model_data = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
