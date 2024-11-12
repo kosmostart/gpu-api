@@ -203,12 +203,12 @@ async fn run() {
     let model_data = model_load::load("knight", "../models/knight/knight.gltf");
     
     let view_source = ViewSource {
-        x: 15.0,
-        y: -7.0,
+        x: 13.0,
+        y: -5.0,
         z: 0.0,        
-        scale_x: 5.0,
-        scale_y: 5.0,
-        scale_z: 5.0
+        scale_x: 10.0,
+        scale_y: 10.0,
+        scale_z: 10.0
     };
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "knight", model_data, vec![view_source]);
@@ -289,7 +289,7 @@ async fn run() {
     let model_data = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
     
     let view_source = ViewSource {
-        x: 8.0,
+        x: 5.0,
         y: 7.0,
         z: 0.0,        
         scale_x: 1.0,
