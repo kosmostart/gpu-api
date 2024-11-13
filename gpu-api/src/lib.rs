@@ -28,7 +28,7 @@ pub fn screen_to_ndc(width: f32, height: f32, x: f32, y: f32) -> [f32; 3] {
     [x_ndc, y_ndc, z_ndc]
 }
 
-pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f32, point: glam::Vec3) -> f32 {
+pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f32, point: &glam::Vec3) -> f32 {
     let x_ndc = (2.0 * x / width) - 1.0;
     let y_ndc = 1.0 - (2.0 * y / height);    
 
@@ -57,24 +57,56 @@ pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f
 
 pub fn screen_to_ray_direction(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> glam::Vec3 {
     let x_ndc = (2.0 * x / width) - 1.0;
-    let y_ndc = 1.0 - (2.0 * y / height);    
+    let y_ndc = 1.0 - (2.0 * y / height);
 
-    let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);    
+    let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
 
-    let mut ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;    
+    let mut ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;
     ray_near_eye.w = 0.0;
 
-    let ray_near_world = camera.view.inverse() * ray_near_eye;        
-    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);    
+    let ray_near_world = camera.view.inverse() * ray_near_eye;
+    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);
     
-    //warn!("ray_near_world3 {:?}", ray_near_world3);    
+    //warn!("ray_near_world3 {:?}", ray_near_world3);
 
     ray_near_world3.normalize()
 }
 
+pub fn ray_plane_intersection(ray_origin: &glam::Vec3, ray_direction: &glam::Vec3, plane_origin: &glam::Vec3, plane_normal: &glam::Vec3) -> glam::Vec3 {    
+    let d = plane_origin.dot(-plane_normal);
+
+    let t = -(d + ray_origin.dot(*plane_normal)) / ray_direction.dot(*plane_normal);
+
+    ray_origin + t * ray_direction
+
+    /*
+    float denom = dot(n, v);
+
+    // Prevent divide by zero:
+    if (abs(denom) <= 1e-4f)
+        return std::nullopt;
+
+    // If you want to ensure the ray reflects off only
+    // the "top" half of the plane, use this instead:
+    //
+    // if (-denom <= 1e-4f)
+    //     return std::nullopt;
+
+    float t = -(dot(n, p) + d) / dot(n, v);
+
+    // Use pointy end of the ray.
+    // It is technically correct to compare t < 0,
+    // but that may be undesirable in a raytracer.
+    if (t <= 1e-4)
+        return std::nullopt;
+
+    return p + t * v;
+    */
+}
+
 pub fn ray_aabb_intersection(ray_origin: &glam::Vec3, ray_direction_inv: &glam::Vec3, box0: &glam::Vec3, box1: &glam::Vec3) -> bool {    
-    let mut tmin = 0.0;
-    let mut tmax = f32::INFINITY;    
+    let mut t_min = 0.0;
+    let mut t_max = f32::INFINITY;    
 
     fn min(x: f32, y: f32) -> f32 {
         if x < y {
@@ -95,22 +127,22 @@ pub fn ray_aabb_intersection(ray_origin: &glam::Vec3, ray_direction_inv: &glam::
     let t1 = (box0.x - ray_origin.x) * ray_direction_inv.x;
     let t2 = (box1.x - ray_origin.x) * ray_direction_inv.x;
     
-    tmin = min(max(t1, tmin), max(t2, tmin));
-    tmax = max(min(t1, tmax), min(t2, tmax));
+    t_min = min(max(t1, t_min), max(t2, t_min));
+    t_max = max(min(t1, t_max), min(t2, t_max));
 
     let t1 = (box0.y - ray_origin.y) * ray_direction_inv.y;
     let t2 = (box1.y - ray_origin.y) * ray_direction_inv.y;
     
-    tmin = min(max(t1, tmin), max(t2, tmin));
-    tmax = max(min(t1, tmax), min(t2, tmax));
+    t_min = min(max(t1, t_min), max(t2, t_min));
+    t_max = max(min(t1, t_max), min(t2, t_max));
 
     let t1 = (box0.z - ray_origin.z) * ray_direction_inv.z;
     let t2 = (box1.z - ray_origin.z) * ray_direction_inv.z;
     
-    tmin = min(max(t1, tmin), max(t2, tmin));
-    tmax = max(min(t1, tmax), min(t2, tmax));
+    t_min = min(max(t1, t_min), max(t2, t_min));
+    t_max = max(min(t1, t_max), min(t2, t_max));
 
-    return tmin < tmax;
+    return t_min < t_max;
 }
 
 pub fn ray_aabb_intersection2(ray_origin: &glam::Vec3, ray_direction_inv: &glam::Vec3, box0: &glam::Vec3, box1: &glam::Vec3) -> bool {    
