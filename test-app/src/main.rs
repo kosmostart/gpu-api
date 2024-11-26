@@ -531,7 +531,7 @@ async fn run() {
                                         continue;
                                     }
                                     
-                                    if object.views_amount == 0 {
+                                    if object.instances_amount == 0 {
                                         continue;
                                     }
                                     

@@ -38,16 +38,26 @@ pub struct ObjectGroup {
     pub objects: Vec<Object>
 }
 
+pub struct ObjectInstance {
+    pub view_source: ViewSource,
+    pub is_moving: bool,
+    pub move_target: glam::Vec3,
+    pub move_direction_normalized: glam::Vec3,
+    pub x_move_done: bool,
+    pub y_move_done: bool,
+    pub z_move_done: bool
+}
+
 pub struct Object {
     pub name: String,
     pub meshes: Vec<Mesh>,
     pub instance_buffer: Buffer,
-    pub view_sources: Vec<ViewSource>,
+    pub instances: Vec<ObjectInstance>,
     pub model_matrices: Vec<Mat4>,
     pub texture_bind_groups: Vec<BindGroup>,
     pub views: Vec<f32>,
     pub views_size: u64,
-    pub views_amount: u32,
+    pub instances_amount: u32,
     pub test_point: [f32; 3]
 }
 
@@ -56,14 +66,14 @@ impl Object {
         self.views.clear();
         self.model_matrices.clear();
 
-        for view_source in &self.view_sources {
-            let model_matrix = generate_model_matrix(view_source);
+        for instance in &self.instances {
+            let model_matrix = generate_model_matrix(&instance.view_source);
             self.views.extend_from_slice(&model_matrix.to_cols_array());
             self.model_matrices.push(model_matrix);
         }
 
         self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
-        self.views_amount = self.view_sources.len() as u32;
+        self.instances_amount = self.instances.len() as u32;
     }
 }
 
@@ -178,27 +188,39 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let mut views = vec![];
     let mut model_matrices = vec![];
+    let mut instances = vec![];
 
-    for view_source in &view_sources {
-        let model_matrix = generate_model_matrix(view_source);
+    for view_source in view_sources {
+        let model_matrix = generate_model_matrix(&view_source);        
         views.extend_from_slice(&model_matrix.to_cols_array());
+
         model_matrices.push(model_matrix);
+
+        instances.push(ObjectInstance {
+            view_source,
+            is_moving: false,
+            move_target: glam::Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+            move_direction_normalized: glam::Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+            x_move_done: false,
+            y_move_done: false,
+            z_move_done: false
+        });
     }
 
     let views_size = views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
 
-    let views_amount = view_sources.len() as u32;
+    let instances_amount = instances.len() as u32;
 
     Object {
         name: name.to_owned(),
-        meshes,        
+        meshes,
         instance_buffer,
         texture_bind_groups,
-        view_sources,
+        instances,
         model_matrices,
         views,
         views_size,
-        views_amount,
+        instances_amount,
         test_point
     }
 }

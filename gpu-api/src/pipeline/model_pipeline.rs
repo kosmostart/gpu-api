@@ -42,13 +42,13 @@ impl Pipeline {
             }
             
             for object in &object_group.objects {
-                if object.views_amount == 0 {
+                if object.instances_amount == 0 {
                     continue;
                 }
                 
                 render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
                         
-                let instances_range = 0..object.views_amount;
+                let instances_range = 0..object.instances_amount;
                 
                 for mesh in &object.meshes {
                     for primitive in &mesh.primitives {
