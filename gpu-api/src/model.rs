@@ -45,7 +45,13 @@ pub struct ObjectInstance {
     pub move_direction_normalized: glam::Vec3,
     pub x_move_done: bool,
     pub y_move_done: bool,
-    pub z_move_done: bool
+    pub z_move_done: bool,
+    pub bounding_box: BoundingBox
+}
+
+pub struct BoundingBox {
+    pub box0: glam::Vec3,
+    pub box1: glam::Vec3
 }
 
 pub struct Object {
@@ -57,8 +63,7 @@ pub struct Object {
     pub texture_bind_groups: Vec<BindGroup>,
     pub views: Vec<f32>,
     pub views_size: u64,
-    pub instances_amount: u32,
-    pub test_point: [f32; 3]
+    pub instances_amount: u32    
 }
 
 impl Object {
@@ -85,9 +90,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
 }
 
 pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, name: &str, model_data: ModelData, view_sources: Vec<ViewSource>) -> Object {
-    let mut meshes = vec![];
-
-    let test_point = model_data.meshes[0].primitives[0].positions[0];
+    let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
         let mut primitives = vec![];
@@ -199,11 +202,15 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         instances.push(ObjectInstance {
             view_source,
             is_moving: false,
-            move_target: glam::Vec3 { x: 0.0, y: 0.0, z: 0.0 },
-            move_direction_normalized: glam::Vec3 { x: 0.0, y: 0.0, z: 0.0 },
+            move_target: glam::vec3(0.0, 0.0, 0.0),
+            move_direction_normalized: glam::vec3(0.0, 0.0, 0.0),
             x_move_done: false,
             y_move_done: false,
-            z_move_done: false
+            z_move_done: false,
+            bounding_box: BoundingBox { 
+                box0: glam::vec3(0.0, 0.0, 0.0),
+                box1: glam::vec3(0.0, 0.0, 0.0)
+            }
         });
     }
 
@@ -220,7 +227,6 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         model_matrices,
         views,
         views_size,
-        instances_amount,
-        test_point
+        instances_amount        
     }
 }
