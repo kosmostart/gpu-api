@@ -97,7 +97,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
         for primitive in mesh.primitives {
             let mut index = 0;
-            let mut vertices = vec![];	        
+            let mut vertices = vec![];
 
             for position in primitive.positions {
                 vertices.push(model_pipeline::Vertex {
