@@ -200,7 +200,7 @@ async fn run() {
         objects: vec![]
     };
     
-    let model_data = model_load::load("knight", "../models/knight/knight.gltf");
+    let model_data = model_load::load("paladin", "../models/paladin/paladin.glb");
     
     let view_source = ViewSource {
         x: 13.0,

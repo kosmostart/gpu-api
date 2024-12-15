@@ -1,15 +1,15 @@
 use std::io::Write;
 use log::*;
-use model_load::gpu_api_dto::rkyv;
+use model_load::gpu_api_dto::{self, rkyv};
 
 fn main() {
     env_logger::init();
 
-    process_model("plane");    
+    process_model("box", "glb");    
 }
 
-fn process_model(model_name: &str) {    
-    let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.gltf", model_name));
+fn process_model(model_name: &str, extension: &str) {    
+    let mut model_data = model_load::load(model_name, &format!("../models/{0}/{0}.{1}", model_name, extension));
     let mut texture_index = 0;
 
     for texture in &mut model_data.textures {
@@ -28,7 +28,8 @@ fn process_model(model_name: &str) {
     
     let mut file = std::fs::File::create(&format!("{}.model", model_name)).expect("Failed to create file");    
 
-    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&model_data).expect("Failed to serialize model data");
+    //let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&model_data).expect("Failed to serialize model data");
+    let bytes = gpu_api_dto::bitcode::encode(&model_data);
 
     let res = file.write_all(&bytes).expect("Failed to write model data to file");
     info!("{:?}", res);

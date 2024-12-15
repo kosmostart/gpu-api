@@ -1,19 +1,21 @@
+use bitcode::{Encode, Decode};
 use rkyv::{Archive, Serialize, Deserialize};
+pub use bitcode;
 pub use rkyv;
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct ModelData {
     pub name: String,
 	pub meshes: Vec<MeshData>,
     pub textures: Vec<TextureData>
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct MeshData {
 	pub primitives: Vec<PrimitiveData>
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct PrimitiveData {
 	pub positions: Vec<[f32; 3]>,
 	pub indices: Vec<u32>,
@@ -30,7 +32,7 @@ pub struct PrimitiveData {
     pub emmisive_texture_index: Option<usize>
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct TextureData {
     pub index: usize,
     pub format: String,
@@ -39,7 +41,7 @@ pub struct TextureData {
     pub pixels: Option<Vec<u8>>    
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,
@@ -49,7 +51,6 @@ pub struct ViewSource {
     pub scale_z: f32
 }
 
-pub fn deserialize_model_data(buf: &[u8]) -> ModelData {
-    let archived = unsafe { rkyv::access_unchecked::<ArchivedModelData>(buf) };
-    rkyv::deserialize::<ModelData, rkyv::rancor::Error>(archived).expect("Failed to deserialize model data")
+pub fn deserialize_model_data(buf: &[u8]) -> ModelData {    
+    bitcode::decode(&buf).expect("Failed to deserialize model data")
 }
