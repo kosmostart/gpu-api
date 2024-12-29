@@ -66,7 +66,9 @@ pub fn new(device: &Device, queue: &Queue, vertices: &Vec<Vertex>, indices: &Vec
     );    
 
     let diffuse_bytes = include_bytes!("../../../textures/happy-tree.png");
-    let diffuse_texture = crate::texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
+
+    let img = image::load_from_memory(diffuse_bytes).expect("Failed to load texture");
+    let diffuse_texture = crate::texture::Texture::from_image(&device, &queue, &img, Some("happy-tree.png")).expect("Failed to create texture from image");
 
     let texture_bind_group_layout = device.create_bind_group_layout(        
         &wgpu::BindGroupLayoutDescriptor {

@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
@@ -89,7 +91,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, name: &str, model_data: ModelData, view_sources: Vec<ViewSource>) -> Object {
+pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, name: &str, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -150,44 +152,66 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         mapped_at_creation: false
     });
 
-    let mut texture_bind_groups = vec![];    
+    let mut texture_bind_groups = vec![];
 
-    for texture_item in model_data.textures {
-        let index_str = texture_item.index.to_string();        
-
-        let texture_image = match texture_item.format.as_ref() {
-            "R8G8B8A8" => {
-                let image_buffer = ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer");
-                DynamicImage::ImageRgba8(image_buffer)
-            }
-            _ => {
-                let image_buffer = ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer");                
-                DynamicImage::ImageRgb8(image_buffer)
-            }
-        };
-
-        let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");        
-
-        let texture_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture.view),
-                        //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(sampler)
+    match loaded_images {
+        Some(loaded_images) => {
+            for texture_item in model_data.textures {
+                let index_str = texture_item.index.to_string();                            
+        
+                let texture = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.index], Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+        
+                let texture_bind_group = device.create_bind_group(
+                    &wgpu::BindGroupDescriptor {
+                        layout: texture_bind_group_layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(&texture.view),
+                                //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(sampler)
+                            }
+                        ],
+                        label: Some(&("texture_bind_group_".to_owned() + &index_str)),
                     }
-                ],
-                label: Some(&("texture_bind_group_".to_owned() + &index_str)),
+                );
+        
+                texture_bind_groups.push(texture_bind_group);        
             }
-        );
+        }
+        None => {
+            for texture_item in model_data.textures {
+                let index_str = texture_item.index.to_string();                        
 
-        texture_bind_groups.push(texture_bind_group);        
-    }
+                let texture_image = image::load_from_memory(texture_item.image_encoded.as_ref().expect("Image encoded is empty")).expect("Failed to load texture");
+        
+                let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+        
+                let texture_bind_group = device.create_bind_group(
+                    &wgpu::BindGroupDescriptor {
+                        layout: texture_bind_group_layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(&texture.view),
+                                //resource: wgpu::BindingResource::TextureViewArray(&textures.iter().map(|v| &v.view).collect::<Vec<&TextureView>>())
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(sampler)
+                            }
+                        ],
+                        label: Some(&("texture_bind_group_".to_owned() + &index_str)),
+                    }
+                );
+        
+                texture_bind_groups.push(texture_bind_group);
+            }
+        }
+    }    
 
     let mut views = vec![];
     let mut model_matrices = vec![];

@@ -1,4 +1,3 @@
-use gpu_api_dto::rkyv::{Archive, Serialize, Deserialize};
 use image::{GenericImageView, ImageError};
 use wgpu::{Device, Sampler};
 
@@ -7,12 +6,7 @@ pub struct Texture {
     pub view: wgpu::TextureView    
 }
 
-impl Texture {
-    pub fn from_bytes(device: &Device, queue: &wgpu::Queue, bytes: &[u8], label: &str) -> Result<Self, ImageError> {
-        let img = image::load_from_memory(bytes)?;
-        Texture::from_image(device, queue, &img, Some(label))
-    }
-
+impl Texture {    
     pub fn from_image(device: &wgpu::Device, queue: &wgpu::Queue, img: &image::DynamicImage, label: Option<&str>) -> Result<Self, ImageError> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();

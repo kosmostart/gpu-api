@@ -1,6 +1,7 @@
-use std::io::{Write, Read};
+use std::io::{Cursor, Read, Write};
+use image::{DynamicImage, Rgb, Rgba};
 use log::*;
-use gltf::{mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
+use gltf::{image::Format, mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
 use gpu_api_dto::{ModelData, MeshData, PrimitiveData, TextureData};
 pub use gpu_api_dto;
 
@@ -16,7 +17,7 @@ fn nodes(node: Node, node_level: usize) {
     }
 }
 
-pub fn load(model_name: &str, model_path: &str) -> ModelData {
+pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>) {
     info!("Loading model {} from path {}", model_name, model_path);    
     let (document, buffers, images) = gltf::import(model_path).expect("Model import failed");
 
@@ -301,6 +302,7 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
 
     let mut textures = vec![];
     let mut texture_index = 0;
+    let mut loaded_images = vec![];
 
     for texture in document.textures() {
         info!("Found texture");
@@ -310,23 +312,28 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
 
         info!("Model {} image, format {:?}, width {}, height {}", model_name, image_gltf_data.format, image_gltf_data.width, image_gltf_data.height);
 
-        //let mut file = std::fs::File::create(&image_index.to_string()).expect("Failed to image create file");
+        //let bytes_byffer = vec![];
+        //let mut cursor = Cursor::new(bytes_byffer);        
 
-        //file.write_all(&image_gltf_data.pixels).expect("Failed to write image pixes to file");
+        match image_gltf_data.format {
+            Format::R8G8B8A8 => {
+                let image_buffer = image::ImageBuffer::from_raw(image_gltf_data.width, image_gltf_data.height, image_gltf_data.pixels.clone()).expect("Failed to create image buffer");
+                //image_buffer.write_to(&mut cursor, image::ImageFormat::Png).expect("Failed to write image to buffer");        
+                loaded_images.push(DynamicImage::ImageRgba8(image_buffer));
+            }
+            _ => {
+                let image_buffer = image::ImageBuffer::from_raw(image_gltf_data.width, image_gltf_data.height, image_gltf_data.pixels.clone()).expect("Failed to create image buffer");
+                //image_buffer.write_to(&mut cursor, image::ImageFormat::Png).expect("Failed to write image to buffer");        
+                loaded_images.push(DynamicImage::ImageRgb8(image_buffer));
+            }
+        }        
 
-        //image::ImageBuffer::from_raw(texture_item.width, texture_item.height, texture_item.pixels.expect("Texture pixels are empty")).expect("Failed to create image buffer")
-        
-        //let mut file = std::fs::File::open(&image_index.to_string()).expect("Failed to open image file");
-        //let mut q = vec![];
-
-        //file.read_to_end(&mut q).unwrap();
-        
         textures.push(TextureData {
             index: texture_index,
             format: format!("{:?}", image_gltf_data.format),
             width: image_gltf_data.width,
             height: image_gltf_data.height,
-            pixels: Some(image_gltf_data.pixels.clone())
+            image_encoded: None
         });
 
         texture_index = texture_index + 1;
@@ -376,9 +383,9 @@ pub fn load(model_name: &str, model_path: &str) -> ModelData {
         }
     }
 
-    ModelData {
+    (ModelData {
         name: model_name.to_owned(),
         meshes,
         textures
-    }
+    }, loaded_images)
 }

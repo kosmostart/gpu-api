@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 
 log = "*"
+image = "*"
 gltf = { version = "*", features = ["KHR_materials_pbrSpecularGlossiness"] }
 gpu-api-dto = { path = "../gpu-api-dto" }

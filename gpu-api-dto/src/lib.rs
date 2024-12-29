@@ -1,21 +1,19 @@
 use bitcode::{Encode, Decode};
-use rkyv::{Archive, Serialize, Deserialize};
 pub use bitcode;
-pub use rkyv;
 
-#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct ModelData {
     pub name: String,
 	pub meshes: Vec<MeshData>,
     pub textures: Vec<TextureData>
 }
 
-#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct MeshData {
 	pub primitives: Vec<PrimitiveData>
 }
 
-#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct PrimitiveData {
 	pub positions: Vec<[f32; 3]>,
 	pub indices: Vec<u32>,
@@ -32,16 +30,16 @@ pub struct PrimitiveData {
     pub emmisive_texture_index: Option<usize>
 }
 
-#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Encode, Decode, Debug, Clone)]
 pub struct TextureData {
     pub index: usize,
     pub format: String,
     pub width: u32,
     pub height: u32,
-    pub pixels: Option<Vec<u8>>    
+    pub image_encoded: Option<Vec<u8>>
 }
 
-#[derive(Encode, Decode, Archive, Serialize, Deserialize, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(Encode, Decode, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,

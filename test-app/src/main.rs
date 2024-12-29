@@ -200,7 +200,7 @@ async fn run() {
         objects: vec![]
     };
     
-    let model_data = model_load::load("paladin", "../models/paladin/paladin.glb");
+    let (model_data, loaded_images) = model_load::load("paladin", "../models/paladin/paladin.glb");
     
     let view_source = ViewSource {
         x: 13.0,
@@ -211,10 +211,10 @@ async fn run() {
         scale_z: 10.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "knight", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "knight", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
-    let model_data = model_load::load("overlord", "../models/overlord/overlord.gltf");
+    let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
         x: -25.0,
@@ -225,12 +225,12 @@ async fn run() {
         scale_z: 0.1
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "overlord", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
     
 /*
-    let model_data = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
+    let (model_data, loaded_images) = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
     
     let view_source = ViewSource {
         x: 10.0,
@@ -241,10 +241,10 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "helm", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "helm", model_data, Some(loaded_images), vec![view_source]);
     objects.push(object);
 */
-    let model_data = model_load::load("duck", "../models/duck/duck.gltf");
+    let (model_data, loaded_images) = model_load::load("duck", "../models/duck/duck.gltf");
     
     let view_source = ViewSource {
         x: -20.0,
@@ -255,10 +255,10 @@ async fn run() {
         scale_z: 0.02
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "duck", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "duck", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
-    let model_data = model_load::load("plane", "../models/plane/plane.gltf");
+    let (model_data, loaded_images) = model_load::load("plane", "../models/plane/plane.gltf");
     
     let view_source = ViewSource {
         x: -5.0,
@@ -269,10 +269,10 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "plane", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "plane", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
-    let model_data = model_load::load("box", "../models/box/box.glb");
+    let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
     
     let view_source = ViewSource {
         x: -10.0,
@@ -283,10 +283,10 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "box", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
-    let model_data = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
+    let (model_data, loaded_images) = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
     
     let view_source = ViewSource {
         x: 5.0,
@@ -297,7 +297,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, "animated-cube", model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
     let mut object_groups = vec![];

@@ -10,4 +10,5 @@ edition = "2021"
 log = "*"
 env_logger = "*"
 serde_json = "*"
+image = "*"
 model-load = { path = "../model-load" }

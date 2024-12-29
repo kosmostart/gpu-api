@@ -8,6 +8,5 @@ edition = "2021"
 [dependencies]
 
 bitcode = "*"
-rkyv = "*"
 serde = "*"
 serde_derive = "*"
