@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
@@ -91,7 +89,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, name: &str, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
+pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -184,9 +182,11 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         }
         None => {
             for texture_item in model_data.textures {
-                let index_str = texture_item.index.to_string();                        
+                let index_str = texture_item.index.to_string();
 
-                let texture_image = image::load_from_memory(texture_item.image_encoded.as_ref().expect("Image encoded is empty")).expect("Failed to load texture");
+                log::warn!("{} {}", model_data.name, texture_item.image_encoded.as_ref().unwrap().len());
+
+                let texture_image = image::load_from_memory_with_format(texture_item.image_encoded.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");
         
                 let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
         
@@ -243,7 +243,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
     let instances_amount = instances.len() as u32;
 
     Object {
-        name: name.to_owned(),
+        name: model_data.name,
         meshes,
         instance_buffer,
         texture_bind_groups,
