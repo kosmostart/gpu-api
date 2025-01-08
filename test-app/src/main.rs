@@ -200,6 +200,7 @@ async fn run() {
         objects: vec![]
     };        
 
+    /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
@@ -213,6 +214,7 @@ async fn run() {
     
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
+    */
 
     
 /*
@@ -244,6 +246,8 @@ async fn run() {
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);    
 
+    /*
+
     let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
     
     let view_source = ViewSource {
@@ -267,10 +271,12 @@ async fn run() {
         scale_x: 1.0,
         scale_y: 1.0,
         scale_z: 1.0
-    };
+    };    
 
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
+
+    */
 
     let mut object_groups = vec![];
     object_groups.push(object_group);

@@ -62,6 +62,8 @@ pub fn screen_to_ray_direction(camera: &Camera, width: f32, height: f32, x: f32,
     let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
 
     let mut ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;
+
+    // !!! This is not obvious, but very important. !!!
     ray_near_eye.w = 0.0;
 
     let ray_near_world = camera.view.inverse() * ray_near_eye;

@@ -5,7 +5,8 @@ pub use bitcode;
 pub struct ModelData {
     pub name: String,
 	pub meshes: Vec<MeshData>,
-    pub textures: Vec<TextureData>
+    pub textures: Vec<TextureData>,
+    pub animations: Vec<Animation>
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
@@ -28,6 +29,16 @@ pub struct PrimitiveData {
     pub normal_texture_index: Option<usize>,
     pub occlusion_texture_index: Option<usize>,
     pub emmisive_texture_index: Option<usize>
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub struct Animation {
+    pub name: String,
+    pub timestamps: Vec<f32>,
+    pub translations: Vec<[f32; 3]>,
+    pub rotations: Vec<[f32; 4]>,
+    pub scales: Vec<[f32; 3]>,
+    pub weight_morphs: Vec<f32>
 }
 
 #[derive(Encode, Decode, Debug, Clone)]

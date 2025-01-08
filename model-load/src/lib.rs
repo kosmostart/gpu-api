@@ -2,7 +2,7 @@ use std::io::{Cursor, Read, Write};
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
 use gltf::{image::Format, mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
-use gpu_api_dto::{ModelData, MeshData, PrimitiveData, TextureData};
+use gpu_api_dto::{Animation, MeshData, ModelData, PrimitiveData, TextureData};
 pub use gpu_api_dto;
 
 fn nodes(node: Node, node_level: usize) {
@@ -339,53 +339,118 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         texture_index = texture_index + 1;
     }
 
+    let mut animations = vec![];
+
     for animation in document.animations() {
         info!("Found animation, channels {}, samplers {}", animation.channels().count(), animation.samplers().count());
         
         for channel in animation.channels() {
             let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
 
-            match reader.read_inputs() {
+            let timestamps = match reader.read_inputs() {
                 Some(inputs) => {
                     match inputs {
                         gltf::accessor::Iter::Standard(times) => {
-                            let times: Vec<f32> = times.collect();
-                            info!("Time: {}", times.len());                        
+                            let times: Vec<f32> = times.collect();                            
+                            times
                         }
                         gltf::accessor::Iter::Sparse(_) => {
                             info!("Sparse keyframes not supported");
+                            vec![]
                         }
                     }
                 }
-                None => {}                
+                None => {
+                    info!("Empty animations timestamps");
+                    vec![]
+                }
             };
     
-            let mut keyframes_vec = vec![];
+            let mut translations = vec![];
+            let mut rotations = vec![];
+            let mut scales = vec![];            
+            let mut weight_morphs = vec![];
 
             match reader.read_outputs() {
                 Some(outputs) => {
                     match outputs {
-                        gltf::animation::util::ReadOutputs::Translations(translation) => {
-                            translation.for_each(|tr| {                                
-                                let vector: Vec<f32> = tr.into();
-                                keyframes_vec.push(vector);
-                            });
-                        }                        
-                        gltf::animation::util::ReadOutputs::Rotations(_) => {}
-                        gltf::animation::util::ReadOutputs::Scales(_) => {}
-                        gltf::animation::util::ReadOutputs::MorphTargetWeights(_) => {}
+                        gltf::animation::util::ReadOutputs::Translations(translation_iterator) => {
+                            for value in translation_iterator {
+                                translations.push(value);                                
+                            }
+                        }             
+                        gltf::animation::util::ReadOutputs::Rotations(rotation) => {
+                            match rotation {
+                                gltf::animation::util::Rotations::I8(rotation_iterator) => {
+                                    info!("I8 rotations not supported");
+                                }
+                                gltf::animation::util::Rotations::U8(rotation_iterator) => {
+                                    info!("U8 rotations not supported");
+                                }
+                                gltf::animation::util::Rotations::I16(rotation_iterator) => {
+                                    info!("I16 rotations not supported");
+                                }
+                                gltf::animation::util::Rotations::U16(rotation_iterator) => {
+                                    info!("U16 rotations not supported");
+                                }
+                                gltf::animation::util::Rotations::F32(rotation_iterator) => {
+                                    for value in rotation_iterator {
+                                        rotations.push(value);                                
+                                    }
+                                }
+                            }
+                        }
+                        gltf::animation::util::ReadOutputs::Scales(scale_iterator) => {
+                            for value in scale_iterator {
+                                scales.push(value);                                
+                            }
+                        }
+                        gltf::animation::util::ReadOutputs::MorphTargetWeights(morph_target_weights) => {
+                            match morph_target_weights {
+                                gltf::animation::util::MorphTargetWeights::I8(morph_iterator) => {
+                                    info!("I8 rotations not supported");
+                                }
+                                gltf::animation::util::MorphTargetWeights::U8(morph_iterator) => {
+                                    info!("U8 rotations not supported");
+                                }
+                                gltf::animation::util::MorphTargetWeights::I16(morph_iterator) => {
+                                    info!("I16 rotations not supported");
+                                }
+                                gltf::animation::util::MorphTargetWeights::U16(morph_iterator) => {
+                                    info!("U16 rotations not supported");
+                                }
+                                gltf::animation::util::MorphTargetWeights::F32(morph_iterator) => {
+                                    for value in morph_iterator {
+                                        weight_morphs.push(value);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 None => {}
             };
     
-            info!("Keyframes: {}", keyframes_vec.len());
+            info!("Translations: {}", translations.len());
+            info!("Rotations: {}", rotations.len());
+            info!("Scales: {}", scales.len());
+            info!("Weight morphs: {}", weight_morphs.len());
+
+            animations.push(Animation {
+                name: animation.name().unwrap_or("Default").to_owned(),
+                timestamps,
+                translations,
+                rotations,
+                scales,
+                weight_morphs             
+            })
         }
     }
 
     (ModelData {
         name: model_name.to_owned(),
         meshes,
-        textures
+        textures,
+        animations
     }, loaded_images)
 }
