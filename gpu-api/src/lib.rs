@@ -10,6 +10,7 @@ pub use image;
 use log::warn;
 pub use wgpu;
 
+pub mod frame_counter;
 pub mod texture;
 pub mod camera;
 pub mod instance;

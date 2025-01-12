@@ -1,13 +1,12 @@
 use std::sync::Arc;
-use std::collections::HashMap;
 use log::*;
-use winit::{dpi::{LogicalSize, PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, window::Window};
+use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, model::{self, create_object, ObjectGroup}, pipeline::{self, quad_pipeline}};
+use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationChannelPayload, model::{create_object, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -198,7 +197,12 @@ async fn run() {
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    };        
+    };
+
+    let mut model_animations_group = ModelAnimationsGroup {
+        active: true,
+        model_animations: vec![]
+    };
 
     /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
@@ -232,6 +236,8 @@ async fn run() {
     let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     objects.push(object);
 */
+
+
     let (model_data, loaded_images) = model_load::load("knight", "../models/knight/knight.gltf");
     
     let view_source = ViewSource {
@@ -243,11 +249,11 @@ async fn run() {
         scale_z: 5.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);    
+    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    object_group.objects.push(object);
+    model_animations_group.model_animations.push(model_animations);
 
-    /*
-
+    /*    
     let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
     
     let view_source = ViewSource {
@@ -259,8 +265,13 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
+    model_animations_group.model_animations.push(model_animations);
+
+    */
+
+    /*    
 
     let (model_data, loaded_images) = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
     
@@ -273,13 +284,16 @@ async fn run() {
         scale_z: 1.0
     };    
 
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
+    model_animations_group.model_animations.push(model_animations);
 
     */
 
     let mut object_groups = vec![];
+    let mut model_animations_groups = vec![];
     object_groups.push(object_group);
+    model_animations_groups.push(model_animations_group);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
 
@@ -339,7 +353,9 @@ async fn run() {
         }        
     ];
 
-    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);    
+    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
+
+    let mut frame_counter = FrameCounter::new();
 
     event_loop.run(move |event, target| {        
         target.set_control_flow(ControlFlow::Wait);
@@ -440,8 +456,55 @@ async fn run() {
                         warn!("{:?}", event);                    
                     }
                     WindowEvent::RedrawRequested => {
-                        info!("Redraw requested");                
-        
+                        //info!("Redraw requested");
+                        
+                        for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
+                            for channel in &mut animation.channels {
+                                let current_time = channel.start_instant.elapsed().as_secs_f32();                        
+
+                                let mut frame_index = channel.frame_index;
+
+                                for q in channel.timestamps.iter().skip(frame_index) {
+                                    if q > &current_time {
+                                        break;
+                                    }
+                                    
+                                    frame_index = frame_index + 1;
+                                }
+
+                                if frame_index < channel.timestamps.len() {
+                                    match &channel.payload {
+                                        AnimationChannelPayload::Translations(translations) => {
+                                            let translation = translations[frame_index];
+                                            object_groups[0].objects[0].update_view_with_translation(&translation);
+                                        }
+                                        AnimationChannelPayload::Rotations(rotations) => {
+                                            let rotation = rotations[frame_index];
+                                            object_groups[0].objects[0].update_view_with_rotation(&rotation);
+                                        }
+                                        AnimationChannelPayload::Scales(scales) => {
+                                            let scale = scales[frame_index];
+                                            object_groups[0].objects[0].update_view_with_scale(&scale);
+                                        }
+                                        AnimationChannelPayload::WeightMorphs(weight_morphs) => {
+                                            let weight_morph = weight_morphs[frame_index];
+                                        }
+                                        _ => {}
+                                    }                                    
+                                } else {
+                                    channel.frame_index = 0;
+
+                                    #[cfg(not(target_arch = "wasm32"))] {
+                                        channel.start_instant = std::time::Instant::now();
+                                    }
+                                    
+                                    #[cfg(target_arch = "wasm32")] {
+                                        channel.start_instant = web_time::Instant::now();
+                                    }
+                                }
+                            }
+                        }                                                                                     
+                                
                         // Get a command encoder for the current frame
                         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                 label: Some("Redraw")
@@ -452,7 +515,7 @@ async fn run() {
                         let frame = surface.get_current_texture().expect("Get next frame");                        
                         let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
                         texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
-                        let view = &frame.texture.create_view(&texture_view_descriptor);
+                        let view = &frame.texture.create_view(&texture_view_descriptor);                        
         
                         {
                             let mut uniform_buffer = staging_belt.write_buffer(
@@ -569,7 +632,11 @@ async fn run() {
                         staging_belt.finish();
                         queue.submit(Some(encoder.finish()));
                         frame.present();
-                        staging_belt.recall();          
+                        staging_belt.recall();
+
+                        frame_counter.update();
+
+                        window.request_redraw();     
                     }              
                     _ => {}
                 }

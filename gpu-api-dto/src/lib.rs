@@ -34,11 +34,21 @@ pub struct PrimitiveData {
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct Animation {
     pub name: String,
+    pub channels: Vec<AnimationChannel>
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub struct AnimationChannel {    
     pub timestamps: Vec<f32>,
-    pub translations: Vec<[f32; 3]>,
-    pub rotations: Vec<[f32; 4]>,
-    pub scales: Vec<[f32; 3]>,
-    pub weight_morphs: Vec<f32>
+    pub payload: AnimationChannelPayload
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub enum AnimationChannelPayload {
+    Translations(Vec<[f32; 3]>),
+    Rotations(Vec<[f32; 4]>),
+    Scales(Vec<[f32; 3]>),
+    WeightMorphs(Vec<f32>)
 }
 
 #[derive(Encode, Decode, Debug, Clone)]

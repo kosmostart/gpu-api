@@ -20,6 +20,7 @@ wgpu = "*"
 tokio = { version = "*", features = ["rt-multi-thread"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "*"
 console_error_panic_hook = "*"
 console_log = "*"
 wasm-bindgen = "*"

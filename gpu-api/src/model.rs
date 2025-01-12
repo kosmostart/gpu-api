@@ -1,7 +1,7 @@
 use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{ModelData, ViewSource};
+use gpu_api_dto::{Animation, AnimationChannelPayload, ModelData, ViewSource};
 use crate::{pipeline::model_pipeline};
 
 pub const MODEL_MATRIX_ELEMENT_SIZE: u64 = 4;
@@ -38,6 +38,11 @@ pub struct ObjectGroup {
     pub objects: Vec<Object>
 }
 
+pub struct ModelAnimationsGroup {
+    pub active: bool,
+    pub model_animations: Vec<ModelAnimations>
+}
+
 pub struct ObjectInstance {
     pub view_source: ViewSource,
     pub is_moving: bool,
@@ -66,6 +71,25 @@ pub struct Object {
     pub instances_amount: u32    
 }
 
+pub struct ModelAnimations {
+    pub model_animations: Vec<ModelAnimation>
+}
+
+pub struct ModelAnimation {
+    pub name: String,
+    pub channels: Vec<ModelAnimationChannel>
+}
+
+pub struct ModelAnimationChannel {
+    pub timestamps: Vec<f32>,
+    pub payload: AnimationChannelPayload,
+    pub frame_index: usize,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub start_instant: std::time::Instant,
+    #[cfg(target_arch = "wasm32")]
+    pub start_instant: web_time::Instant
+}
+
 impl Object {
     pub fn update_view(&mut self) {
         self.views.clear();
@@ -80,16 +104,64 @@ impl Object {
         self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
+
+    pub fn update_view_with_translation(&mut self, translation: &[f32; 3]) {
+        self.views.clear();
+        self.model_matrices.clear();
+
+        let translation_matrix = glam::Mat4::from_translation(glam::Vec3::new(translation[0], translation[1], translation[2]));
+
+        for instance in &self.instances {
+            let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
+            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.model_matrices.push(model_matrix);
+        }
+
+        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.instances_amount = self.instances.len() as u32;
+    }
+
+    pub fn update_view_with_rotation(&mut self, rotation: &[f32; 4]) {
+        self.views.clear();
+        self.model_matrices.clear();
+
+        let rotation_matrix = glam::Mat4::from_quat(glam::quat(rotation[0], rotation[1], rotation[2], rotation[3]));
+
+        for instance in &self.instances {
+            let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
+            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.model_matrices.push(model_matrix);
+        }
+
+        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.instances_amount = self.instances.len() as u32;
+    }
+
+    pub fn update_view_with_scale(&mut self, scale: &[f32; 3]) {
+        self.views.clear();
+        self.model_matrices.clear();
+
+        let scale_matrix = glam::Mat4::from_scale(glam::Vec3::new(scale[0], scale[1], scale[2]));
+
+        for instance in &self.instances {
+            let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
+            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.model_matrices.push(model_matrix);
+        }
+
+        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.instances_amount = self.instances.len() as u32;
+    }
 }
 
-pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {    
+pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
-    let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));
+    let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));    
 
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
+pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> (Object, ModelAnimations) {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -242,7 +314,30 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let instances_amount = instances.len() as u32;
 
-    Object {
+    let mut model_animations = vec![];
+
+    for animation in model_data.animations {
+        let mut channels = vec![];
+
+        for channel in animation.channels {
+            channels.push(ModelAnimationChannel {
+                timestamps: channel.timestamps,
+                payload: channel.payload,
+                frame_index: 0,
+                #[cfg(not(target_arch = "wasm32"))]
+                start_instant: std::time::Instant::now(),
+                #[cfg(target_arch = "wasm32")]
+                start_instant: web_time::Instant::now()
+            });
+        }
+
+        model_animations.push(ModelAnimation {
+            name: animation.name,
+            channels            
+        });
+    }
+
+    (Object {
         name: model_data.name,
         meshes,
         instance_buffer,
@@ -252,5 +347,9 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         views,
         views_size,
         instances_amount        
-    }
+    },
+    ModelAnimations {
+        model_animations
+    })
 }
+
