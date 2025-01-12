@@ -31,6 +31,10 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
 
     info!("Found {} nodes", document.nodes().count());
 
+    for node in document.nodes() {
+        info!("Found node {:?}, index {}", node.name(), node.index());
+    }
+
     let mut meshes = vec![];    
 
     for mesh in document.meshes() {
@@ -69,6 +73,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
 
             match reader.read_indices() {
                 Some(iter) => {
+                    // Different type indexes should not intersect.
                     match iter {
                         ReadIndices::U8(dog) => {
                             for q in dog {
@@ -82,7 +87,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                         }
                         ReadIndices::U32(dog) => {
                             for q in dog {
-                                indices.push(q);
+                                indices.push(q as u32);
                             }
                         }
                     }
@@ -118,23 +123,76 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                     }
                 }
                 None => {}
+            }                                                
+
+            match reader.read_colors(0) {
+                Some(iter) => {}
+                None => {}
+            }
+
+            match reader.read_joints(0) {
+                Some(iter) => {                    
+                }
+                None => {}
+            }
+
+            let mut texture_coordinates = vec![];
+            
+            match reader.read_tex_coords(0) {
+                Some(coords) => {
+                    match coords {
+                        ReadTexCoords::F32(iter) => {
+                            for q in iter {                                
+                                texture_coordinates.push(q);
+                            }
+                        }
+                        ReadTexCoords::U8(iter) => {
+                            for q in iter {
+                                warn!("set 0 u8 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U16(iter) => {
+                            for q in iter {
+                                warn!("set 0 u16 {:?}", q);
+                            }
+                        }
+                    }
+                    
+                }
+                None => {}
             }            
 
-            /*
-            match reader.read_joints() {
-                Some(iter) => {}
+            match reader.read_tex_coords(1) {
+                Some(coords) => {
+                    match coords {
+                        ReadTexCoords::F32(iter) => {
+                            for q in iter {
+                                warn!("set 1 f32 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U8(iter) => {
+                            for q in iter {
+                                warn!("set 1 u8 {:?}", q);
+                            }
+                        }
+                        ReadTexCoords::U16(iter) => {
+                            for q in iter {
+                                warn!("set 1 u16 {:?}", q);
+                            }
+                        }
+                    }
+                    
+                }
+                None => {}
+            }                                
+            
+            match reader.read_weights(0) {
+                Some(iter) => {                    
+                }
                 None => {}
             }
-            */
 
-            //let iter = reader.read_morph_targets();
-
-            /*
-            match reader.read_weights() {
-                Some(iter) => {}
-                None => {}
-            }
-            */
+            reader.read_morph_targets();
 
             let mut pbr_specular_glossiness_diffuse_texture_index = None;
             let mut pbr_specular_glossiness_texture_index = None;
@@ -211,69 +269,12 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 }
             }
 
-            let mut texture_coordinates = vec![];
-            
-            match reader.read_tex_coords(0) {
-                Some(coords) => {
-                    match coords {
-                        ReadTexCoords::F32(iter) => {
-                            for q in iter {                                
-                                texture_coordinates.push(q);
-                            }
-                        }
-                        ReadTexCoords::U8(iter) => {
-                            for q in iter {
-                                warn!("set 0 u8 {:?}", q);
-                            }
-                        }
-                        ReadTexCoords::U16(iter) => {
-                            for q in iter {
-                                warn!("set 0 u16 {:?}", q);
-                            }
-                        }
-                    }
-                    
-                }
-                None => {}
-            }
-
-            match reader.read_tex_coords(1) {
-                Some(coords) => {
-                    match coords {
-                        ReadTexCoords::F32(iter) => {
-                            for q in iter {
-                                warn!("set 1 f32 {:?}", q);
-                            }
-                        }
-                        ReadTexCoords::U8(iter) => {
-                            for q in iter {
-                                warn!("set 1 u8 {:?}", q);
-                            }
-                        }
-                        ReadTexCoords::U16(iter) => {
-                            for q in iter {
-                                warn!("set 1 u16 {:?}", q);
-                            }
-                        }
-                    }
-                    
-                }
-                None => {}
-            }
-
-            /*
-            match reader.read_colors(0) {
-                Some(iter) => {}
-                None => {}
-            } 
-            */           
-
-            info!("{} positions total: {}", model_name, positions.len());
-            info!("{} indices total: {}", model_name, indices.len());
-            info!("{} normals total: {}", model_name, normals.len());
-            info!("{} tangents total: {}", model_name, tangents.len());
-            info!("{} bitangents total: {}", model_name, bitangents.len());
-            info!("{} texture coordinates total: {}", model_name, texture_coordinates.len());
+            info!("{}, mesh {:?} positions total: {}", model_name, mesh.name(), positions.len());
+            info!("{}, mesh {:?} indices total: {}", model_name, mesh.name(), indices.len());
+            info!("{}, mesh {:?} normals total: {}", model_name, mesh.name(), normals.len());
+            info!("{}, mesh {:?} tangents total: {}", model_name, mesh.name(), tangents.len());
+            info!("{}, mesh {:?} bitangents total: {}", model_name, mesh.name(), bitangents.len());
+            info!("{}, mesh {:?} texture coordinates total: {}", model_name, mesh.name(), texture_coordinates.len());
 
             primitives.push(PrimitiveData {
                 positions,
@@ -347,7 +348,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         let mut channels = vec![];
         
         for channel in animation.channels() {
-            info!("Found animation channel");
+            info!("Found animation channel");            
+
             let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
 
             let timestamps = match reader.read_inputs() {
