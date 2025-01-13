@@ -224,7 +224,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
                         }                        
                     ]
                 },
-                crate::instance::InstanceRaw::vertex_buffer_layout()
+                crate::model_instance::InstanceRaw::vertex_buffer_layout()
             ]
         },
         fragment: Some(wgpu::FragmentState {

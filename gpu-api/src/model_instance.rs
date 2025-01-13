@@ -1,14 +1,13 @@
 use std::mem;
-use log::*;
-
-pub const NUM_INSTANCES_PER_ROW: u32 = 1;
-pub const SPACE_BETWEEN: f32 = 3.0;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
+#[derive(Debug, Copy, Clone)]
 pub struct InstanceRaw {
-    model: [[f32; 4]; 4],
+    pub model_matrix: [f32; 16]    
 }
+
+unsafe impl bytemuck::Pod for InstanceRaw {}
+unsafe impl bytemuck::Zeroable for InstanceRaw {}
 
 impl InstanceRaw {
     pub fn vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {        
@@ -18,17 +17,12 @@ impl InstanceRaw {
             // This means that our shaders will only change to use the next
             // instance when the shader starts processing a new instance
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
+            attributes: &[                
                 wgpu::VertexAttribute {
                     offset: 0,
-                    // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
-                    // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
                     shader_location: 3,
                     format: wgpu::VertexFormat::Float32x4
                 },
-                // A mat4 takes up 4 vertex slots as it is technically 4 vec4s. We need to define a slot
-                // for each vec4. We'll have to reassemble the mat4 in
-                // the shader.
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
                     shader_location: 4,
@@ -43,7 +37,7 @@ impl InstanceRaw {
                     offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
                     shader_location: 6,
                     format: wgpu::VertexFormat::Float32x4
-                }
+                },
             ]
         }
     }

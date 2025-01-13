@@ -38,9 +38,17 @@ pub struct Animation {
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
-pub struct AnimationChannel {    
+pub struct AnimationChannel {
+    pub interpolation: Interpolation,    
     pub timestamps: Vec<f32>,
     pub payload: AnimationChannelPayload
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub enum Interpolation {
+    Linear,
+    Step,
+    CubicSpline
 }
 
 #[derive(Encode, Decode, Debug, Clone)]

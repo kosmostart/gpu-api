@@ -15,7 +15,10 @@ var<uniform> camera: CameraUniform;
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
     @location(1) texture_coordinates: vec2<f32>,
-    @location(2) normal: vec3<f32>
+    @location(2) normal: vec3<f32>,
+    //@location(3) tangent: vec4<f32>,
+    //@location(4) joints: vec4<u32>,
+    //@location(5) weights: vec4<f32>
 };
 
 struct FragmentInput {
@@ -34,15 +37,15 @@ struct InstanceInput {
 // Vertex shader
 @vertex
 //@stage(vertex)
-fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput {
+fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput {    
+    var fragment_input: FragmentInput;
+
     let model_matrix = mat4x4<f32>(
         instance.model_matrix_0,
         instance.model_matrix_1,
         instance.model_matrix_2,
-        instance.model_matrix_3,
+        instance.model_matrix_3
     );
-    
-    var fragment_input: FragmentInput;
 
     fragment_input.clip_position = camera.projection * model_matrix * vec4<f32>(vertex_input.position, 1.0);
     fragment_input.texture_coordinates = vertex_input.texture_coordinates;

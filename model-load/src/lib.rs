@@ -1,38 +1,48 @@
 use std::io::{Cursor, Read, Write};
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
-use gltf::{image::Format, mesh::{util::{ReadIndices, ReadTexCoords}, Mode}, Node};
-use gpu_api_dto::{Animation, AnimationChannel, AnimationChannelPayload, MeshData, ModelData, PrimitiveData, TextureData};
+use gltf::{image::Format, mesh::{util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}, Mode}, Node};
+use gpu_api_dto::{Animation, AnimationChannel, AnimationChannelPayload, Interpolation, MeshData, ModelData, PrimitiveData, TextureData};
 pub use gpu_api_dto;
-
-fn nodes(node: Node, node_level: usize) {
-    info!("Node level: {}, node name: {:?}, node index: {}", node_level, node.name(), node.index());
-    //info!("{:?}", node.mesh());
-    //info!("{:?}", node.camera());
-    info!("{:?}", node.transform());
-
-
-    for child_node in node.children() {        
-        nodes(child_node, node_level + 1);
-    }
-}
 
 pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>) {
     info!("Loading model {} from path {}", model_name, model_path);    
     let (document, buffers, images) = gltf::import(model_path).expect("Model import failed");
+    
+    info!("Found {} scenes", document.scenes().count());
 
-    //let mut node_level = 0;
-
-    //for node in gltf_data.nodes() {
-    //    nodes(node, node_level);
-    //}
-
-    //return;
+    for scene in document.scenes() {
+        info!("Found scene {:?}, index {}", scene.name(), scene.index());        
+    }
 
     info!("Found {} nodes", document.nodes().count());
 
     for node in document.nodes() {
-        info!("Found node {:?}, index {}", node.name(), node.index());
+        info!("Found node {:?}, index {}, mesh {:?}, skin {:?}, weights {:?}", 
+            node.name(), 
+            node.index(), 
+            node.mesh().map(|v| v.name()),
+            node.skin().map(|v| v.name()),
+            node.weights(),
+            //node.transform()
+        );
+    }
+
+    info!("Found {} skins", document.skins().count());
+
+    for skin in document.skins() {
+        info!("Found skin {:?}, index {}", skin.name(), skin.index());
+        for q in skin.joints() {
+            info!("Joint node {:?}, {:?}", q.name(), q.mesh());        
+        }
+
+        match skin.inverse_bind_matrices() {
+            Some(ibm) => {                
+            }
+            None => {
+                info!("IBM are empty");
+            }
+        }
     }
 
     let mut meshes = vec![];    
@@ -123,7 +133,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                     }
                 }
                 None => {}
-            }                                                
+            }
 
             match reader.read_colors(0) {
                 Some(iter) => {}
@@ -131,7 +141,19 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             }
 
             match reader.read_joints(0) {
-                Some(iter) => {                    
+                Some(joints) => {
+                    match joints {
+                        ReadJoints::U8(iter) => {
+                            info!("Joints count is {}", iter.count());
+                            //for q in iter {                                
+                            //}
+                        }
+                        ReadJoints::U16(iter) => {
+                            for q in iter {
+                                info!("Found u16 joint");
+                            }
+                        }
+                    }
                 }
                 None => {}
             }
@@ -187,8 +209,26 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             }                                
             
             match reader.read_weights(0) {
-                Some(iter) => {                    
+                Some(weights) => {
+                    match weights {
+                        ReadWeights::U8(iter) => {
+                            for q in iter {
+                                info!("Found u8 weight");
+                            }
+                        }
+                        ReadWeights::U16(iter) => {
+                            for q in iter {
+                                info!("Found u16 weight");
+                            }
+                        }
+                        ReadWeights::F32(iter) => {
+                            info!("Weights count is {}", iter.count());
+                            //for q in iter {                                
+                            //}
+                        }
+                    }
                 }
+                None => {}
                 None => {}
             }
 
@@ -348,7 +388,13 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         let mut channels = vec![];
         
         for channel in animation.channels() {
-            info!("Found animation channel");            
+            info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());
+
+            let interpolation = match channel.sampler().interpolation() {
+                gltf::animation::Interpolation::Linear => Interpolation::Linear,
+                gltf::animation::Interpolation::Step => Interpolation::Step,
+                gltf::animation::Interpolation::CubicSpline => Interpolation::CubicSpline
+            };
 
             let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
 
@@ -381,7 +427,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                 translations.push(value);                                
                             }
 
-                            info!("Translations: {}", translations.len());
+                            //info!("Translations: {}", translations.len());
 
                             AnimationChannelPayload::Translations(translations)
                         }
@@ -408,7 +454,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                 }
                             }
 
-                            info!("Rotations: {}", rotations.len());
+                            //info!("Rotations: {}", rotations.len());
 
                             AnimationChannelPayload::Rotations(rotations)
                         }
@@ -419,7 +465,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                 scales.push(value);                                
                             }
 
-                            info!("Scales: {}", scales.len());
+                            //info!("Scales: {}", scales.len());
 
                             AnimationChannelPayload::Scales(scales)
                         }
@@ -446,7 +492,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                 }
                             }
 
-                            info!("Weight morphs: {}", weight_morphs.len());
+                            //info!("Weight morphs: {}", weight_morphs.len());
 
                             AnimationChannelPayload::WeightMorphs(weight_morphs)
                         }
@@ -457,11 +503,12 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 }
             };                                                    
 
-            channels.push(AnimationChannel {                
+            channels.push(AnimationChannel {        
+                interpolation,        
                 timestamps,
                 payload
             })
-        }
+        }        
 
         animations.push(Animation {
             name: animation.name().unwrap_or("Default").to_owned(),

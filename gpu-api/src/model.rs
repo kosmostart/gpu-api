@@ -2,9 +2,9 @@ use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use gpu_api_dto::{Animation, AnimationChannelPayload, ModelData, ViewSource};
-use crate::{pipeline::model_pipeline};
+use crate::{model_instance::InstanceRaw, pipeline::model_pipeline};
 
-pub const MODEL_MATRIX_ELEMENT_SIZE: u64 = 4;
+pub const INSTANCE_SIZE: u64 = 64;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
 pub struct Mesh {
@@ -66,7 +66,7 @@ pub struct Object {
     pub instances: Vec<ObjectInstance>,
     pub model_matrices: Vec<Mat4>,
     pub texture_bind_groups: Vec<BindGroup>,
-    pub views: Vec<f32>,
+    pub views: Vec<InstanceRaw>,
     pub views_size: u64,
     pub instances_amount: u32    
 }
@@ -97,11 +97,13 @@ impl Object {
 
         for instance in &self.instances {
             let model_matrix = generate_model_matrix(&instance.view_source);
-            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.views.push(InstanceRaw {
+                model_matrix: model_matrix.to_cols_array()                
+            });
             self.model_matrices.push(model_matrix);
         }
 
-        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
@@ -113,11 +115,13 @@ impl Object {
 
         for instance in &self.instances {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
-            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.views.push(InstanceRaw {
+                model_matrix: model_matrix.to_cols_array()                
+            });
             self.model_matrices.push(model_matrix);
         }
 
-        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
@@ -129,11 +133,13 @@ impl Object {
 
         for instance in &self.instances {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
-            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.views.push(InstanceRaw {
+                model_matrix: model_matrix.to_cols_array()                
+            });
             self.model_matrices.push(model_matrix);
         }
 
-        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
@@ -145,11 +151,13 @@ impl Object {
 
         for instance in &self.instances {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
-            self.views.extend_from_slice(&model_matrix.to_cols_array());
+            self.views.push(InstanceRaw {
+                model_matrix: model_matrix.to_cols_array()                
+            });
             self.model_matrices.push(model_matrix);
         }
 
-        self.views_size = self.views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 }
@@ -217,7 +225,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Instance Buffer"),
-        size: MODEL_MATRIX_ELEMENT_SIZE * MAX_MODEL_AMOUNT,
+        size: INSTANCE_SIZE * MAX_MODEL_AMOUNT,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false
     });
@@ -291,7 +299,10 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     for view_source in view_sources {
         let model_matrix = generate_model_matrix(&view_source);        
-        views.extend_from_slice(&model_matrix.to_cols_array());
+
+        views.push(InstanceRaw {
+            model_matrix: model_matrix.to_cols_array()            
+        });
 
         model_matrices.push(model_matrix);
 
@@ -310,7 +321,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         });
     }
 
-    let views_size = views.len() as u64 * MODEL_MATRIX_ELEMENT_SIZE;
+    let views_size = views.len() as u64 * INSTANCE_SIZE;
 
     let instances_amount = instances.len() as u32;
 

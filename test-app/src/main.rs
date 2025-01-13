@@ -458,6 +458,7 @@ async fn run() {
                     WindowEvent::RedrawRequested => {
                         //info!("Redraw requested");
                         
+                        /*
                         for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
                             for channel in &mut animation.channels {
                                 let current_time = channel.start_instant.elapsed().as_secs_f32();                        
@@ -503,7 +504,8 @@ async fn run() {
                                     }
                                 }
                             }
-                        }                                                                                     
+                        }
+                        */
                                 
                         // Get a command encoder for the current frame
                         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
