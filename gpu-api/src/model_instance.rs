@@ -2,17 +2,17 @@ use std::mem;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct InstanceRaw {
-    pub model_matrix: [f32; 16]    
+pub struct ModelInstance {
+    pub model_matrix: [f32; 16]
 }
 
-unsafe impl bytemuck::Pod for InstanceRaw {}
-unsafe impl bytemuck::Zeroable for InstanceRaw {}
+unsafe impl bytemuck::Pod for ModelInstance {}
+unsafe impl bytemuck::Zeroable for ModelInstance {}
 
-impl InstanceRaw {
+impl ModelInstance {
     pub fn vertex_buffer_layout<'a>() -> wgpu::VertexBufferLayout<'a> {        
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<ModelInstance>() as wgpu::BufferAddress,
             // We need to switch from using a step mode of Vertex to Instance
             // This means that our shaders will only change to use the next
             // instance when the shader starts processing a new instance

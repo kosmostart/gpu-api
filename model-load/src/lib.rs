@@ -29,22 +29,28 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
     }
 
     info!("Found {} skins", document.skins().count());
+/*
+    let mut res_skins = vec![];
 
     for skin in document.skins() {
         info!("Found skin {:?}, index {}", skin.name(), skin.index());
-        for q in skin.joints() {
-            info!("Joint node {:?}, {:?}", q.name(), q.mesh());        
-        }
 
-        match skin.inverse_bind_matrices() {
-            Some(ibm) => {                
-            }
-            None => {
-                info!("IBM are empty");
-            }
-        }
+        let num_joints = skin.joints().count();
+        let reader = skin.reader(|b| Some(&buffers[b.index()][..b.length()]));
+
+        let inv_b_mats = if let Some(inv_b_mats) = reader.read_inverse_bind_matrices() {
+            inv_b_mats.map(|mat| Mat4::from_cols_array_2d(&mat)).collect()
+        } else {
+            // The inverse bind matrices are sometimes not provided. This has to
+            // be interpreted as all of them being the identity transform.
+            vec![Mat4::IDENTITY; num_joints]
+        };
+
+        let joints = skin.joints().map(|node| Labeled::new(Joint { node_idx: node.index() }, node.name())).collect();
+
+        res_skins.push(Labeled::new(Skin { inverse_bind_matrices: inv_b_mats, joints }, skin.name()))
     }
-
+*/
     let mut meshes = vec![];    
 
     for mesh in document.meshes() {
