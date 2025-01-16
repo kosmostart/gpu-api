@@ -182,21 +182,15 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 None => {}
             }
 
-            let mut tangents = vec![];
-            let mut bitangents = vec![];
-            
-            let mut index = 0;
+            let mut tangents = vec![];                           
 
             //bitangent = cross(normal.xyz, tangent.xyz) * tangent.w.
 
             match reader.read_tangents() {
-                Some(iter) => {
-                    for q in iter {
-                        tangents.push([q[0], q[1], q[2]]);
-                        let normal = normals[index];
-                        bitangents.push([normal[0] * q[0] * q[3], normal[1] * q[1] * q[3], normal[2] * q[2] * q[3]]);
-                        index = index + 1;
-                    }
+                Some(iter) => {                    
+                    for tangent in iter {
+                        tangents.push(tangent);                        
+                    }                    
                 }
                 None => {}
             }
@@ -213,7 +207,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                     match read_joints {
                         ReadJoints::U8(iter) => {                            
                             for joint in iter {
-                                joints.push(joint);
+                                joints.push([joint[0] as u32, joint[1] as u32, joint[2] as u32, joint[3] as u32]);
                             }
                         }
                         ReadJoints::U16(iter) => {
@@ -382,18 +376,22 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             info!("{}, mesh {:?} positions total: {}", model_name, mesh.name(), positions.len());
             info!("{}, mesh {:?} indices total: {}", model_name, mesh.name(), indices.len());
             info!("{}, mesh {:?} normals total: {}", model_name, mesh.name(), normals.len());
-            info!("{}, mesh {:?} tangents total: {}", model_name, mesh.name(), tangents.len());
-            info!("{}, mesh {:?} bitangents total: {}", model_name, mesh.name(), bitangents.len());
+            info!("{}, mesh {:?} tangents total: {}", model_name, mesh.name(), tangents.len());            
             info!("{}, mesh {:?} joints total: {}", model_name, mesh.name(), joints.len());
             info!("{}, mesh {:?} weights total: {}", model_name, mesh.name(), weights.len());
             info!("{}, mesh {:?} texture coordinates total: {}", model_name, mesh.name(), texture_coordinates.len());
+
+            if tangents.is_empty() {
+                for _ in 0..positions.len() {
+                    tangents.push([0.0, 0.0, 0.0, 0.0]);
+                }
+            }
 
             primitives.push(PrimitiveData {
                 positions,
                 indices,
                 normals,
-                tangents,
-                bitangents,
+                tangents,                
                 joints,
                 weights,
                 texture_coordinates,

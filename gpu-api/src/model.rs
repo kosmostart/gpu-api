@@ -183,7 +183,10 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                 vertices.push(model_pipeline::Vertex {
                     position,
                     texture_coordinates: primitive.texture_coordinates[index],
-                    normal: [1.0, 1.0, 1.0]                   
+                    normal: primitive.normals[index],
+                    tangent: primitive.tangents[index],
+                    joints: primitive.joints[index],
+                    weights: primitive.weights[index]
                 });
 
                 index = index + 1;

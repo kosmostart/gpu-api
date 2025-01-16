@@ -12,7 +12,10 @@ use crate::texture::Texture;
 pub struct Vertex {    
     pub position: [f32; 3],    
     pub texture_coordinates: [f32; 2],
-    pub normal: [f32; 3]
+    pub normal: [f32; 3],
+    pub tangent: [f32; 4],
+    pub joints: [u32; 4],
+    pub weights: [f32; 4]
 }
 
 unsafe impl bytemuck::Pod for Vertex {}
@@ -218,10 +221,43 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
                             format: wgpu::VertexFormat::Float32x2
                         },
                         wgpu::VertexAttribute {
-                            offset: (std::mem::size_of::<[f32; 3]>() + std::mem::size_of::<[f32; 2]>()) as wgpu::BufferAddress,
+                            offset: (
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 2]>()
+                            ) as wgpu::BufferAddress,
                             shader_location: 2,
                             format: wgpu::VertexFormat::Float32x3
-                        }                        
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 2]>() +
+                                std::mem::size_of::<[f32; 3]>()
+                            ) as wgpu::BufferAddress,
+                            shader_location: 3,
+                            format: wgpu::VertexFormat::Float32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 2]>() +
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 4]>()
+                            ) as wgpu::BufferAddress,
+                            shader_location: 4,
+                            format: wgpu::VertexFormat::Uint32x4
+                        },
+                        wgpu::VertexAttribute {
+                            offset: (
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 2]>() +
+                                std::mem::size_of::<[f32; 3]>() + 
+                                std::mem::size_of::<[f32; 4]>() + 
+                                std::mem::size_of::<[u32; 4]>()
+                            ) as wgpu::BufferAddress,
+                            shader_location: 5,
+                            format: wgpu::VertexFormat::Float32x4
+                        }
                     ]
                 },
                 crate::model_instance::ModelInstance::vertex_buffer_layout()
