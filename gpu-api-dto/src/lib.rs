@@ -21,6 +21,8 @@ pub struct PrimitiveData {
 	pub normals: Vec<[f32; 3]>,
 	pub tangents: Vec<[f32; 3]>,
 	pub bitangents: Vec<[f32; 3]>,
+    pub joints: Vec<[u8; 4]>,
+    pub weights: Vec<[f32; 4]>,
     pub texture_coordinates: Vec<[f32; 2]>,
     pub pbr_specular_glossiness_diffuse_texture_index: Option<usize>,
     pub pbr_specular_glossiness_texture_index: Option<usize>,

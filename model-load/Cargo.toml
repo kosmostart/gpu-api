@@ -9,5 +9,6 @@ edition = "2021"
 
 log = "*"
 image = "*"
+glam = "*"
 gltf = { version = "*", features = ["KHR_materials_pbrSpecularGlossiness"] }
 gpu-api-dto = { path = "../gpu-api-dto" }

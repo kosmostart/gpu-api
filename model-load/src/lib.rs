@@ -1,4 +1,5 @@
 use std::io::{Cursor, Read, Write};
+use glam::Vec4;
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
 use gltf::{image::Format, mesh::{util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}, Mode}, Node};
@@ -26,6 +27,16 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             node.weights(),
             //node.transform()
         );
+
+        let transform_matrix = node.transform().matrix();
+        let global_transform_matrix = glam::Mat4 {
+            x_axis: Vec4::from_array(transform_matrix[0]),
+            y_axis: Vec4::from_array(transform_matrix[1]),
+            z_axis: Vec4::from_array(transform_matrix[2]),
+            w_axis: Vec4::from_array(transform_matrix[3])
+        };
+
+        //let joint_matrix = node.inverse_transform * joint.global_transform_matrix * joint.inv_b_mats[index];
     }
 
     info!("Found {} skins", document.skins().count());
@@ -71,10 +82,26 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             pub joints: Vec<Joint>
         }
 
-        let joints = skin.joints().map(|node| Joint { 
-            node_index: node.index(),
-            node_name: node.name().map(|v| v.to_owned())
-        }).collect();
+        let mut joints = vec![];
+
+        let mut index = 0;        
+
+        for joint in skin.joints() {
+            let transform_matrix = joint.transform().matrix();
+            let global_transform_matrix = glam::Mat4 {
+                x_axis: Vec4::from_array(transform_matrix[0]),
+                y_axis: Vec4::from_array(transform_matrix[1]),
+                z_axis: Vec4::from_array(transform_matrix[2]),
+                w_axis: Vec4::from_array(transform_matrix[3])
+            };                        
+            
+            joints.push(Joint { 
+                node_index: joint.index(),
+                node_name: joint.name().map(|v| v.to_owned())
+            });
+
+            index = index + 1;
+        }        
 
         skins.push(Skin {
                 name: skin.name().map(|v| v.to_owned()),
@@ -179,13 +206,15 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 None => {}
             }
 
+            let mut joints = vec![];
+
             match reader.read_joints(0) {
-                Some(joints) => {
-                    match joints {
-                        ReadJoints::U8(iter) => {
-                            info!("Joints count is {}", iter.count());
-                            //for q in iter {                                
-                            //}
+                Some(read_joints) => {
+                    match read_joints {
+                        ReadJoints::U8(iter) => {                            
+                            for joint in iter {
+                                joints.push(joint);
+                            }
                         }
                         ReadJoints::U16(iter) => {
                             for q in iter {
@@ -245,11 +274,13 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                     
                 }
                 None => {}
-            }                                
+            }
+
+            let mut weights = vec![];
             
             match reader.read_weights(0) {
-                Some(weights) => {
-                    match weights {
+                Some(read_weights) => {
+                    match read_weights {
                         ReadWeights::U8(iter) => {
                             for q in iter {
                                 info!("Found u8 weight");
@@ -260,10 +291,10 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                 info!("Found u16 weight");
                             }
                         }
-                        ReadWeights::F32(iter) => {
-                            info!("Weights count is {}", iter.count());
-                            //for q in iter {                                
-                            //}
+                        ReadWeights::F32(iter) => {                            
+                            for weight in iter {
+                                weights.push(weight);
+                            }
                         }
                     }
                 }
@@ -353,6 +384,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             info!("{}, mesh {:?} normals total: {}", model_name, mesh.name(), normals.len());
             info!("{}, mesh {:?} tangents total: {}", model_name, mesh.name(), tangents.len());
             info!("{}, mesh {:?} bitangents total: {}", model_name, mesh.name(), bitangents.len());
+            info!("{}, mesh {:?} joints total: {}", model_name, mesh.name(), joints.len());
+            info!("{}, mesh {:?} weights total: {}", model_name, mesh.name(), weights.len());
             info!("{}, mesh {:?} texture coordinates total: {}", model_name, mesh.name(), texture_coordinates.len());
 
             primitives.push(PrimitiveData {
@@ -361,6 +394,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 normals,
                 tangents,
                 bitangents,
+                joints,
+                weights,
                 texture_coordinates,
                 pbr_specular_glossiness_diffuse_texture_index,
                 pbr_specular_glossiness_texture_index,
@@ -427,7 +462,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         let mut channels = vec![];
         
         for channel in animation.channels() {
-            info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());
+            info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());            
 
             let interpolation = match channel.sampler().interpolation() {
                 gltf::animation::Interpolation::Linear => Interpolation::Linear,
