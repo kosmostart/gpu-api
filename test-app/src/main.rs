@@ -568,14 +568,61 @@ async fn run() {
                         }
                         
                         {
-                            for object_group in &object_groups {
-                                for object in &object_group.objects {
+                            for object_group in &mut object_groups {
+                                for object in &mut object_group.objects {
                                     if object_group.active == false {
                                         continue;
                                     }
                                     
                                     if object.instances_amount == 0 {
                                         continue;
+                                    }
+                                    
+                                    for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
+                                        for channel in &mut animation.channels {
+                                            let current_time = channel.start_instant.elapsed().as_secs_f32();                        
+            
+                                            let mut frame_index = channel.frame_index;
+            
+                                            for q in channel.timestamps.iter().skip(frame_index) {
+                                                if q > &current_time {
+                                                    break;
+                                                }
+                                                
+                                                frame_index = frame_index + 1;
+                                            }
+            
+                                            if frame_index < channel.timestamps.len() {
+                                                match &channel.payload {
+                                                    AnimationChannelPayload::Translations(translations) => {
+                                                        let translation = translations[frame_index];
+                                                        object.update_view_with_translation(&translation);
+                                                    }
+                                                    AnimationChannelPayload::Rotations(rotations) => {
+                                                        let rotation = rotations[frame_index];
+                                                        object.update_view_with_rotation(&rotation);
+                                                    }
+                                                    AnimationChannelPayload::Scales(scales) => {
+                                                        let scale = scales[frame_index];
+                                                        object.update_view_with_scale(&scale);
+                                                    }
+                                                    AnimationChannelPayload::WeightMorphs(weight_morphs) => {
+                                                        let weight_morph = weight_morphs[frame_index];
+                                                    }
+                                                    _ => {}
+                                                }                                    
+                                            } else {
+                                                channel.frame_index = 0;
+            
+                                                #[cfg(not(target_arch = "wasm32"))] {
+                                                    channel.start_instant = std::time::Instant::now();
+                                                }
+                                                
+                                                #[cfg(target_arch = "wasm32")] {
+                                                    channel.start_instant = web_time::Instant::now();
+                                                }
+                                            }
+                                        }
                                     }
                                     
                                     let mut view_slice = staging_belt.write_buffer(

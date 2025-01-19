@@ -3,7 +3,7 @@ use glam::Vec4;
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
 use gltf::{image::Format, mesh::{util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}, Mode}, Node};
-use gpu_api_dto::{Animation, AnimationChannel, AnimationChannelPayload, Interpolation, MeshData, ModelData, PrimitiveData, TextureData};
+use gpu_api_dto::{Animation, AnimationChannel, AnimationChannelPayload, AnimationProperty, Interpolation, MeshData, ModelData, PrimitiveData, TextureData};
 pub use gpu_api_dto;
 
 pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>) {
@@ -26,7 +26,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             node.skin().map(|v| v.name()),
             node.weights(),
             //node.transform()
-        );
+        );        
 
         let transform_matrix = node.transform().matrix();
         let global_transform_matrix = glam::Mat4 {
@@ -87,13 +87,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         let mut index = 0;        
 
         for joint in skin.joints() {
-            let transform_matrix = joint.transform().matrix();
-            let global_transform_matrix = glam::Mat4 {
-                x_axis: Vec4::from_array(transform_matrix[0]),
-                y_axis: Vec4::from_array(transform_matrix[1]),
-                z_axis: Vec4::from_array(transform_matrix[2]),
-                w_axis: Vec4::from_array(transform_matrix[3])
-            };                        
+            let transform_matrix = joint.transform().matrix();            
             
             joints.push(Joint { 
                 node_index: joint.index(),
@@ -462,6 +456,14 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         for channel in animation.channels() {
             info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());            
 
+            let animation_property = match channel.target().property() {
+                gltf::animation::Property::Translation => AnimationProperty::Translation,
+                gltf::animation::Property::Rotation => AnimationProperty::Rotation,
+                gltf::animation::Property::Scale => AnimationProperty::Scale,
+                gltf::animation::Property::MorphTargetWeights => AnimationProperty::MorphTargetWeights
+            };
+
+
             let interpolation = match channel.sampler().interpolation() {
                 gltf::animation::Interpolation::Linear => Interpolation::Linear,
                 gltf::animation::Interpolation::Step => Interpolation::Step,
@@ -575,7 +577,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                 }
             };                                                    
 
-            channels.push(AnimationChannel {        
+            channels.push(AnimationChannel {
+                property: animation_property,    
                 interpolation,        
                 timestamps,
                 payload
