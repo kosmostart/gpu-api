@@ -1,9 +1,8 @@
 use std::io::{Cursor, Read, Write};
-use glam::Vec4;
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
-use gltf::{image::Format, mesh::{util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}, Mode}, Node};
-use gpu_api_dto::{Animation, AnimationChannel, AnimationChannelPayload, AnimationProperty, Interpolation, MeshData, ModelData, PrimitiveData, TextureData};
+use gltf::{image::Format, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
+use gpu_api_dto::{Animation, AnimationChannel, AnimationProperty, Interpolation, MeshData, ModelData, Node, Skin, Joint, PrimitiveData, TextureData};
 pub use gpu_api_dto;
 
 pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>) {
@@ -18,6 +17,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
 
     info!("Found {} nodes", document.nodes().count());
 
+    let mut nodes = vec![];
+
     for node in document.nodes() {
         info!("Found node {:?}, index {}, mesh {:?}, skin {:?}, weights {:?}", 
             node.name(), 
@@ -28,15 +29,13 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             //node.transform()
         );        
 
-        let transform_matrix = node.transform().matrix();
-        let global_transform_matrix = glam::Mat4 {
-            x_axis: Vec4::from_array(transform_matrix[0]),
-            y_axis: Vec4::from_array(transform_matrix[1]),
-            z_axis: Vec4::from_array(transform_matrix[2]),
-            w_axis: Vec4::from_array(transform_matrix[3])
-        };
+        let local_transform_matrix = node.transform().matrix();        
 
-        //let joint_matrix = node.inverse_transform * joint.global_transform_matrix * joint.inv_b_mats[index];
+        nodes.push(Node {
+            index: node.index(),
+            name: node.name().map(|v| v.to_owned()),
+            local_transform_matrix
+        });
     }
 
     info!("Found {} skins", document.skins().count());
@@ -69,26 +68,13 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
 
                 inv_b_mats
             }            
-        };
-
-        struct Joint {
-            pub node_index: usize,
-            pub node_name: Option<String>
-        }
-
-        struct Skin {
-            pub name: Option<String>,
-            pub inverse_bind_matrices: Vec<[[f32; 4]; 4]>,
-            pub joints: Vec<Joint>
-        }
+        };        
 
         let mut joints = vec![];
 
         let mut index = 0;        
 
-        for joint in skin.joints() {
-            let transform_matrix = joint.transform().matrix();            
-            
+        for joint in skin.joints() {            
             joints.push(Joint { 
                 node_index: joint.index(),
                 node_name: joint.name().map(|v| v.to_owned())
@@ -454,7 +440,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         let mut channels = vec![];
         
         for channel in animation.channels() {
-            info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());            
+            info!("Found animation channel for node {:?} with {:?}, index {}", channel.target().node().name(), channel.target().property(), channel.target().node().index());                        
 
             let animation_property = match channel.target().property() {
                 gltf::animation::Property::Translation => AnimationProperty::Translation,
@@ -489,25 +475,22 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                     info!("Empty animations timestamps");
                     vec![]
                 }
-            };        
+            };
 
-            let payload = match reader.read_outputs() {
+            let mut translations = vec![];
+            let mut rotations = vec![];
+            let mut scales = vec![];
+            let mut weight_morphs = vec![];
+
+            match reader.read_outputs() {
                 Some(outputs) => {
                     match outputs {
                         gltf::animation::util::ReadOutputs::Translations(translation_iterator) => {
-                            let mut translations = vec![];
-
                             for value in translation_iterator {
                                 translations.push(value);                                
                             }
-
-                            //info!("Translations: {}", translations.len());
-
-                            AnimationChannelPayload::Translations(translations)
                         }
                         gltf::animation::util::ReadOutputs::Rotations(rotation) => {
-                            let mut rotations = vec![];
-
                             match rotation {
                                 gltf::animation::util::Rotations::I8(_rotation_iterator) => {
                                     info!("I8 rotations not supported");
@@ -526,26 +509,14 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                         rotations.push(value);                                
                                     }
                                 }
-                            }
-
-                            //info!("Rotations: {}", rotations.len());
-
-                            AnimationChannelPayload::Rotations(rotations)
+                            }                            
                         }
-                        gltf::animation::util::ReadOutputs::Scales(scale_iterator) => {
-                            let mut scales = vec![];            
-
+                        gltf::animation::util::ReadOutputs::Scales(scale_iterator) => {                            
                             for value in scale_iterator {
                                 scales.push(value);                                
                             }
-
-                            //info!("Scales: {}", scales.len());
-
-                            AnimationChannelPayload::Scales(scales)
                         }
                         gltf::animation::util::ReadOutputs::MorphTargetWeights(morph_target_weights) => {
-                            let mut weight_morphs = vec![];
-
                             match morph_target_weights {
                                 gltf::animation::util::MorphTargetWeights::I8(_morph_iterator) => {
                                     info!("I8 rotations not supported");
@@ -565,10 +536,6 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                                     }
                                 }
                             }
-
-                            //info!("Weight morphs: {}", weight_morphs.len());
-
-                            AnimationChannelPayload::WeightMorphs(weight_morphs)
                         }
                     }
                 }
@@ -578,10 +545,14 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             };                                                    
 
             channels.push(AnimationChannel {
+                target_index: channel.target().node().index(),
                 property: animation_property,    
                 interpolation,        
                 timestamps,
-                payload
+                translations,
+                rotations,
+                scales,
+                weight_morphs
             })
         }        
 
@@ -591,8 +562,10 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         });
     }
 
-    (ModelData {
+    (ModelData {        
         name: model_name.to_owned(),
+        nodes,
+        skins,
         meshes,
         textures,
         animations

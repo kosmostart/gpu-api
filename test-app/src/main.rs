@@ -6,7 +6,7 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationChannelPayload, model::{create_object, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
+use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationProperty, model::{create_object, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -591,25 +591,40 @@ async fn run() {
                                                 
                                                 frame_index = frame_index + 1;
                                             }
+
+                                            let node = object.nodes[channel.target_index];
+
+                                            pub fn sample(current_time: f32) {                                                                                                
+                                                /*
+                                                while (current_index + 1 < animation.timestamps_.size() && time > animation.timestamps_[current_index + 1])
+                                                    ++current_index;
+
+                                                if (current_index + 1 >= animation.timestamps_.size())
+                                                    current_index = 0;
+                                                */
+
+                                                let factor = (current_time - timestamps_[current_index]) / (timestamps_[current_index + 1] - timestamps_[current_index]);
+
+                                                return lerp(values_[current_index], values_[current_index + 1], factor);
+                                            }
             
                                             if frame_index < channel.timestamps.len() {
-                                                match &channel.payload {
-                                                    AnimationChannelPayload::Translations(translations) => {
-                                                        let translation = translations[frame_index];
+                                                match &channel.property {
+                                                    AnimationProperty::Translation => {
+                                                        let translation = channel.translations[frame_index];
                                                         object.update_view_with_translation(&translation);
                                                     }
-                                                    AnimationChannelPayload::Rotations(rotations) => {
-                                                        let rotation = rotations[frame_index];
+                                                    AnimationProperty::Rotation => {
+                                                        let rotation = channel.rotations[frame_index];
                                                         object.update_view_with_rotation(&rotation);
                                                     }
-                                                    AnimationChannelPayload::Scales(scales) => {
-                                                        let scale = scales[frame_index];
+                                                    AnimationProperty::Scale => {
+                                                        let scale = channel.scales[frame_index];
                                                         object.update_view_with_scale(&scale);
                                                     }
-                                                    AnimationChannelPayload::WeightMorphs(weight_morphs) => {
-                                                        let weight_morph = weight_morphs[frame_index];
-                                                    }
-                                                    _ => {}
+                                                    AnimationProperty::MorphTargetWeights => {
+                                                        let weight_morph = channel.weight_morphs[frame_index];
+                                                    }                                                    
                                                 }                                    
                                             } else {
                                                 channel.frame_index = 0;

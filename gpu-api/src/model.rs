@@ -1,11 +1,25 @@
 use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{Animation, AnimationChannelPayload, ModelData, ViewSource};
+use gpu_api_dto::{Animation, AnimationProperty, Interpolation, ModelData, Node, Skin, ViewSource};
 use crate::{model_instance::ModelInstance, pipeline::model_pipeline};
 
 pub const INSTANCE_SIZE: u64 = 64;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
+
+pub struct Object {
+    pub name: String,
+    pub nodes: Vec<Node>,
+    pub skins: Vec<Skin>,
+    pub meshes: Vec<Mesh>,
+    pub instance_buffer: Buffer,
+    pub instances: Vec<ObjectInstance>,
+    pub model_matrices: Vec<Mat4>,
+    pub texture_bind_groups: Vec<BindGroup>,
+    pub views: Vec<ModelInstance>,
+    pub views_size: u64,
+    pub instances_amount: u32    
+}
 
 pub struct Mesh {
     pub name: String,
@@ -59,18 +73,6 @@ pub struct BoundingBox {
     pub box1: glam::Vec3
 }
 
-pub struct Object {
-    pub name: String,
-    pub meshes: Vec<Mesh>,
-    pub instance_buffer: Buffer,
-    pub instances: Vec<ObjectInstance>,
-    pub model_matrices: Vec<Mat4>,
-    pub texture_bind_groups: Vec<BindGroup>,
-    pub views: Vec<ModelInstance>,
-    pub views_size: u64,
-    pub instances_amount: u32    
-}
-
 pub struct ModelAnimations {
     pub model_animations: Vec<ModelAnimation>
 }
@@ -81,8 +83,14 @@ pub struct ModelAnimation {
 }
 
 pub struct ModelAnimationChannel {
+    pub target_index: usize,
+    pub property: AnimationProperty,
+    pub interpolation: Interpolation,
     pub timestamps: Vec<f32>,
-    pub payload: AnimationChannelPayload,
+    pub translations: Vec<[f32; 3]>,
+    pub rotations: Vec<[f32; 4]>,
+    pub scales: Vec<[f32; 3]>,
+    pub weight_morphs: Vec<f32>,
     pub frame_index: usize,
     #[cfg(not(target_arch = "wasm32"))]
     pub start_instant: std::time::Instant,
@@ -335,8 +343,14 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
         for channel in animation.channels {
             channels.push(ModelAnimationChannel {
+                target_index: channel.target_index,
+                property: channel.property,
+                interpolation: channel.interpolation,
                 timestamps: channel.timestamps,
-                payload: channel.payload,
+                translations: channel.translations,
+                rotations: channel.rotations,
+                scales: channel.scales,
+                weight_morphs: channel.weight_morphs,
                 frame_index: 0,
                 #[cfg(not(target_arch = "wasm32"))]
                 start_instant: std::time::Instant::now(),
@@ -353,6 +367,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     (Object {
         name: model_data.name,
+        nodes: model_data.nodes,
+        skins: model_data.skins,
         meshes,
         instance_buffer,
         texture_bind_groups,

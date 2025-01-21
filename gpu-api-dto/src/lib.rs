@@ -4,9 +4,31 @@ pub use bitcode;
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct ModelData {
     pub name: String,
+    pub nodes: Vec<Node>,
+    pub skins: Vec<Skin>,
 	pub meshes: Vec<MeshData>,
     pub textures: Vec<TextureData>,
     pub animations: Vec<Animation>
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub struct Node {
+    pub index: usize,
+    pub name: Option<String>,
+    pub local_transform_matrix: [[f32; 4]; 4]
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub struct Skin {
+    pub name: Option<String>,
+    pub inverse_bind_matrices: Vec<[[f32; 4]; 4]>,
+    pub joints: Vec<Joint>
+}
+
+#[derive(Encode, Decode, Debug, Clone)]
+pub struct Joint {
+    pub node_index: usize,
+    pub node_name: Option<String>
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
@@ -40,10 +62,14 @@ pub struct Animation {
 
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct AnimationChannel {
+    pub target_index: usize,
     pub property: AnimationProperty,
     pub interpolation: Interpolation,
     pub timestamps: Vec<f32>,
-    pub payload: AnimationChannelPayload
+    pub translations: Vec<[f32; 3]>,
+    pub rotations: Vec<[f32; 4]>,
+    pub scales: Vec<[f32; 3]>,
+    pub weight_morphs: Vec<f32>
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
@@ -58,15 +84,7 @@ pub enum AnimationProperty {
     Translation,    
     Rotation,    
     Scale,    
-    MorphTargetWeights,
-}
-
-#[derive(Encode, Decode, Debug, Clone)]
-pub enum AnimationChannelPayload {
-    Translations(Vec<[f32; 3]>),
-    Rotations(Vec<[f32; 4]>),
-    Scales(Vec<[f32; 3]>),
-    WeightMorphs(Vec<f32>)
+    MorphTargetWeights
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
