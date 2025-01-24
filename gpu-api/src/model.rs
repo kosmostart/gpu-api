@@ -9,7 +9,7 @@ pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
 pub struct Object {
     pub name: String,
-    pub nodes: Vec<Node>,
+    pub nodes: Vec<ModelNode>,
     pub skins: Vec<Skin>,
     pub meshes: Vec<Mesh>,
     pub instance_buffer: Buffer,
@@ -19,6 +19,15 @@ pub struct Object {
     pub views: Vec<ModelInstance>,
     pub views_size: u64,
     pub instances_amount: u32    
+}
+
+pub struct ModelNode {
+    pub index: usize,
+    pub name: Option<String>,
+    pub translation: glam::Vec3,
+    pub rotation: glam::Quat,
+    pub scale: glam::Vec3,
+    pub local_transform: Mat4
 }
 
 pub struct Mesh {
@@ -87,9 +96,9 @@ pub struct ModelAnimationChannel {
     pub property: AnimationProperty,
     pub interpolation: Interpolation,
     pub timestamps: Vec<f32>,
-    pub translations: Vec<[f32; 3]>,
-    pub rotations: Vec<[f32; 4]>,
-    pub scales: Vec<[f32; 3]>,
+    pub translations: Vec<glam::Vec3>,
+    pub rotations: Vec<glam::Quat>,
+    pub scales: Vec<glam::Vec3>,
     pub weight_morphs: Vec<f32>,
     pub frame_index: usize,
     #[cfg(not(target_arch = "wasm32"))]
@@ -119,7 +128,7 @@ impl Object {
         self.views.clear();
         self.model_matrices.clear();
 
-        let translation_matrix = glam::Mat4::from_translation(glam::Vec3::new(translation[0], translation[1], translation[2]));
+        let translation_matrix = glam::Mat4::from_translation(glam::Vec3::new(translation[0], translation[1], translation[2]));        
 
         for instance in &self.instances {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
@@ -342,14 +351,18 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         let mut channels = vec![];
 
         for channel in animation.channels {
+            let translations = channel.translations.into_iter().map(|v| glam::Vec3::from_array(v)).collect();
+            let rotations = channel.rotations.into_iter().map(|v| glam::Quat::from_array(v)).collect();
+            let scales = channel.scales.into_iter().map(|v| glam::Vec3::from_array(v)).collect();
+
             channels.push(ModelAnimationChannel {
                 target_index: channel.target_index,
                 property: channel.property,
                 interpolation: channel.interpolation,
                 timestamps: channel.timestamps,
-                translations: channel.translations,
-                rotations: channel.rotations,
-                scales: channel.scales,
+                translations,
+                rotations,
+                scales,
                 weight_morphs: channel.weight_morphs,
                 frame_index: 0,
                 #[cfg(not(target_arch = "wasm32"))]
@@ -365,9 +378,24 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         });
     }
 
+    let mut nodes = vec![];
+
+    for node in model_data.nodes {
+        let local_transform = Mat4::from_cols_array_2d(&node.local_transform_matrix);
+        
+        nodes.push(ModelNode {
+            index: node.index,
+            name: node.name.map(|v| v.to_owned()),
+            translation: glam::Vec3::from_array(node.translation),
+            rotation: glam::Quat::from_array(node.rotation),
+            scale: glam::Vec3::from_array(node.scale),
+            local_transform: local_transform
+        });
+    }
+
     (Object {
         name: model_data.name,
-        nodes: model_data.nodes,
+        nodes,
         skins: model_data.skins,
         meshes,
         instance_buffer,

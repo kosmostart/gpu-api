@@ -6,7 +6,7 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationProperty, model::{create_object, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
+use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationProperty, model::{create_object, ModelAnimationChannel, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -567,7 +567,7 @@ async fn run() {
                             camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
                         }
                         
-                        {
+                        {                            
                             for object_group in &mut object_groups {
                                 for object in &mut object_group.objects {
                                     if object_group.active == false {
@@ -580,63 +580,56 @@ async fn run() {
                                     
                                     for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
                                         for channel in &mut animation.channels {
-                                            let current_time = channel.start_instant.elapsed().as_secs_f32();                        
-            
-                                            let mut frame_index = channel.frame_index;
-            
-                                            for q in channel.timestamps.iter().skip(frame_index) {
-                                                if q > &current_time {
-                                                    break;
+                                            sample(channel, object);
+                                            pub fn sample(channel: &mut ModelAnimationChannel, object: &mut gpu_api::model::Object) {
+                                                let current_time = channel.start_instant.elapsed().as_secs_f32();    
+
+                                                let mut frame_index = channel.frame_index;
+                
+                                                for q in channel.timestamps.iter().skip(frame_index) {
+                                                    if q > &current_time {
+                                                        break;
+                                                    }
+                                                    
+                                                    frame_index = frame_index + 1;
                                                 }
-                                                
-                                                frame_index = frame_index + 1;
-                                            }
 
-                                            let node = object.nodes[channel.target_index];
+                                                if frame_index == channel.timestamps.len() {
+                                                    frame_index = 0;
+                                                    channel.frame_index = 0;
+                                                    #[cfg(not(target_arch = "wasm32"))] {
+                                                        channel.start_instant = std::time::Instant::now();
+                                                    }                                                    
+                                                    #[cfg(target_arch = "wasm32")] {
+                                                        channel.start_instant = web_time::Instant::now();
+                                                    }
+                                                }
 
-                                            pub fn sample(current_time: f32) {                                                                                                
-                                                /*
-                                                while (current_index + 1 < animation.timestamps_.size() && time > animation.timestamps_[current_index + 1])
-                                                    ++current_index;
+                                                let previous_frame_index = match frame_index {
+                                                    0 => 0,
+                                                    _ => frame_index - 1
+                                                };
 
-                                                if (current_index + 1 >= animation.timestamps_.size())
-                                                    current_index = 0;
-                                                */
+                                                let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
 
-                                                let factor = (current_time - timestamps_[current_index]) / (timestamps_[current_index + 1] - timestamps_[current_index]);
-
-                                                return lerp(values_[current_index], values_[current_index + 1], factor);
-                                            }
-            
-                                            if frame_index < channel.timestamps.len() {
                                                 match &channel.property {
-                                                    AnimationProperty::Translation => {
-                                                        let translation = channel.translations[frame_index];
-                                                        object.update_view_with_translation(&translation);
+                                                    AnimationProperty::Translation => {                                                        
+                                                        let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
+                                                        object.nodes[channel.target_index].translation = translation;
                                                     }
-                                                    AnimationProperty::Rotation => {
-                                                        let rotation = channel.rotations[frame_index];
-                                                        object.update_view_with_rotation(&rotation);
+                                                    AnimationProperty::Rotation => {                                                        
+                                                        let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
+                                                        object.nodes[channel.target_index].rotation = rotation;
                                                     }
-                                                    AnimationProperty::Scale => {
-                                                        let scale = channel.scales[frame_index];
-                                                        object.update_view_with_scale(&scale);
+                                                    AnimationProperty::Scale => {                                                        
+                                                        let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
+                                                        object.nodes[channel.target_index].scale = scale;
                                                     }
                                                     AnimationProperty::MorphTargetWeights => {
                                                         let weight_morph = channel.weight_morphs[frame_index];
-                                                    }                                                    
-                                                }                                    
-                                            } else {
-                                                channel.frame_index = 0;
-            
-                                                #[cfg(not(target_arch = "wasm32"))] {
-                                                    channel.start_instant = std::time::Instant::now();
+                                                    }
                                                 }
-                                                
-                                                #[cfg(target_arch = "wasm32")] {
-                                                    channel.start_instant = web_time::Instant::now();
-                                                }
-                                            }
+                                            }                                       
                                         }
                                     }
                                     

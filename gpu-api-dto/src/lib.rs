@@ -15,6 +15,9 @@ pub struct ModelData {
 pub struct Node {
     pub index: usize,
     pub name: Option<String>,
+    pub translation: [f32; 3], 
+    pub rotation: [f32; 4], 
+    pub scale: [f32; 3],
     pub local_transform_matrix: [[f32; 4]; 4]
 }
 

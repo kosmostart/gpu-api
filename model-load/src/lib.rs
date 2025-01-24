@@ -29,11 +29,16 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             //node.transform()
         );        
 
-        let local_transform_matrix = node.transform().matrix();        
+        let local_transform_matrix = node.transform().matrix();
+
+        let (translation, rotation, scale) = node.transform().decomposed();
 
         nodes.push(Node {
             index: node.index(),
             name: node.name().map(|v| v.to_owned()),
+            translation, 
+            rotation, 
+            scale,
             local_transform_matrix
         });
     }
