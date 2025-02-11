@@ -52,16 +52,12 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
     info!("{:?}", node_topological_sorting);
     info!("{:?}", node_map);
 
-    for node in document.nodes() {
-        /*
-        info!("Found node {:?}, index {}, mesh {:?}, skin {:?}, weights {:?}", 
+    for node in document.nodes() {        
+        info!("Found node {:?}, index {} skin {:?}", 
             node.name(), 
-            node.index(), 
-            node.mesh().map(|v| v.name()),
-            node.skin().map(|v| v.name()),
-            node.weights()            
-        );
-        */
+            node.index(),             
+            node.skin().map(|v| v.index())
+        );        
 
         let mut child_list = node.index().to_string();        
         child_list.push_str(" node :");
@@ -76,11 +72,13 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
 
         let local_transform_matrix = node.transform().matrix();
 
-        let (translation, rotation, scale) = node.transform().decomposed();        
+        let (translation, rotation, scale) = node.transform().decomposed();
 
         nodes.push(Node {
             index: node.index(),
+            children_nodes: node.children().map(|v| v.index()).collect(),
             name: node.name().map(|v| v.to_owned()),
+            skin_index: node.skin().map(|v| v.index()),
             translation, 
             rotation, 
             scale,
@@ -243,8 +241,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
                             }
                         }
                         ReadJoints::U16(iter) => {
-                            for q in iter {
-                                info!("Found u16 joint");
+                            for joint in iter {
+                                joints.push([joint[0] as u32, joint[1] as u32, joint[2] as u32, joint[3] as u32]);
                             }
                         }
                     }

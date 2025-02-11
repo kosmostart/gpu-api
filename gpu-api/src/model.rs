@@ -26,6 +26,7 @@ pub struct Object {
 pub struct ModelNode {
     pub index: usize,
     pub name: Option<String>,
+    pub skin_index: Option<usize>,
     pub translation: glam::Vec3,
     pub rotation: glam::Quat,
     pub scale: glam::Vec3,
@@ -212,9 +213,9 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
             for position in primitive.positions {
                 vertices.push(model_pipeline::Vertex {
                     position,
-                    texture_coordinates: primitive.texture_coordinates[index],
-                    normal: primitive.normals[index],
-                    tangent: primitive.tangents[index],
+                    texture_coordinates: if primitive.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive.texture_coordinates[index]},
+                    normal: if primitive.normals.is_empty() {[1.0, 1.0, 1.0]} else {primitive.normals[index]},
+                    tangent: if primitive.tangents.is_empty() {[1.0, 1.0, 1.0, 1.0]} else {primitive.tangents[index]},
                     joints: primitive.joints[index],
                     weights: primitive.weights[index]
                 });
@@ -398,7 +399,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         
         nodes.push(ModelNode {
             index: node.index,
-            name: node.name.map(|v| v.to_owned()),
+            name: node.name,
+            skin_index: node.skin_index,
             translation: glam::Vec3::from_array(node.translation),
             rotation: glam::Quat::from_array(node.rotation),
             scale: glam::Vec3::from_array(node.scale),

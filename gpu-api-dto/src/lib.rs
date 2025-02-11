@@ -16,7 +16,9 @@ pub struct ModelData {
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct Node {
     pub index: usize,
+    pub children_nodes: Vec<usize>,
     pub name: Option<String>,
+    pub skin_index: Option<usize>,
     pub translation: [f32; 3], 
     pub rotation: [f32; 4], 
     pub scale: [f32; 3],

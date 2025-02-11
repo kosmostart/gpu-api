@@ -237,8 +237,24 @@ async fn run() {
     objects.push(object);
 */
 
-
+/*
     let (model_data, loaded_images) = model_load::load("knight", "../models/knight/knight.gltf");
+    
+    let view_source = ViewSource {
+        x: -2.0,
+        y: -5.0,
+        z: 0.0,        
+        scale_x: 5.0,
+        scale_y: 5.0,
+        scale_z: 5.0
+    };
+    
+    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    object_group.objects.push(object);
+    model_animations_group.model_animations.push(model_animations);
+ */
+
+    let (model_data, loaded_images) = model_load::load("skin-test", "../models/skin-test/skin-test.glb");
     
     let view_source = ViewSource {
         x: -2.0,
@@ -652,33 +668,27 @@ async fn run() {
                                         }                                            
                                     }                                    
 
-                                    let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[0.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
-
-                                    let mut joint_matrix_index = 0;
-
-                                    /*
+                                    let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
+                                    
                                     for node in &object.nodes {
-                                        let inverse_node_global_transform = node.global_transform_matrix.inverse();
+                                        match node.skin_index {
+                                            Some(skin_index) => {
+                                                //let inverse_node_global_transform = node.global_transform_matrix.inverse();
 
-                                        for joint in &object.skins[0].joints {                                        
-                                            let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-    
-                                            joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
-    
-                                            joint_matrix_index = joint_matrix_index + 1;
+                                                let mut joint_matrix_index = 0;
+
+                                                for joint in &object.skins[skin_index].joints {
+                                                    //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                                                    let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+            
+                                                    joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+            
+                                                    joint_matrix_index = joint_matrix_index + 1;
+                                                }
+                                            }
+                                            None => {}
                                         }
-
-                                        joint_matrix_index = 0;
-                                    }
-                                    */
-
-                                    for joint in &object.skins[0].joints {                                        
-                                        let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-
-                                        joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
-
-                                        joint_matrix_index = joint_matrix_index + 1;
-                                    }
+                                    }       
 
                                     let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 

@@ -195,7 +195,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
         label: Some("camera_bind_group")
     });
 
-    let mut joint_matrices: [[f32; 16]; JOINT_MATRICES_AMOUNT] = [[0.0; 16]; JOINT_MATRICES_AMOUNT];
+    let mut joint_matrices: [[f32; 16]; JOINT_MATRICES_AMOUNT] = [[1.0; 16]; JOINT_MATRICES_AMOUNT];
 
     let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 
