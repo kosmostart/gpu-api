@@ -199,7 +199,7 @@ async fn run() {
         objects: vec![]
     }; 
 
-    /*
+    /* 
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
@@ -211,9 +211,9 @@ async fn run() {
         scale_z: 0.1
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    */
+    */    
     
 /*
     let (model_data, loaded_images) = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
@@ -227,7 +227,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     objects.push(object);
 */
 
@@ -242,7 +242,7 @@ async fn run() {
         scale_z: 10.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
 
 /*
@@ -257,7 +257,7 @@ async fn run() {
         scale_z: 5.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
  */
     /*    
@@ -272,7 +272,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     */
 
@@ -289,7 +289,7 @@ async fn run() {
         scale_z: 1.0
     };    
 
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     */
 
@@ -687,7 +687,7 @@ async fn run() {
                                     {                                                                
                                         let mut joint_matrices_slice = staging_belt.write_buffer(
                                             &mut encoder,
-                                            &model_pipeline.joint_matrices_buffer,
+                                            &object.joint_matrices_buffer,
                                             0,
                                             wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
                                             &device

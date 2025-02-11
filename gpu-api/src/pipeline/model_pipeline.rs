@@ -32,10 +32,8 @@ pub struct Pipeline {
     pub depth_sampler: Sampler,
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
-    pub camera_bind_group: BindGroup,
-    pub joint_matrices_buffer: Buffer,
-    pub joint_matrices_bind_group_layout: BindGroupLayout,
-    pub joint_matrices_bind_group: BindGroup,
+    pub camera_bind_group: BindGroup,    
+    pub joint_matrices_bind_group_layout: BindGroupLayout,    
     pub pipeline_layout: PipelineLayout,
     pub swapchain_format: TextureFormat,
     pub render_pipeline: RenderPipeline
@@ -107,7 +105,7 @@ impl Pipeline {
                         }
                         */
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
-                        render_pass.set_bind_group(2, &self.joint_matrices_bind_group, &[]); // Joint matrices
+                        render_pass.set_bind_group(2, &object.joint_matrices_bind_group, &[]); // Joint matrices
                         render_pass.set_vertex_buffer(0, primitive.vertex_buffer.slice(..));
                         render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                         render_pass.draw_indexed(0..primitive.num_elements, 0, instances_range.clone());
@@ -193,19 +191,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
             }
         ],
         label: Some("camera_bind_group")
-    });
-
-    let mut joint_matrices: [[f32; 16]; JOINT_MATRICES_AMOUNT] = [[1.0; 16]; JOINT_MATRICES_AMOUNT];
-
-    let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
-
-    let joint_matrices_buffer = device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some("Joint matrices Buffer"),
-            contents: bytemuck::cast_slice(joint_matrices_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        }
-    );
+    });    
 
     let joint_matrices_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
@@ -221,18 +207,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
             }
         ],
         label: Some("joint_matrices_group_layout"),
-    });
-
-    let joint_matrices_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: &joint_matrices_bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: joint_matrices_buffer.as_entire_binding(),
-            }
-        ],
-        label: Some("joint_matrices_bind_group")
-    });
+    });    
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Pipeline Layout"),
@@ -351,9 +326,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
         camera_buffer,
         camera_bind_group_layout,
         camera_bind_group,
-        joint_matrices_buffer,
-        joint_matrices_bind_group_layout,
-        joint_matrices_bind_group,
+        joint_matrices_bind_group_layout,        
         pipeline_layout,
         swapchain_format: TextureFormat::Rgba8UnormSrgb,
         render_pipeline      

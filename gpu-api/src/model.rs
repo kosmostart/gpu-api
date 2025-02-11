@@ -19,6 +19,8 @@ pub struct Object {
     pub instances: Vec<ObjectInstance>,
     pub model_matrices: Vec<Mat4>,
     pub texture_bind_groups: Vec<BindGroup>,
+    pub joint_matrices_buffer: Buffer,    
+    pub joint_matrices_bind_group: BindGroup,
     pub views: Vec<ModelInstance>,
     pub views_size: u64,
     pub instances_amount: u32    
@@ -192,7 +194,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
+pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::Pipeline, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -267,7 +269,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         
                 let texture_bind_group = device.create_bind_group(
                     &wgpu::BindGroupDescriptor {
-                        layout: texture_bind_group_layout,
+                        layout: &pipeline.texture_bind_group_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -276,7 +278,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                             },
                             wgpu::BindGroupEntry {
                                 binding: 1,
-                                resource: wgpu::BindingResource::Sampler(sampler)
+                                resource: wgpu::BindingResource::Sampler(&pipeline.sampler)
                             }
                         ],
                         label: Some(&("texture_bind_group_".to_owned() + &index_str)),
@@ -298,7 +300,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         
                 let texture_bind_group = device.create_bind_group(
                     &wgpu::BindGroupDescriptor {
-                        layout: texture_bind_group_layout,
+                        layout: &pipeline.texture_bind_group_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -307,7 +309,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                             },
                             wgpu::BindGroupEntry {
                                 binding: 1,
-                                resource: wgpu::BindingResource::Sampler(sampler)
+                                resource: wgpu::BindingResource::Sampler(&pipeline.sampler)
                             }
                         ],
                         label: Some(&("texture_bind_group_".to_owned() + &index_str)),
@@ -384,6 +386,29 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         });
     }
 
+    let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; model_pipeline::JOINT_MATRICES_AMOUNT];
+
+    let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+
+    let joint_matrices_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Joint matrices Buffer"),
+            contents: bytemuck::cast_slice(joint_matrices_ref),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        }
+    );
+
+    let joint_matrices_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &pipeline.joint_matrices_bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: joint_matrices_buffer.as_entire_binding(),
+            }
+        ],
+        label: Some("joint_matrices_bind_group")
+    });
+
     let mut nodes = vec![];
 
     for node in model_data.nodes {
@@ -432,6 +457,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         animations,
         instance_buffer,
         texture_bind_groups,
+        joint_matrices_buffer,
+        joint_matrices_bind_group,
         instances,
         model_matrices,
         views,
