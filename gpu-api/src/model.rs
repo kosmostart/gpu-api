@@ -14,6 +14,7 @@ pub struct Object {
     pub node_map: std::collections::BTreeMap<usize, usize>,
     pub skins: Vec<ModelSkin>,
     pub meshes: Vec<Mesh>,
+    pub animations: Vec<ModelAnimation>,
     pub instance_buffer: Buffer,
     pub instances: Vec<ObjectInstance>,
     pub model_matrices: Vec<Mat4>,
@@ -75,11 +76,6 @@ pub struct ObjectGroup {
     pub objects: Vec<Object>
 }
 
-pub struct ModelAnimationsGroup {
-    pub active: bool,
-    pub model_animations: Vec<ModelAnimations>
-}
-
 pub struct ObjectInstance {
     pub view_source: ViewSource,
     pub is_moving: bool,
@@ -94,10 +90,6 @@ pub struct ObjectInstance {
 pub struct BoundingBox {
     pub box0: glam::Vec3,
     pub box1: glam::Vec3
-}
-
-pub struct ModelAnimations {
-    pub model_animations: Vec<ModelAnimation>
 }
 
 pub struct ModelAnimation {
@@ -200,7 +192,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> (Object, ModelAnimations) {
+pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: &BindGroupLayout, sampler: &Sampler, model_data: ModelData, loaded_images: Option<Vec<DynamicImage>>, view_sources: Vec<ViewSource>) -> Object {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -359,7 +351,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
 
     let instances_amount = instances.len() as u32;
 
-    let mut model_animations = vec![];
+    let mut animations = vec![];
 
     for animation in model_data.animations {
         let mut channels = vec![];
@@ -386,7 +378,7 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
             });
         }
 
-        model_animations.push(ModelAnimation {
+        animations.push(ModelAnimation {
             name: animation.name,
             channels            
         });
@@ -430,13 +422,14 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         });        
     }
 
-    (Object {
+    Object {
         name: model_data.name,
         nodes,
         node_topological_sorting: model_data.node_topological_sorting,
         node_map: model_data.node_map,
         skins,
         meshes,
+        animations,
         instance_buffer,
         texture_bind_groups,
         instances,
@@ -444,9 +437,5 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
         views,
         views_size,
         instances_amount        
-    },
-    ModelAnimations {
-        model_animations
-    })
+    }
 }
-

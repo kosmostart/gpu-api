@@ -6,7 +6,7 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationProperty, model::{create_object, ModelAnimationChannel, ModelAnimationsGroup, ObjectGroup}, pipeline::{self, quad_pipeline}};
+use gpu_api::{bytemuck, frame_counter::FrameCounter, gpu_api_dto::AnimationProperty, model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -197,12 +197,7 @@ async fn run() {
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    };
-
-    let mut model_animations_group = ModelAnimationsGroup {
-        active: true,
-        model_animations: vec![]
-    };
+    }; 
 
     /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
@@ -216,11 +211,9 @@ async fn run() {
         scale_z: 0.1
     };
     
-    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    model_animations_group.model_animations.push(model_animations);
     */
-
     
 /*
     let (model_data, loaded_images) = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
@@ -249,9 +242,8 @@ async fn run() {
         scale_z: 10.0
     };
     
-    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    model_animations_group.model_animations.push(model_animations);
 
 /*
     let (model_data, loaded_images) = model_load::load("skin-test", "../models/skin-test/skin-test.glb");
@@ -265,9 +257,8 @@ async fn run() {
         scale_z: 5.0
     };
     
-    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    model_animations_group.model_animations.push(model_animations);
  */
     /*    
     let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
@@ -281,10 +272,8 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    model_animations_group.model_animations.push(model_animations);
-
     */
 
     /*    
@@ -300,16 +289,12 @@ async fn run() {
         scale_z: 1.0
     };    
 
-    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
-    model_animations_group.model_animations.push(model_animations);
-
     */
 
     let mut object_groups = vec![];
-    let mut model_animations_groups = vec![];
     object_groups.push(object_group);
-    model_animations_groups.push(model_animations_group);
     
     let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
 
@@ -596,61 +581,56 @@ async fn run() {
                                     
                                     if object.instances_amount == 0 {
                                         continue;
-                                    }
-
-                                    let animation = &mut model_animations_groups[0].model_animations[0].model_animations[0];
+                                    }                                    
                                     
-                                    for channel in &mut animation.channels {
-                                        sample(channel, object);
-                                        pub fn sample(channel: &mut ModelAnimationChannel, object: &mut gpu_api::model::Object) {
-                                            let current_time = channel.start_instant.elapsed().as_secs_f32();    
+                                    for channel in &mut object.animations[0].channels {
+                                        let current_time = channel.start_instant.elapsed().as_secs_f32();    
 
-                                            let mut frame_index = channel.frame_index;
-            
-                                            for timestamp in channel.timestamps.iter().skip(frame_index) {
-                                                if timestamp > &current_time {
-                                                    break;
-                                                }
-                                                
-                                                frame_index = frame_index + 1;
+                                        let mut frame_index = channel.frame_index;
+        
+                                        for timestamp in channel.timestamps.iter().skip(frame_index) {
+                                            if timestamp > &current_time {
+                                                break;
                                             }
+                                            
+                                            frame_index = frame_index + 1;
+                                        }
 
-                                            if frame_index == channel.timestamps.len() {
-                                                frame_index = 0;
-                                                channel.frame_index = 0;
-                                                #[cfg(not(target_arch = "wasm32"))] {
-                                                    channel.start_instant = std::time::Instant::now();
-                                                }                                                    
-                                                #[cfg(target_arch = "wasm32")] {
-                                                    channel.start_instant = web_time::Instant::now();
-                                                }
+                                        if frame_index == channel.timestamps.len() {
+                                            frame_index = 0;
+                                            channel.frame_index = 0;
+                                            #[cfg(not(target_arch = "wasm32"))] {
+                                                channel.start_instant = std::time::Instant::now();
+                                            }                                                    
+                                            #[cfg(target_arch = "wasm32")] {
+                                                channel.start_instant = web_time::Instant::now();
                                             }
+                                        }
 
-                                            let previous_frame_index = match frame_index {
-                                                0 => 0,
-                                                _ => frame_index - 1
-                                            };
+                                        let previous_frame_index = match frame_index {
+                                            0 => 0,
+                                            _ => frame_index - 1
+                                        };
 
-                                            let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
+                                        let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
 
-                                            match &channel.property {
-                                                AnimationProperty::Translation => {
-                                                    let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
-                                                    object.nodes[channel.target_index].translation = translation;
-                                                }
-                                                AnimationProperty::Rotation => {                                                        
-                                                    let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
-                                                    object.nodes[channel.target_index].rotation = rotation;
-                                                }
-                                                AnimationProperty::Scale => {
-                                                    let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
-                                                    object.nodes[channel.target_index].scale = scale;
-                                                }
-                                                AnimationProperty::MorphTargetWeights => {
-                                                    let weight_morph = channel.weight_morphs[frame_index];
-                                                }
+                                        match &channel.property {
+                                            AnimationProperty::Translation => {
+                                                let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
+                                                object.nodes[channel.target_index].translation = translation;
                                             }
-                                        }                                       
+                                            AnimationProperty::Rotation => {                                                        
+                                                let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
+                                                object.nodes[channel.target_index].rotation = rotation;
+                                            }
+                                            AnimationProperty::Scale => {
+                                                let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
+                                                object.nodes[channel.target_index].scale = scale;
+                                            }
+                                            AnimationProperty::MorphTargetWeights => {
+                                                let weight_morph = channel.weight_morphs[frame_index];
+                                            }
+                                        }                                    
                                     }
                                     
                                     for node_index in object.node_topological_sorting.iter() {                                                                                

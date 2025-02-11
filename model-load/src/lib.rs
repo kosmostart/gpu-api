@@ -612,6 +612,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         });
     }
 
+    info!("Animations total: {}", animations.len());
+
     (ModelData {        
         name: model_name.to_owned(),
         nodes,
