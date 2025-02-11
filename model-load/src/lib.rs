@@ -1,7 +1,7 @@
 use std::io::{Cursor, Read, Write};
 use image::{DynamicImage, Rgb, Rgba};
 use log::*;
-use gltf::{image::Format, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
+use gltf::{image::Format, iter, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
 use gpu_api_dto::{Animation, AnimationChannel, AnimationProperty, Interpolation, MeshData, ModelData, Node, Skin, Joint, PrimitiveData, TextureData};
 pub use gpu_api_dto;
 
@@ -15,23 +15,68 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
         info!("Found scene {:?}, index {}", scene.name(), scene.index());        
     }
 
-    info!("Found {} nodes", document.nodes().count());
+    info!("Found {} nodes", document.nodes().count());    
 
     let mut nodes = vec![];
 
+    /// Computes topological ordering and children->parent map.
+    fn node_indices_topological_sort(nodes: iter::Nodes) -> (Vec<usize>, std::collections::BTreeMap<usize, usize>) {
+        // NOTE: The algorithm uses BTreeMaps to guarantee consistent ordering.
+
+        // Maps parent to list of children
+        let mut children = std::collections::BTreeMap::<usize, Vec<usize>>::new();
+        for node in nodes {
+            children.insert(node.index(), node.children().map(|n| n.index()).collect());
+        }        
+
+        // Maps child to parent
+        let parents: std::collections::BTreeMap<usize, usize> =
+            children.iter().flat_map(|(parent, children)| children.iter().map(|ch| (*ch, *parent))).collect();
+
+        // Initialize the BFS queue with nodes that don't have any parent (i.e. roots)
+        let mut queue: std::collections::VecDeque<usize> = children.keys().filter(|n| parents.get(n).is_none()).cloned().collect();
+
+        let mut topological_sort = Vec::<usize>::new();
+
+        while let Some(n) = queue.pop_front() {
+            topological_sort.push(n);
+            for ch in &children[&n] {
+                queue.push_back(*ch);
+            }
+        }
+
+        (topological_sort, parents)
+    }
+
+    let (node_topological_sorting, node_map) = node_indices_topological_sort(document.nodes());
+    info!("{:?}", node_topological_sorting);
+    info!("{:?}", node_map);
+
     for node in document.nodes() {
+        /*
         info!("Found node {:?}, index {}, mesh {:?}, skin {:?}, weights {:?}", 
             node.name(), 
             node.index(), 
             node.mesh().map(|v| v.name()),
             node.skin().map(|v| v.name()),
-            node.weights(),
-            //node.transform()
-        );        
+            node.weights()            
+        );
+        */
+
+        let mut child_list = node.index().to_string();        
+        child_list.push_str(" node :");
+
+        for q in node.children() {            
+            //info!("Found child node, index {}", q.index());
+            child_list.push_str(" ");
+            child_list.push_str(&q.index().to_string());
+        }
+        
+        info!("{}", child_list);
 
         let local_transform_matrix = node.transform().matrix();
 
-        let (translation, rotation, scale) = node.transform().decomposed();
+        let (translation, rotation, scale) = node.transform().decomposed();        
 
         nodes.push(Node {
             index: node.index(),
@@ -41,9 +86,7 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             scale,
             local_transform_matrix
         });
-    }
-
-    info!("Found {} skins", document.skins().count());
+    }    
 
     let mut skins = vec![];
 
@@ -86,7 +129,9 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             });
 
             index = index + 1;
-        }        
+        }
+
+        info!("Joints total: {}", joints.len());
 
         skins.push(Skin {
                 name: skin.name().map(|v| v.to_owned()),
@@ -95,6 +140,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
             }
         );
     }
+
+    info!("Skins total: {}", skins.len());
 
     let mut meshes = vec![];    
 
@@ -570,6 +617,8 @@ pub fn load(model_name: &str, model_path: &str) -> (ModelData, Vec<DynamicImage>
     (ModelData {        
         name: model_name.to_owned(),
         nodes,
+        node_topological_sorting,
+        node_map,
         skins,
         meshes,
         textures,

@@ -10,7 +10,9 @@ pub const MAX_MODEL_AMOUNT: u64 = 100000;
 pub struct Object {
     pub name: String,
     pub nodes: Vec<ModelNode>,
-    pub skins: Vec<Skin>,
+    pub node_topological_sorting: Vec<usize>,
+    pub node_map: std::collections::BTreeMap<usize, usize>,
+    pub skins: Vec<ModelSkin>,
     pub meshes: Vec<Mesh>,
     pub instance_buffer: Buffer,
     pub instances: Vec<ObjectInstance>,
@@ -27,7 +29,18 @@ pub struct ModelNode {
     pub translation: glam::Vec3,
     pub rotation: glam::Quat,
     pub scale: glam::Vec3,
-    pub local_transform: Mat4
+    pub global_transform_matrix: Mat4
+}
+
+pub struct ModelSkin {
+    pub name: Option<String>,    
+    pub joints: Vec<ModelJoint>
+}
+
+pub struct ModelJoint {
+    pub node_index: usize,
+    pub node_name: Option<String>,
+    pub inverse_bind_matrix: Mat4
 }
 
 pub struct Mesh {
@@ -389,14 +402,38 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
             translation: glam::Vec3::from_array(node.translation),
             rotation: glam::Quat::from_array(node.rotation),
             scale: glam::Vec3::from_array(node.scale),
-            local_transform: local_transform
+            global_transform_matrix: local_transform
         });
+    }
+
+    let mut skins = vec![];
+
+    for skin in model_data.skins {
+        let mut joints = vec![];
+        let mut index = 0;
+
+        for joint in skin.joints {
+            joints.push(ModelJoint {
+                node_index: joint.node_index,
+                node_name: joint.node_name,
+                inverse_bind_matrix: Mat4::from_cols_array_2d(&skin.inverse_bind_matrices[index])
+            });
+
+            index = index + 1;
+        }
+
+        skins.push(ModelSkin { 
+            name: skin.name, 
+            joints
+        });        
     }
 
     (Object {
         name: model_data.name,
         nodes,
-        skins: model_data.skins,
+        node_topological_sorting: model_data.node_topological_sorting,
+        node_map: model_data.node_map,
+        skins,
         meshes,
         instance_buffer,
         texture_bind_groups,

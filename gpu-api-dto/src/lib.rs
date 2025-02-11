@@ -5,10 +5,12 @@ pub use bitcode;
 pub struct ModelData {
     pub name: String,
     pub nodes: Vec<Node>,
+    pub node_topological_sorting: Vec<usize>,
+    pub node_map: std::collections::BTreeMap<usize, usize>,
     pub skins: Vec<Skin>,
 	pub meshes: Vec<MeshData>,
     pub textures: Vec<TextureData>,
-    pub animations: Vec<Animation>
+    pub animations: Vec<Animation>    
 }
 
 #[derive(Encode, Decode, Debug, Clone)]

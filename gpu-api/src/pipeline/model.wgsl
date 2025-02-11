@@ -9,8 +9,15 @@ struct CameraUniform {
     projection: mat4x4<f32>
 };
 
+// Joint matrices
+struct JointUniform {
+    joint_matrices: array<mat4x4<f32>, 100>
+};
+
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
+@group(2) @binding(0)
+var<uniform> joint_uniform: JointUniform;
 
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
@@ -47,7 +54,13 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
         instance.model_matrix_3
     );
 
-    fragment_input.clip_position = camera.projection * model_matrix * vec4<f32>(vertex_input.position, 1.0);
+    var skin_matrix: mat4x4<f32> = 
+        vertex_input.weights[0] * joint_uniform.joint_matrices[vertex_input.joints[0]] +
+        vertex_input.weights[1] * joint_uniform.joint_matrices[vertex_input.joints[1]] +
+        vertex_input.weights[2] * joint_uniform.joint_matrices[vertex_input.joints[2]] +
+        vertex_input.weights[3] * joint_uniform.joint_matrices[vertex_input.joints[3]];
+
+    fragment_input.clip_position = camera.projection * model_matrix * skin_matrix * vec4<f32>(vertex_input.position, 1.0);
     fragment_input.texture_coordinates = vertex_input.texture_coordinates;
     fragment_input.normal = vertex_input.normal;
     

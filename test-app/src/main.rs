@@ -190,7 +190,7 @@ async fn run() {
         bias: wgpu::DepthBiasState::default()
     });
 
-    let mut element_pipeline = pipeline::element_pipeline::new(&device, &queue, &scene1.vertices, &scene1.indices, depth_stencil_state.clone());
+    //let mut element_pipeline = pipeline::element_pipeline::new(&device, &queue, &scene1.vertices, &scene1.indices, depth_stencil_state.clone());
     
     let (camera, model_pipeline) = pipeline::model_pipeline::new(&device, &config, layout.size.width as f32, layout.size.height as f32, model_depth_stencil_state).await;
 
@@ -397,6 +397,7 @@ async fn run() {
                             ElementState::Released => {
                                 match current_scene.as_ref() {
                                     "scene1" => {
+                                        /*
                                         element_pipeline.vertex_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Vertex Buffer"),
@@ -416,8 +417,10 @@ async fn run() {
                                         indices_count = scene1.indices.len() as u32;
     
                                         current_scene = "scene2".to_owned();
+                                        */
                                     }
                                     "scene2" => {
+                                        /*
                                         element_pipeline.vertex_buffer = device.create_buffer_init(
                                             &wgpu::util::BufferInitDescriptor {
                                                 label: Some("Vertex Buffer"),
@@ -433,6 +436,7 @@ async fn run() {
                                                 usage: wgpu::BufferUsages::INDEX
                                             }
                                         );
+                                        */
                                         
                                         indices_count = scene2.indices.len() as u32;
     
@@ -613,7 +617,7 @@ async fn run() {
                                                 let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
 
                                                 match &channel.property {
-                                                    AnimationProperty::Translation => {                                                        
+                                                    AnimationProperty::Translation => {
                                                         let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
                                                         object.nodes[channel.target_index].translation = translation;
                                                     }
@@ -621,7 +625,7 @@ async fn run() {
                                                         let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
                                                         object.nodes[channel.target_index].rotation = rotation;
                                                     }
-                                                    AnimationProperty::Scale => {                                                        
+                                                    AnimationProperty::Scale => {
                                                         let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
                                                         object.nodes[channel.target_index].scale = scale;
                                                     }
@@ -632,6 +636,63 @@ async fn run() {
                                             }                                       
                                         }
                                     }
+                                    
+                                    for node_index in object.node_topological_sorting.iter() {                                                                                
+                                        match object.node_map.get(node_index) {
+                                            Some(parent_index) => {
+                                                let parent_transform = object.nodes[*parent_index].global_transform_matrix;
+                                                let node = &mut object.nodes[*node_index];
+                                
+                                                let local_transform = gpu_api::glam::Mat4:: from_scale_rotation_translation(node.scale, node.rotation, node.translation);
+                                                node.global_transform_matrix = parent_transform * local_transform;                                                
+                                            }
+                                            None => {
+                                                //info!("Node parent index not found");
+                                            }
+                                        }                                            
+                                    }                                    
+
+                                    let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[0.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
+
+                                    let mut joint_matrix_index = 0;
+
+                                    /*
+                                    for node in &object.nodes {
+                                        let inverse_node_global_transform = node.global_transform_matrix.inverse();
+
+                                        for joint in &object.skins[0].joints {                                        
+                                            let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+    
+                                            joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+    
+                                            joint_matrix_index = joint_matrix_index + 1;
+                                        }
+
+                                        joint_matrix_index = 0;
+                                    }
+                                    */
+
+                                    for joint in &object.skins[0].joints {                                        
+                                        let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+
+                                        joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+
+                                        joint_matrix_index = joint_matrix_index + 1;
+                                    }
+
+                                    let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+
+                                    {                                                                
+                                        let mut joint_matrices_slice = staging_belt.write_buffer(
+                                            &mut encoder,
+                                            &model_pipeline.joint_matrices_buffer,
+                                            0,
+                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
+                                            &device
+                                        );
+                    
+                                        joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
+                                    }                                    
                                     
                                     let mut view_slice = staging_belt.write_buffer(
                                         &mut encoder,
@@ -682,7 +743,7 @@ async fn run() {
                             );                                                        
         
                             model_pipeline.draw(&mut render_pass, &object_groups);                            
-                            element_pipeline.draw(&mut render_pass, indices_count);
+                            //element_pipeline.draw(&mut render_pass, indices_count);
                             quad_pipeline.draw(&mut render_pass, amount as u32);
                         }
         
