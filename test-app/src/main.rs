@@ -216,8 +216,9 @@ async fn run() {
         scale_z: 0.1
     };
     
-    let object = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
+    let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
+    model_animations_group.model_animations.push(model_animations);
     */
 
     
@@ -237,23 +238,22 @@ async fn run() {
     objects.push(object);
 */
 
-/*
     let (model_data, loaded_images) = model_load::load("knight", "../models/knight/knight.gltf");
     
     let view_source = ViewSource {
         x: -2.0,
         y: -5.0,
         z: 0.0,        
-        scale_x: 5.0,
-        scale_y: 5.0,
-        scale_z: 5.0
+        scale_x: 10.0,
+        scale_y: 10.0,
+        scale_z: 10.0
     };
     
     let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     model_animations_group.model_animations.push(model_animations);
- */
 
+/*
     let (model_data, loaded_images) = model_load::load("skin-test", "../models/skin-test/skin-test.glb");
     
     let view_source = ViewSource {
@@ -268,7 +268,7 @@ async fn run() {
     let (object, model_animations) = create_object(&device, &queue, &model_pipeline.texture_bind_group_layout, &model_pipeline.sampler, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     model_animations_group.model_animations.push(model_animations);
-
+ */
     /*    
     let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
     
@@ -597,60 +597,60 @@ async fn run() {
                                     if object.instances_amount == 0 {
                                         continue;
                                     }
+
+                                    let animation = &mut model_animations_groups[0].model_animations[0].model_animations[0];
                                     
-                                    for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
-                                        for channel in &mut animation.channels {
-                                            sample(channel, object);
-                                            pub fn sample(channel: &mut ModelAnimationChannel, object: &mut gpu_api::model::Object) {
-                                                let current_time = channel.start_instant.elapsed().as_secs_f32();    
+                                    for channel in &mut animation.channels {
+                                        sample(channel, object);
+                                        pub fn sample(channel: &mut ModelAnimationChannel, object: &mut gpu_api::model::Object) {
+                                            let current_time = channel.start_instant.elapsed().as_secs_f32();    
 
-                                                let mut frame_index = channel.frame_index;
-                
-                                                for q in channel.timestamps.iter().skip(frame_index) {
-                                                    if q > &current_time {
-                                                        break;
-                                                    }
-                                                    
-                                                    frame_index = frame_index + 1;
+                                            let mut frame_index = channel.frame_index;
+            
+                                            for timestamp in channel.timestamps.iter().skip(frame_index) {
+                                                if timestamp > &current_time {
+                                                    break;
                                                 }
+                                                
+                                                frame_index = frame_index + 1;
+                                            }
 
-                                                if frame_index == channel.timestamps.len() {
-                                                    frame_index = 0;
-                                                    channel.frame_index = 0;
-                                                    #[cfg(not(target_arch = "wasm32"))] {
-                                                        channel.start_instant = std::time::Instant::now();
-                                                    }                                                    
-                                                    #[cfg(target_arch = "wasm32")] {
-                                                        channel.start_instant = web_time::Instant::now();
-                                                    }
+                                            if frame_index == channel.timestamps.len() {
+                                                frame_index = 0;
+                                                channel.frame_index = 0;
+                                                #[cfg(not(target_arch = "wasm32"))] {
+                                                    channel.start_instant = std::time::Instant::now();
+                                                }                                                    
+                                                #[cfg(target_arch = "wasm32")] {
+                                                    channel.start_instant = web_time::Instant::now();
                                                 }
+                                            }
 
-                                                let previous_frame_index = match frame_index {
-                                                    0 => 0,
-                                                    _ => frame_index - 1
-                                                };
+                                            let previous_frame_index = match frame_index {
+                                                0 => 0,
+                                                _ => frame_index - 1
+                                            };
 
-                                                let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
+                                            let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
 
-                                                match &channel.property {
-                                                    AnimationProperty::Translation => {
-                                                        let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
-                                                        object.nodes[channel.target_index].translation = translation;
-                                                    }
-                                                    AnimationProperty::Rotation => {                                                        
-                                                        let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
-                                                        object.nodes[channel.target_index].rotation = rotation;
-                                                    }
-                                                    AnimationProperty::Scale => {
-                                                        let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
-                                                        object.nodes[channel.target_index].scale = scale;
-                                                    }
-                                                    AnimationProperty::MorphTargetWeights => {
-                                                        let weight_morph = channel.weight_morphs[frame_index];
-                                                    }
+                                            match &channel.property {
+                                                AnimationProperty::Translation => {
+                                                    let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
+                                                    object.nodes[channel.target_index].translation = translation;
                                                 }
-                                            }                                       
-                                        }
+                                                AnimationProperty::Rotation => {                                                        
+                                                    let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
+                                                    object.nodes[channel.target_index].rotation = rotation;
+                                                }
+                                                AnimationProperty::Scale => {
+                                                    let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
+                                                    object.nodes[channel.target_index].scale = scale;
+                                                }
+                                                AnimationProperty::MorphTargetWeights => {
+                                                    let weight_morph = channel.weight_morphs[frame_index];
+                                                }
+                                            }
+                                        }                                       
                                     }
                                     
                                     for node_index in object.node_topological_sorting.iter() {                                                                                
@@ -662,14 +662,25 @@ async fn run() {
                                                 let local_transform = gpu_api::glam::Mat4:: from_scale_rotation_translation(node.scale, node.rotation, node.translation);
                                                 node.global_transform_matrix = parent_transform * local_transform;                                                
                                             }
-                                            None => {
-                                                //info!("Node parent index not found");
-                                            }
+                                            None => {}
                                         }                                            
                                     }                                    
 
                                     let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
                                     
+                                    let mut joint_matrix_index = 0;
+                                    let skin_index = 0;
+
+                                    for joint in &object.skins[skin_index].joints {
+                                        //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                                        let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+
+                                        joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+
+                                        joint_matrix_index = joint_matrix_index + 1;
+                                    }
+                                    
+                                    /*
                                     for node in &object.nodes {
                                         match node.skin_index {
                                             Some(skin_index) => {
@@ -688,7 +699,8 @@ async fn run() {
                                             }
                                             None => {}
                                         }
-                                    }       
+                                    }
+                                    */      
 
                                     let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 

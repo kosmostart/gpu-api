@@ -216,8 +216,8 @@ pub fn create_object(device: &Device, queue: &Queue, texture_bind_group_layout: 
                     texture_coordinates: if primitive.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive.texture_coordinates[index]},
                     normal: if primitive.normals.is_empty() {[1.0, 1.0, 1.0]} else {primitive.normals[index]},
                     tangent: if primitive.tangents.is_empty() {[1.0, 1.0, 1.0, 1.0]} else {primitive.tangents[index]},
-                    joints: primitive.joints[index],
-                    weights: primitive.weights[index]
+                    joints: if primitive.joints.is_empty() {[0, 0, 0, 0]} else {primitive.joints[index]},
+                    weights: if primitive.weights.is_empty() {[1.0, 1.0, 1.0, 1.0]} else {primitive.weights[index]}
                 });
 
                 index = index + 1;
