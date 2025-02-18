@@ -1,3 +1,4 @@
+use log::*;
 use glam::Mat4;
 use image::{ImageBuffer, DynamicImage};
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
@@ -96,7 +97,10 @@ pub struct BoundingBox {
 
 pub struct ModelAnimation {
     pub name: String,
-    pub channels: Vec<ModelAnimationChannel>
+    pub channels: Vec<ModelAnimationChannel>,
+    pub frame_index: usize,
+    pub frame_cycle_count: usize,
+    pub joint_matrices: Vec<[[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT]>
 }
 
 pub struct ModelAnimationChannel {
@@ -109,6 +113,7 @@ pub struct ModelAnimationChannel {
     pub scales: Vec<glam::Vec3>,
     pub weight_morphs: Vec<f32>,
     pub frame_index: usize,
+    pub channel_time: f32,
     #[cfg(not(target_arch = "wasm32"))]
     pub start_instant: std::time::Instant,
     #[cfg(target_arch = "wasm32")]
@@ -373,6 +378,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                 scales,
                 weight_morphs: channel.weight_morphs,
                 frame_index: 0,
+                channel_time: 0.0,
                 #[cfg(not(target_arch = "wasm32"))]
                 start_instant: std::time::Instant::now(),
                 #[cfg(target_arch = "wasm32")]
@@ -382,11 +388,14 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
         animations.push(ModelAnimation {
             name: animation.name,
-            channels            
+            channels,
+            frame_index: 0,
+            frame_cycle_count: 0,
+            joint_matrices: vec![]
         });
     }
 
-    let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; model_pipeline::JOINT_MATRICES_AMOUNT];
+    let joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; model_pipeline::JOINT_MATRICES_AMOUNT];
 
     let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 
@@ -445,6 +454,143 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
             name: skin.name, 
             joints
         });        
+    }
+
+    let time_per_frame = 1.0 / 200.0;
+
+    for animation in &mut animations {        
+        info!("Animation {} started", animation.name);
+        let mut animation_time = 0.0;
+
+        let mut max_animation_time = 0.0;
+
+        for channel in &animation.channels {
+            let max_channel_time = *channel.timestamps.last().expect("Empty animation timestamps");
+            //info!("Channel max time value: {}", max_channel_time);
+
+            if max_channel_time > max_animation_time {
+                max_animation_time = max_channel_time;
+            }
+        }
+
+        while animation_time < max_animation_time {
+            for channel in &mut animation.channels {                                    
+                let mut frame_index = channel.frame_index;            
+    
+                for timestamp in channel.timestamps.iter().skip(frame_index) {
+                    if timestamp > &animation_time {
+                        break;
+                    }
+                    
+                    frame_index = frame_index + 1;
+                }
+                
+                if frame_index == channel.timestamps.len() {
+                    frame_index = 0;
+                    channel.frame_index = 0;
+                    channel.channel_time = 0.0;
+                }                
+    
+                /*
+                if frame_index == channel.timestamps.len() {
+                    frame_index = 0;
+                    channel.frame_index = 0;
+                    #[cfg(not(target_arch = "wasm32"))] {
+                        channel.start_instant = std::time::Instant::now();
+                    }                                                    
+                    #[cfg(target_arch = "wasm32")] {
+                        channel.start_instant = web_time::Instant::now();
+                    }
+                }
+                */
+    
+                let previous_frame_index = match frame_index {
+                    0 => 0,
+                    _ => frame_index - 1
+                };                
+    
+                let factor = (animation_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
+    
+                match &channel.property {
+                    AnimationProperty::Translation => {
+                        let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
+                        nodes[channel.target_index].translation = translation;
+                    }
+                    AnimationProperty::Rotation => {                                                        
+                        let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
+                        nodes[channel.target_index].rotation = rotation;
+                    }
+                    AnimationProperty::Scale => {
+                        let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
+                        nodes[channel.target_index].scale = scale;
+                    }
+                    AnimationProperty::MorphTargetWeights => {
+                        let weight_morph = channel.weight_morphs[frame_index];
+                    }
+                }
+
+                channel.channel_time = channel.channel_time + time_per_frame;
+            }
+
+            for node_index in model_data.node_topological_sorting.iter() {
+                match model_data.node_map.get(node_index) {
+                    Some(parent_index) => {
+                        let parent_transform = nodes[*parent_index].global_transform_matrix;
+                        let node = &mut nodes[*node_index];
+        
+                        let local_transform = glam::Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation);
+                        node.global_transform_matrix = parent_transform * local_transform;
+                    }
+                    None => {}
+                }                                            
+            }                                    
+
+            let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; model_pipeline::JOINT_MATRICES_AMOUNT];
+            
+            let mut joint_matrix_index = 0;
+            let skin_index = 0;
+            
+            for joint in &skins[skin_index].joints {
+                //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+
+                joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+
+                joint_matrix_index = joint_matrix_index + 1;
+            }                                    
+            
+            /*
+            // Inverse node global transform
+
+            for node in &object.nodes {
+                match node.skin_index {
+                    Some(skin_index) => {
+                        //let inverse_node_global_transform = node.global_transform_matrix.inverse();
+
+                        let mut joint_matrix_index = 0;
+
+                        for joint in &object.skins[skin_index].joints {
+                            //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                            let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+
+                            joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+
+                            joint_matrix_index = joint_matrix_index + 1;
+                        }
+                    }
+                    None => {}
+                }
+            }
+            */
+
+            animation.joint_matrices.push(joint_matrices);                                    
+
+            animation_time = animation_time + time_per_frame;
+        }
+        
+        animation.frame_cycle_count = animation.joint_matrices.len();        
+
+        info!("Animation {} done, joint matrices total: {}", animation.name, animation.joint_matrices.len());
     }
 
     Object {

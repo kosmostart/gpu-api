@@ -197,9 +197,9 @@ async fn run() {
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    }; 
+    };
 
-    /* 
+    /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
     let view_source = ViewSource {
@@ -212,10 +212,10 @@ async fn run() {
     };
     
     let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);
-    */    
+    object_group.objects.push(object);    
+    */
     
-/*
+    /*
     let (model_data, loaded_images) = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
     
     let view_source = ViewSource {
@@ -460,301 +460,263 @@ async fn run() {
                     WindowEvent::KeyboardInput { device_id: _, event, is_synthetic } => {
                         warn!("{:?}", event);                    
                     }
-                    WindowEvent::RedrawRequested => {
+                    WindowEvent::RedrawRequested => {                        
                         //info!("Redraw requested");
-                        
-                        /*
-                        for animation in &mut model_animations_groups[0].model_animations[0].model_animations {
-                            for channel in &mut animation.channels {
-                                let current_time = channel.start_instant.elapsed().as_secs_f32();                        
 
-                                let mut frame_index = channel.frame_index;
-
-                                for q in channel.timestamps.iter().skip(frame_index) {
-                                    if q > &current_time {
-                                        break;
-                                    }
-                                    
-                                    frame_index = frame_index + 1;
+                        if frame_counter.update() {
+                            // Get a command encoder for the current frame
+                                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                                    label: Some("Redraw")
                                 }
-
-                                if frame_index < channel.timestamps.len() {
-                                    match &channel.payload {
-                                        AnimationChannelPayload::Translations(translations) => {
-                                            let translation = translations[frame_index];
-                                            object_groups[0].objects[0].update_view_with_translation(&translation);
-                                        }
-                                        AnimationChannelPayload::Rotations(rotations) => {
-                                            let rotation = rotations[frame_index];
-                                            object_groups[0].objects[0].update_view_with_rotation(&rotation);
-                                        }
-                                        AnimationChannelPayload::Scales(scales) => {
-                                            let scale = scales[frame_index];
-                                            object_groups[0].objects[0].update_view_with_scale(&scale);
-                                        }
-                                        AnimationChannelPayload::WeightMorphs(weight_morphs) => {
-                                            let weight_morph = weight_morphs[frame_index];
-                                        }
-                                        _ => {}
-                                    }                                    
-                                } else {
-                                    channel.frame_index = 0;
-
-                                    #[cfg(not(target_arch = "wasm32"))] {
-                                        channel.start_instant = std::time::Instant::now();
-                                    }
-                                    
-                                    #[cfg(target_arch = "wasm32")] {
-                                        channel.start_instant = web_time::Instant::now();
-                                    }
-                                }
-                            }
-                        }
-                        */
-                                
-                        // Get a command encoder for the current frame
-                        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                                label: Some("Redraw")
-                            }
-                        );
-        
-                        // Get the next frame
-                        let frame = surface.get_current_texture().expect("Get next frame");                        
-                        let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
-                        texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
-                        let view = &frame.texture.create_view(&texture_view_descriptor);                        
-        
-                        {
-                            let mut uniform_buffer = staging_belt.write_buffer(
-                                &mut encoder,
-                                &quad_pipeline.uniform_buffer,
-                                0,
-                                wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
-                                    .unwrap(),
-                                &device
                             );
-        
-                            uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
-                        }
-                        
-                        let amount = {
-                            let i = 0;
-                            let total = quads.len();
-                            let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
-                            let res = end - i;
-        
-                            let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
-        
-                            let mut instance_buffer = staging_belt.write_buffer(
-                                &mut encoder,
-                                &quad_pipeline.instance_buffer,
-                                0,
-                                wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
-                                &device,
-                            );
-        
-                            instance_buffer.copy_from_slice(instance_bytes);
-        
-                            res
-                        };
-        
-                        {
-                            let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
-                        
-                            let mut camera_slice = staging_belt.write_buffer(
-                                &mut encoder,
-                                &model_pipeline.camera_buffer,
-                                0,
-                                wgpu::BufferSize::new(gpu_api::camera::CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
-                                &device
-                            );
-        
-                            camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
-                        }
-                        
-                        {                            
-                            for object_group in &mut object_groups {
-                                for object in &mut object_group.objects {
-                                    if object_group.active == false {
-                                        continue;
-                                    }
-                                    
-                                    if object.instances_amount == 0 {
-                                        continue;
-                                    }                                    
-                                    
-                                    for channel in &mut object.animations[0].channels {
-                                        let current_time = channel.start_instant.elapsed().as_secs_f32();    
-
-                                        let mut frame_index = channel.frame_index;
-        
-                                        for timestamp in channel.timestamps.iter().skip(frame_index) {
-                                            if timestamp > &current_time {
-                                                break;
-                                            }
-                                            
-                                            frame_index = frame_index + 1;
-                                        }
-
-                                        if frame_index == channel.timestamps.len() {
-                                            frame_index = 0;
-                                            channel.frame_index = 0;
-                                            #[cfg(not(target_arch = "wasm32"))] {
-                                                channel.start_instant = std::time::Instant::now();
-                                            }                                                    
-                                            #[cfg(target_arch = "wasm32")] {
-                                                channel.start_instant = web_time::Instant::now();
-                                            }
-                                        }
-
-                                        let previous_frame_index = match frame_index {
-                                            0 => 0,
-                                            _ => frame_index - 1
-                                        };
-
-                                        let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
-
-                                        match &channel.property {
-                                            AnimationProperty::Translation => {
-                                                let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
-                                                object.nodes[channel.target_index].translation = translation;
-                                            }
-                                            AnimationProperty::Rotation => {                                                        
-                                                let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
-                                                object.nodes[channel.target_index].rotation = rotation;
-                                            }
-                                            AnimationProperty::Scale => {
-                                                let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
-                                                object.nodes[channel.target_index].scale = scale;
-                                            }
-                                            AnimationProperty::MorphTargetWeights => {
-                                                let weight_morph = channel.weight_morphs[frame_index];
-                                            }
-                                        }                                    
-                                    }
-                                    
-                                    for node_index in object.node_topological_sorting.iter() {                                                                                
-                                        match object.node_map.get(node_index) {
-                                            Some(parent_index) => {
-                                                let parent_transform = object.nodes[*parent_index].global_transform_matrix;
-                                                let node = &mut object.nodes[*node_index];
-                                
-                                                let local_transform = gpu_api::glam::Mat4:: from_scale_rotation_translation(node.scale, node.rotation, node.translation);
-                                                node.global_transform_matrix = parent_transform * local_transform;                                                
-                                            }
-                                            None => {}
-                                        }                                            
-                                    }                                    
-
-                                    let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
-                                    
-                                    let mut joint_matrix_index = 0;
-                                    let skin_index = 0;
-
-                                    for joint in &object.skins[skin_index].joints {
-                                        //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-                                        let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-
-                                        joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
-
-                                        joint_matrix_index = joint_matrix_index + 1;
-                                    }
-                                    
-                                    /*
-                                    for node in &object.nodes {
-                                        match node.skin_index {
-                                            Some(skin_index) => {
-                                                //let inverse_node_global_transform = node.global_transform_matrix.inverse();
-
-                                                let mut joint_matrix_index = 0;
-
-                                                for joint in &object.skins[skin_index].joints {
-                                                    //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-                                                    let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
             
-                                                    joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+                            // Get the next frame
+                            let frame = surface.get_current_texture().expect("Get next frame");                        
+                            let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
+                            texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
+                            let view = &frame.texture.create_view(&texture_view_descriptor);                        
             
-                                                    joint_matrix_index = joint_matrix_index + 1;
+                            {
+                                let mut uniform_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &quad_pipeline.uniform_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
+                                        .unwrap(),
+                                    &device
+                                );
+            
+                                uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
+                            }
+                            
+                            let amount = {
+                                let i = 0;
+                                let total = quads.len();
+                                let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
+                                let res = end - i;
+            
+                                let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
+            
+                                let mut instance_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &quad_pipeline.instance_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
+                                    &device,
+                                );
+            
+                                instance_buffer.copy_from_slice(instance_bytes);
+            
+                                res
+                            };
+            
+                            {
+                                let camera_projection_ref: &[f32; 16] = camera.projection.as_ref();
+                            
+                                let mut camera_slice = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &model_pipeline.camera_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(gpu_api::camera::CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
+                                    &device
+                                );
+            
+                                camera_slice.copy_from_slice(bytemuck::cast_slice(camera_projection_ref));
+                            }
+                            
+                            {                            
+                                for object_group in &mut object_groups {
+                                    for object in &mut object_group.objects {
+                                        if object_group.active == false {
+                                            continue;
+                                        }
+                                        
+                                        if object.instances_amount == 0 {
+                                            continue;
+                                        }                                                                    
+
+                                        /*
+                                        for channel in &mut object.animations[3].channels {
+                                            let current_time = channel.start_instant.elapsed().as_secs_f32();
+
+                                            let mut frame_index = channel.frame_index;
+            
+                                            for timestamp in channel.timestamps.iter().skip(frame_index) {
+                                                if timestamp > &current_time {
+                                                    break;
+                                                }
+                                                
+                                                frame_index = frame_index + 1;
+                                            }
+
+                                            if frame_index == channel.timestamps.len() {
+                                                frame_index = 0;
+                                                channel.frame_index = 0;
+                                                #[cfg(not(target_arch = "wasm32"))] {
+                                                    channel.start_instant = std::time::Instant::now();
+                                                }                                                    
+                                                #[cfg(target_arch = "wasm32")] {
+                                                    channel.start_instant = web_time::Instant::now();
                                                 }
                                             }
-                                            None => {}
+
+                                            let previous_frame_index = match frame_index {
+                                                0 => 0,
+                                                _ => frame_index - 1
+                                            };
+
+                                            let factor = (current_time - channel.timestamps[previous_frame_index]) / (channel.timestamps[frame_index] - channel.timestamps[previous_frame_index]);
+
+                                            match &channel.property {
+                                                AnimationProperty::Translation => {
+                                                    let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
+                                                    object.nodes[channel.target_index].translation = translation;
+                                                }
+                                                AnimationProperty::Rotation => {                                                        
+                                                    let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
+                                                    object.nodes[channel.target_index].rotation = rotation;
+                                                }
+                                                AnimationProperty::Scale => {
+                                                    let scale = channel.scales[previous_frame_index].lerp(channel.scales[frame_index], factor);
+                                                    object.nodes[channel.target_index].scale = scale;
+                                                }
+                                                AnimationProperty::MorphTargetWeights => {
+                                                    let weight_morph = channel.weight_morphs[frame_index];
+                                                }
+                                            }                                    
                                         }
-                                    }
-                                    */      
+                                        
+                                        for node_index in object.node_topological_sorting.iter() {
+                                            match object.node_map.get(node_index) {
+                                                Some(parent_index) => {
+                                                    let parent_transform = object.nodes[*parent_index].global_transform_matrix;
+                                                    let node = &mut object.nodes[*node_index];
+                                    
+                                                    let local_transform = gpu_api::glam::Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation);
+                                                    node.global_transform_matrix = parent_transform * local_transform;
+                                                }
+                                                None => {}
+                                            }                                            
+                                        }                                    
 
-                                    let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+                                        let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [[1.0; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
+                                        
+                                        let mut joint_matrix_index = 0;
+                                        let skin_index = 0;
+                                        
+                                        for joint in &object.skins[skin_index].joints {
+                                            //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                                            let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
 
-                                    {                                                                
-                                        let mut joint_matrices_slice = staging_belt.write_buffer(
+                                            joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+
+                                            joint_matrix_index = joint_matrix_index + 1;
+                                        }
+                                        */
+                                        
+                                        /*
+                                        // Inverse node global transform
+                                        for node in &object.nodes {
+                                            match node.skin_index {
+                                                Some(skin_index) => {
+                                                    //let inverse_node_global_transform = node.global_transform_matrix.inverse();
+
+                                                    let mut joint_matrix_index = 0;
+
+                                                    for joint in &object.skins[skin_index].joints {
+                                                        //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                                                        let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
+                
+                                                        joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+                
+                                                        joint_matrix_index = joint_matrix_index + 1;
+                                                    }
+                                                }
+                                                None => {}
+                                            }
+                                        }
+                                        */
+
+                                        //let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+
+                                        if object.animations[0].frame_index == object.animations[0].frame_cycle_count {
+                                            object.animations[0].frame_index = 0;
+                                        }
+                                        
+                                        let joint_matrices_ref: &[[f32; 16]] = object.animations[0].joint_matrices[object.animations[0].frame_index].as_ref();                                        
+
+                                        {                                                                
+                                            let mut joint_matrices_slice = staging_belt.write_buffer(
+                                                &mut encoder,
+                                                &object.joint_matrices_buffer,
+                                                0,
+                                                wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
+                                                &device
+                                            );
+                        
+                                            joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
+                                        }
+
+                                        object.animations[0].frame_index = object.animations[0].frame_index + 1;
+                                        
+                                        let mut view_slice = staging_belt.write_buffer(
                                             &mut encoder,
-                                            &object.joint_matrices_buffer,
+                                            &object.instance_buffer,
                                             0,
-                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
+                                            wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
                                             &device
                                         );
                     
-                                        joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
-                                    }                                    
-                                    
-                                    let mut view_slice = staging_belt.write_buffer(
-                                        &mut encoder,
-                                        &object.instance_buffer,
-                                        0,
-                                        wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
-                                        &device
-                                    );
-                
-                                    view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
+                                        view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
+                                    }
                                 }
                             }
-                        }
-        
-                        // Clear frame
-                        {
-                            let mut render_pass = encoder.begin_render_pass(
-                                &wgpu::RenderPassDescriptor {
-                                    label: Some("Render pass"),
-                                    color_attachments: &[
-                                        Some(wgpu::RenderPassColorAttachment {
-                                            view,
-                                            resolve_target: None,
-                                            ops: wgpu::Operations {
-                                                load: wgpu::LoadOp::Clear(
-                                                    wgpu::Color {
-                                                        r: 1.0,
-                                                        g: 1.0,
-                                                        b: 1.0,
-                                                        a: 1.0
-                                                    },
-                                                ),
-                                                store: StoreOp::Store
-                                            }
-                                        })
-                                    ],
-                                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                                        view: &model_pipeline.depth_texture.view,
-                                        depth_ops: Some(wgpu::Operations {
-                                            load: wgpu::LoadOp::Clear(1.0),
-                                            store: wgpu::StoreOp::Store,
+            
+                            // Clear frame
+                            {
+                                let mut render_pass = encoder.begin_render_pass(
+                                    &wgpu::RenderPassDescriptor {
+                                        label: Some("Render pass"),
+                                        color_attachments: &[
+                                            Some(wgpu::RenderPassColorAttachment {
+                                                view,
+                                                resolve_target: None,
+                                                ops: wgpu::Operations {
+                                                    load: wgpu::LoadOp::Clear(
+                                                        wgpu::Color {
+                                                            r: 1.0,
+                                                            g: 1.0,
+                                                            b: 1.0,
+                                                            a: 1.0
+                                                        },
+                                                    ),
+                                                    store: StoreOp::Store
+                                                }
+                                            })
+                                        ],
+                                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                                            view: &model_pipeline.depth_texture.view,
+                                            depth_ops: Some(wgpu::Operations {
+                                                load: wgpu::LoadOp::Clear(1.0),
+                                                store: wgpu::StoreOp::Store,
+                                            }),
+                                            stencil_ops: None,
                                         }),
-                                        stencil_ops: None,
-                                    }),
-                                    timestamp_writes: None,
-                                    occlusion_query_set: None
-                                }
-                            );                                                        
-        
-                            model_pipeline.draw(&mut render_pass, &object_groups);                            
-                            //element_pipeline.draw(&mut render_pass, indices_count);
-                            quad_pipeline.draw(&mut render_pass, amount as u32);
-                        }
-        
-                        staging_belt.finish();
-                        queue.submit(Some(encoder.finish()));
-                        frame.present();
-                        staging_belt.recall();
-
-                        frame_counter.update();
+                                        timestamp_writes: None,
+                                        occlusion_query_set: None
+                                    }
+                                );                                                        
+            
+                                model_pipeline.draw(&mut render_pass, &object_groups);
+                                //element_pipeline.draw(&mut render_pass, indices_count);
+                                quad_pipeline.draw(&mut render_pass, amount as u32);
+                            }
+            
+                            staging_belt.finish();
+                            queue.submit(Some(encoder.finish()));
+                            frame.present();
+                            staging_belt.recall();                        
+                        }                                                        
 
                         window.request_redraw();     
                     }              
