@@ -462,23 +462,23 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         info!("Animation {} started", animation.name);
         let mut animation_time = 0.0;
 
-        let mut max_animation_time = 0.0;
+        let mut max_animation_time = 0.0;         
 
         for channel in &animation.channels {
             let max_channel_time = *channel.timestamps.last().expect("Empty animation timestamps");
-            //info!("Channel max time value: {}", max_channel_time);
+            //info!("Channel max time value: {}", max_channel_time);            
 
             if max_channel_time > max_animation_time {
                 max_animation_time = max_channel_time;
             }
         }
-
+            
         while animation_time < max_animation_time {
-            for channel in &mut animation.channels {                                    
+            for channel in &mut animation.channels {
                 let mut frame_index = channel.frame_index;            
     
                 for timestamp in channel.timestamps.iter().skip(frame_index) {
-                    if timestamp > &animation_time {
+                    if timestamp > &channel.channel_time {
                         break;
                     }
                     
@@ -529,7 +529,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                     }
                 }
 
-                channel.channel_time = channel.channel_time + time_per_frame;
+                channel.channel_time = channel.channel_time + time_per_frame;                
             }
 
             for node_index in model_data.node_topological_sorting.iter() {
