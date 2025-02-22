@@ -297,7 +297,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
             for texture_item in model_data.textures {
                 let index_str = texture_item.index.to_string();
 
-                log::warn!("{} {}", model_data.name, texture_item.image_encoded.as_ref().unwrap().len());
+                log::warn!("Creating texture {}, size {}", model_data.name, texture_item.image_encoded.as_ref().expect("Empty encoded image for texture").len());
 
                 let texture_image = image::load_from_memory_with_format(texture_item.image_encoded.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");
         
@@ -459,7 +459,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
     let time_per_frame = 1.0 / 200.0;
 
     for animation in &mut animations {        
-        info!("Animation {} started", animation.name);
+        warn!("Animation {} started", animation.name);
         let mut animation_time = 0.0;
 
         let mut max_animation_time = 0.0;         
@@ -590,7 +590,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         
         animation.frame_cycle_count = animation.joint_matrices.len();        
 
-        info!("Animation {} done, joint matrices total: {}", animation.name, animation.joint_matrices.len());
+        warn!("Animation {} done, joint matrices total: {}", animation.name, animation.joint_matrices.len());
     }
 
     Object {
