@@ -6,7 +6,7 @@ use model_load::{load, gpu_api_dto};
 fn main() {
     env_logger::init();
 
-    process_model("box", "glb");
+    process_model("paladin", "glb");
 }
 
 fn process_model(model_name: &str, extension: &str) {    
