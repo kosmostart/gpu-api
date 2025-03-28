@@ -634,10 +634,10 @@ async fn run() {
                                                 }
                                                 None => {}
                                             }
-                                        }
-                                        */
+                                        }                                        
 
-                                        //let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+                                        let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+                                        */
 
                                         if object.animations[0].frame_index == object.animations[0].frame_cycle_count {
                                             object.animations[0].frame_index = 0;
