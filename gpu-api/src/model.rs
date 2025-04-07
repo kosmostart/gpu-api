@@ -587,8 +587,12 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
             animation_time = animation_time + time_per_frame;
         }
+
+        if animation.joint_matrices.len() < 8 {
+            panic!("Not enough joint matrices");
+        }
         
-        animation.frame_cycle_count = animation.joint_matrices.len();        
+        animation.frame_cycle_count = animation.joint_matrices.len();
 
         warn!("Animation {} done, joint matrices total: {}", animation.name, animation.joint_matrices.len());
     }

@@ -639,11 +639,13 @@ async fn run() {
                                         let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
                                         */
 
-                                        if object.animations[0].frame_index == object.animations[0].frame_cycle_count {
-                                            object.animations[0].frame_index = 0;
+                                        let animation_index = 0;
+
+                                        if object.animations[animation_index].frame_index == object.animations[animation_index].frame_cycle_count {
+                                            object.animations[animation_index].frame_index = 7;
                                         }
                                         
-                                        let joint_matrices_ref: &[[f32; 16]] = object.animations[0].joint_matrices[object.animations[0].frame_index].as_ref();                                        
+                                        let joint_matrices_ref: &[[f32; 16]] = object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index].as_ref();
 
                                         {                                                                
                                             let mut joint_matrices_slice = staging_belt.write_buffer(
@@ -657,7 +659,7 @@ async fn run() {
                                             joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
                                         }
 
-                                        object.animations[0].frame_index = object.animations[0].frame_index + 1;
+                                        object.animations[animation_index].frame_index = object.animations[animation_index].frame_index + 1;
                                         
                                         let mut view_slice = staging_belt.write_buffer(
                                             &mut encoder,
