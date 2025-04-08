@@ -5,7 +5,7 @@ use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroup
 use gpu_api_dto::{Animation, AnimationProperty, Interpolation, ModelData, Node, Skin, ViewSource};
 use crate::{model_instance::ModelInstance, pipeline::model_pipeline};
 
-pub const INSTANCE_SIZE: u64 = 64;
+pub const INSTANCE_SIZE: u64 = 68;
 pub const MAX_MODEL_AMOUNT: u64 = 100000;
 
 pub struct Object {
@@ -128,7 +128,8 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array()                
+                model_matrix: model_matrix.to_cols_array(),
+                is_animated: 0
             });
             self.model_matrices.push(model_matrix);
         }
@@ -146,7 +147,8 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array()                
+                model_matrix: model_matrix.to_cols_array(),
+                is_animated: 0
             });
             self.model_matrices.push(model_matrix);
         }
@@ -164,7 +166,8 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array()                
+                model_matrix: model_matrix.to_cols_array(),
+                is_animated: 0
             });
             self.model_matrices.push(model_matrix);
         }
@@ -182,7 +185,8 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array()                
+                model_matrix: model_matrix.to_cols_array(),
+                is_animated: 0
             });
             self.model_matrices.push(model_matrix);
         }
@@ -334,7 +338,8 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         let model_matrix = generate_model_matrix(&view_source);        
 
         views.push(ModelInstance {
-            model_matrix: model_matrix.to_cols_array()            
+            model_matrix: model_matrix.to_cols_array(),
+            is_animated: 1
         });
 
         model_matrices.push(model_matrix);

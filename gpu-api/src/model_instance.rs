@@ -3,7 +3,8 @@ use std::mem;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ModelInstance {
-    pub model_matrix: [f32; 16]
+    pub model_matrix: [f32; 16],
+    pub is_animated: u32
 }
 
 unsafe impl bytemuck::Pod for ModelInstance {}
@@ -38,6 +39,11 @@ impl ModelInstance {
                     shader_location: 9,
                     format: wgpu::VertexFormat::Float32x4
                 },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
+                    shader_location: 10,
+                    format: wgpu::VertexFormat::Uint32
+                }
             ]
         }
     }

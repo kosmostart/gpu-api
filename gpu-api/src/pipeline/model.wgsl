@@ -38,7 +38,8 @@ struct InstanceInput {
     @location(6) model_matrix_0: vec4<f32>,
     @location(7) model_matrix_1: vec4<f32>,
     @location(8) model_matrix_2: vec4<f32>,
-    @location(9) model_matrix_3: vec4<f32>
+    @location(9) model_matrix_3: vec4<f32>,
+    @location(10) @interpolate(flat) is_animated: u32
 };
 
 // Vertex shader
@@ -54,14 +55,18 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
         instance.model_matrix_3
     );
 
-    var skin_matrix: mat4x4<f32> = 
+    if (instance.is_animated == 1) {
+        var skin_matrix: mat4x4<f32> = 
         vertex_input.weights[0] * joint_uniform.joint_matrices[vertex_input.joints[0]] +
         vertex_input.weights[1] * joint_uniform.joint_matrices[vertex_input.joints[1]] +
         vertex_input.weights[2] * joint_uniform.joint_matrices[vertex_input.joints[2]] +
         vertex_input.weights[3] * joint_uniform.joint_matrices[vertex_input.joints[3]];
 
-    fragment_input.clip_position = camera.projection * model_matrix * skin_matrix * vec4<f32>(vertex_input.position, 1.0);
-    //fragment_input.clip_position = camera.projection * model_matrix * vec4<f32>(vertex_input.position, 1.0);
+        fragment_input.clip_position = camera.projection * model_matrix * skin_matrix * vec4<f32>(vertex_input.position, 1.0);
+    } else {
+        fragment_input.clip_position = camera.projection * model_matrix * vec4<f32>(vertex_input.position, 1.0);
+    }
+
     fragment_input.texture_coordinates = vertex_input.texture_coordinates;
     fragment_input.normal = vertex_input.normal;
     
