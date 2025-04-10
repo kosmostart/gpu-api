@@ -272,7 +272,9 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
     match loaded_images {
         Some(loaded_images) => {
             for texture_item in model_data.textures {
-                let index_str = texture_item.index.to_string();                            
+                let index_str = texture_item.index.to_string();
+
+                log::warn!("Creating texture from image: {}, index {}", model_data.name, texture_item.index);
         
                 let texture = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.index], Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
         
@@ -301,11 +303,11 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
             for texture_item in model_data.textures {
                 let index_str = texture_item.index.to_string();
 
-                log::warn!("Creating texture {}, size {}", model_data.name, texture_item.image_encoded.as_ref().expect("Empty encoded image for texture").len());
+                log::warn!("Creating texture from vec: {}, index {}, size {}", model_data.name, texture_item.index, texture_item.image_encoded.as_ref().expect("Empty encoded image for texture").len());
 
-                let texture_image = image::load_from_memory_with_format(texture_item.image_encoded.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");
+                let texture_image = image::load_from_memory_with_format(texture_item.image_encoded.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");                
         
-                let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");                
         
                 let texture_bind_group = device.create_bind_group(
                     &wgpu::BindGroupDescriptor {
@@ -325,7 +327,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                     }
                 );
         
-                texture_bind_groups.push(texture_bind_group);
+                texture_bind_groups.push(texture_bind_group);                
             }
         }
     }    

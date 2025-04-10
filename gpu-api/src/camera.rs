@@ -42,14 +42,14 @@ pub fn create_camera(width: f32, height: f32, x: f32, y: f32, z: f32) -> Camera 
 pub fn generate_projection_view(width: f32, height: f32) -> (Vec3, Mat4, Mat4, Mat4) {
     let aspect_ratio = width / height;    
     
-    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
+    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 100.0);        
 
     let center_x = 0.0;
     let center_y = 0.0;
     let center_z = 0.0;
     let angle_xz = 0.4f32;
     let angle_y = 0.8f32;
-    let dist = 40.0;
+    let dist = 60.0;
 
     let cam_pos = glam::Vec3::new(
         angle_xz.cos() * angle_y.sin() * dist,
