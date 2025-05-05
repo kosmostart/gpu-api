@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use log::*;
-use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
+use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
@@ -236,7 +236,7 @@ async fn run() {
 */
 
     let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);
-    //let (model_data, loaded_images) = model_load::load("test", "../models/test/test.glb", false, true, vec![]);
+    //let (model_data, loaded_images) = model_load::load("test", "../models/test/test.gltf", false, true, vec![]);
     
     let view_source = ViewSource {
         x: 0.0,
@@ -463,8 +463,25 @@ async fn run() {
                             }                            
                         }
                     }
-                    WindowEvent::MouseWheel { device_id: _, delta, phase: _ } => {
-                        info!("{:?}", delta);
+                    WindowEvent::MouseWheel { device_id: _, delta, phase: _ } => {                        
+                        match delta {
+                            MouseScrollDelta::LineDelta(_, vertical_delta) => {
+                                if vertical_delta > 0.0 {
+                                    camera.dist = camera.dist - 10.0;
+                                } else {
+                                    camera.dist = camera.dist + 10.0;
+                                }
+                            }
+                            MouseScrollDelta::PixelDelta(position) => {
+                                if position.y > 0.0 {
+                                    camera.dist = camera.dist - 10.0;
+                                    info!("1");
+                                } else {
+                                    camera.dist = camera.dist + 10.0;
+                                    info!("2");
+                                }
+                            }
+                        }        
                     }
                     WindowEvent::ModifiersChanged(state) => {
                         info!("Modifiers changed");                        
