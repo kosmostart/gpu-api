@@ -1,0 +1,33 @@
+[package]
+name = "test-app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+log = "*"
+serde_json = "*"
+winit = {version = "*" }
+gltf = "*"
+gpu-api = { path = "../gpu-api" }
+model-load = { path = "../model-load" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "*"
+wgpu = "*"
+tokio = { version = "*", features = ["rt-multi-thread"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "*"
+console_error_panic_hook = "*"
+console_log = "*"
+wasm-bindgen = "*"
+wasm-bindgen-futures = "*"
+js-sys = "*"
+web-sys = { version = "*", features = [
+    "Location", "Blob", "BlobPropertyBag", "MessageEvent", "Url", "Worker",
+    "Headers", "Request", "RequestInit", "RequestMode", "Response", "Clipboard"
+]}
+wgpu = { version = "*", features = ["webgl"] }

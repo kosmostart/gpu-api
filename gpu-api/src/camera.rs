@@ -1,104 +1,95 @@
-use cgmath::{InnerSpace, SquareMatrix};
+use glam::{Mat4, Vec3};
 
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.0, 0.0, 0.5, 1.0,
-);
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CameraUniform {
+    pub camera_position: [f32; 3],
+    pub padding: u32,
+    pub view: [f32; 16],
+    pub projection: [f32; 16]    
+}
+
+unsafe impl bytemuck::Pod for CameraUniform {}
+unsafe impl bytemuck::Zeroable for CameraUniform {}
 
 pub struct Camera {
-    pub eye: cgmath::Point3<f32>,
-    pub target: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
-    pub aspect: f32,
-    pub fovy: f32,
-    pub znear: f32,
-    pub zfar: f32
+    pub x: f32, 
+    pub y: f32, 
+    pub z: f32,
+    pub angle_y: f32,
+    pub angle_xz: f32,
+    pub dist: f32,
+    pub camera_position: Vec3,
+    pub projection_source: Mat4,
+    pub view: Mat4,
+    pub projection_view: Mat4,
+    pub translation: Mat4,
+    pub projection: Mat4
 }
 
 impl Camera {
-    fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        // 1.
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        // 2.
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
+    pub fn update(&mut self, width: f32, height: f32) {
+        let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, self.angle_xz, self.angle_y, self.dist);
 
-        // 3.
-        return OPENGL_TO_WGPU_MATRIX * proj * view;
-    }
-}
-
-#[repr(C)]
-// This is so we can store this in a buffer
-#[derive(Debug, Copy, Clone, bytemuck_derive::Pod, bytemuck_derive::Zeroable)]
-pub struct CameraUniform {
-    // We can't use cgmath with bytemuck directly so we'll have
-    // to convert the Matrix4 into a 4x4 f32 array
-    pub view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    pub fn new() -> Self {
-        
-        Self {
-            view_proj: cgmath::Matrix4::identity().into(),
-        }
+        self.camera_position = camera_position;
+        self.projection_source = projection_source;
+        self.view = view;
+        self.projection_view = projection_view;
+        self.projection = projection_view;
     }
 
-    pub fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
-    }
-}
-
-pub struct CameraController {
-    pub speed: f32,
-    pub is_forward_pressed: bool,
-    pub is_backward_pressed: bool,
-    pub is_left_pressed: bool,
-    pub is_right_pressed: bool,
-}
-
-impl CameraController {
-    pub fn new(speed: f32) -> Self {
-        Self {
-            speed,
-            is_forward_pressed: false,
-            is_backward_pressed: false,
-            is_left_pressed: false,
-            is_right_pressed: false,
-        }
+    pub fn update_with_translation(&mut self) {
+        let (translation, projection) = generate_projection(&self.projection_view, self.x, self.y, self.z);
+        self.translation = translation;
+        self.projection = projection;
     }    
+}
 
-    pub fn update_camera(&self, camera: &mut Camera) {
-        
-        let forward = camera.target - camera.eye;
-        let forward_norm = forward.normalize();
-        let forward_mag = forward.magnitude();
+pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist: f32, x: f32, y: f32, z: f32) -> Camera {    
+    let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, angle_xz, angle_y, dist);
+    let (translation, projection) = generate_projection(&projection_view, x, y, z);
 
-        // Prevents glitching when camera gets too close to the
-        // center of the scene.
-        if self.is_forward_pressed && forward_mag > self.speed {
-            camera.eye += forward_norm * self.speed;
-        }
-        if self.is_backward_pressed {
-            camera.eye -= forward_norm * self.speed;
-        }
-
-        let right = forward_norm.cross(camera.up);
-
-        // Redo radius calc in case the fowrard/backward is pressed.
-        let forward = camera.target - camera.eye;
-        let forward_mag = forward.magnitude();
-
-        if self.is_right_pressed {
-            // Rescale the distance between the target and eye so 
-            // that it doesn't change. The eye therefore still 
-            // lies on the circle made by the target and eye.
-            camera.eye = camera.target - (forward + right * self.speed).normalize() * forward_mag;
-        }
-        if self.is_left_pressed {
-            camera.eye = camera.target - (forward - right * self.speed).normalize() * forward_mag;
-        }
+    Camera {
+        x,
+        y,
+        z,
+        angle_xz,
+        angle_y,        
+        dist,
+        camera_position,
+        projection_source,
+        view,
+        projection_view,
+        translation,
+        projection
     }
+}
+
+pub fn generate_projection_view(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist: f32) -> (Vec3, Mat4, Mat4, Mat4) {
+    let aspect_ratio = width / height;        
+    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
+
+    let center_x = 0.0;
+    let center_y = 0.0;
+    let center_z = 0.0;    
+
+    let camera_position = glam::Vec3::new(
+        angle_xz.cos() * angle_y.sin() * dist,
+        angle_xz.sin() * dist + center_y,
+        angle_xz.cos() * angle_y.cos() * dist
+    );
+
+    let view = glam::Mat4::look_at_rh(
+        camera_position,
+        glam::Vec3::new(center_x, center_y, center_z),
+        glam::Vec3::new(0.0, 1.0, 0.0)
+    );    
+
+    (camera_position, projection_source, view, projection_source * view)
+}
+
+pub fn generate_projection(projection_view: &Mat4, x: f32, y: f32, z: f32) -> (Mat4, Mat4) {
+    let translation = glam::Mat4::from_translation(glam::Vec3::new(x, y, z));
+
+    (translation, projection_view.clone() * translation)
 }
