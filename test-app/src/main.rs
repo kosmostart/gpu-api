@@ -235,7 +235,8 @@ async fn run() {
     objects.push(object);
 */
 
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);    
+    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);
+    //let (model_data, loaded_images) = model_load::load("test", "../models/test/test.glb", false, true, vec![]);
     
     let view_source = ViewSource {
         x: 0.0,

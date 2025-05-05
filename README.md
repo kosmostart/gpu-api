@@ -9,7 +9,8 @@ It Supports:
 - basic shapes
 - images
 - 3D models with animation, skinning, node attachment, normal mapping, PBR (not yet)
-- gltf loading
+- GLTF loading
 - SVG (not yet)
+- ray casting for object picking: ray-AABB intersection, ray-plane intersection
 
 For working example navigate to `test-app` and do `cargo run`
