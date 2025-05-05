@@ -11,3 +11,5 @@ It Supports:
 - 3D models with animation, skinning, node attachment, normal mapping, PBR (not yet)
 - gltf loading
 - SVG (not yet)
+
+For working example navigate to `test-app` and do `cargo run`
