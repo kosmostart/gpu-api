@@ -229,7 +229,7 @@ pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     translation * scale
 }
 
-pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::Pipeline, model_data: ModelData, view_sources: Vec<ViewSource>, loaded_images: Option<Vec<DynamicImage>>) -> Object {
+pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::Pipeline, model_data: ModelData, view_sources: Vec<ViewSource>, loaded_images: Option<Vec<DynamicImage>>, frame_cycle_length: usize) -> Object {
     let mut meshes = vec![];    
 
     for mesh in model_data.meshes {
@@ -727,7 +727,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         });        
     }
 
-    let time_per_frame = 1.0 / 200.0;
+    let time_per_frame = 1.0 / frame_cycle_length as f32;
 
     for animation in &mut animations {        
         warn!("Animation {} started", animation.name);

@@ -1,6 +1,6 @@
 pub struct FrameCounter {
     pub frame_cycle_index: usize,
-    pub frame_cycle_count: usize,
+    pub frame_cycle_length: usize,
     pub time_per_frame: f32,    
     #[cfg(not(target_arch = "wasm32"))]
     pub last_frame_instant: std::time::Instant,
@@ -16,11 +16,11 @@ pub struct FrameCounter {
 }
 
 impl FrameCounter {
-    pub fn new() -> Self {
+    pub fn new(frame_cycle_length: usize) -> Self {
         Self {
             frame_cycle_index: 0,
-            frame_cycle_count: 200,
-            time_per_frame: 1.0 / 200.0,
+            frame_cycle_length,
+            time_per_frame: 1.0 / frame_cycle_length as f32,
             #[cfg(not(target_arch = "wasm32"))]
             last_frame_instant: std::time::Instant::now(),
             #[cfg(target_arch = "wasm32")]
@@ -47,7 +47,7 @@ impl FrameCounter {
             self.frame_count = self.frame_count + 1;
             self.frame_cycle_index = self.frame_cycle_index + 1;
 
-            if self.frame_cycle_index == self.frame_cycle_count {
+            if self.frame_cycle_index == self.frame_cycle_length {
                 self.frame_cycle_index = 0;        
             }
             self.last_frame_instant = new_instant;

@@ -203,6 +203,8 @@ async fn run() {
         objects: vec![]
     };
 
+    let frame_cycle_length = 200;
+
     /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
     
@@ -235,20 +237,20 @@ async fn run() {
     objects.push(object);
 */
 
-    //let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);
+    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);
     //let (model_data, loaded_images) = model_load::load("test", "../models/test/xgimega_tier_2.gltf", false, true, vec![]);
-    let (model_data, loaded_images) = model_load::load("test", "../models/test/Warrior.glb", false, true, vec![71], false);
+    //let (model_data, loaded_images) = model_load::load("test", "../models/test/Warrior.glb", false, true, vec![71], true);
     
     let view_source = ViewSource {
         x: 0.0,
-        y: -10.0,
+        y: 0.0,
         z: 0.0,        
-        scale_x: 10.0,
-        scale_y: 10.0,
-        scale_z: 10.0
+        scale_x: 5.0,
+        scale_y: 5.0,
+        scale_z: 5.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, frame_cycle_length);
     
     //object.update_view_with_rotation(gpu_api::glam::Quat::from_rotation_y(-1.0));
 
@@ -365,7 +367,7 @@ async fn run() {
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
 
-    let mut frame_counter = FrameCounter::new();
+    let mut frame_counter = FrameCounter::new(200);
 
     event_loop.run(move |event, target| {        
         target.set_control_flow(ControlFlow::Wait);
