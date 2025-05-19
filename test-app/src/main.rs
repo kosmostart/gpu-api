@@ -235,16 +235,17 @@ async fn run() {
     objects.push(object);
 */
 
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);
-    //let (model_data, loaded_images) = model_load::load("test", "../models/test/test.gltf", false, true, vec![]);
+    //let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![]);
+    //let (model_data, loaded_images) = model_load::load("test", "../models/test/xgimega_tier_2.gltf", false, true, vec![]);
+    let (model_data, loaded_images) = model_load::load("test", "../models/test/Warrior.glb", false, true, vec![71], false);
     
     let view_source = ViewSource {
         x: 0.0,
-        y: 0.0,
+        y: -10.0,
         z: 0.0,        
-        scale_x: 5.0,
-        scale_y: 5.0,
-        scale_z: 5.0
+        scale_x: 10.0,
+        scale_y: 10.0,
+        scale_z: 10.0
     };
     
     let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images);
@@ -571,10 +572,9 @@ async fn run() {
                                             continue;
                                         }                                        
 
-                                        let animation_index = 0;
-                                        let animation_logic = AnimationComputation::NotAnimated;
+                                        let animation_index = 1;
 
-                                        match animation_logic {
+                                        match object.animation_computation {
                                             AnimationComputation::NotAnimated => {
                                                 for mesh in &object.meshes {
                                                     match &mesh.node_transform {

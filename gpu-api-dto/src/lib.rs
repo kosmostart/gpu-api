@@ -10,6 +10,7 @@ pub struct ModelData {
     pub skins: Vec<Skin>,
 	pub meshes: Vec<MeshData>,
     pub materials: Vec<MaterialData>,
+    pub is_animated: bool,
     pub animations: Vec<Animation>    
 }
 

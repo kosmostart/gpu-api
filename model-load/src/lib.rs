@@ -8,7 +8,7 @@ pub use gpu_api_dto;
 use lz4_flex::compress_prepend_size;
 pub use lz4_flex;
 
-pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: bool, attached_nodes_indices: Vec<usize>) -> (ModelData, Option<Vec<DynamicImage>>) {
+pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: bool, attached_nodes_indices: Vec<usize>, is_animated: bool) -> (ModelData, Option<Vec<DynamicImage>>) {
     info!("Loading model {} from path {}", model_name, model_path);    
     let (document, buffers, images) = gltf::import(model_path).expect("Model import failed");
     
@@ -793,6 +793,7 @@ pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: boo
         skins,
         meshes,
         materials,
+        is_animated,
         animations
     }, match add_images {
         true => Some(loaded_images),

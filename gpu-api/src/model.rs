@@ -3,7 +3,7 @@ use glam::{Mat4, Quat};
 use image::{ImageBuffer, DynamicImage};
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{AlphaMode, Animation, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
+use gpu_api_dto::{AlphaMode, Animation, AnimationComputation, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
 use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_AMOUNT}};
 
 pub struct Object {
@@ -13,6 +13,7 @@ pub struct Object {
     pub node_map: std::collections::BTreeMap<usize, usize>,
     pub skins: Vec<ModelSkin>,
     pub meshes: Vec<Mesh>,
+    pub animation_computation: AnimationComputation,
     pub animations: Vec<ModelAnimation>,
     pub instance_buffer: Buffer,
     pub instances: Vec<ObjectInstance>,
@@ -138,7 +139,11 @@ impl Object {
             let model_matrix = generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: 0                
+                is_animated: match self.animation_computation {
+                    AnimationComputation::PreComputed |
+                    AnimationComputation::ComputeInRealTime => 1,
+                    AnimationComputation::NotAnimated => 0
+                }
             });
             self.model_matrices.push(model_matrix);
         }
@@ -157,7 +162,11 @@ impl Object {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: 0                
+                is_animated: match self.animation_computation {
+                    AnimationComputation::PreComputed |
+                    AnimationComputation::ComputeInRealTime => 1,
+                    AnimationComputation::NotAnimated => 0
+                }
             });
             self.model_matrices.push(model_matrix);
         }
@@ -176,7 +185,11 @@ impl Object {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: 0                
+                is_animated: match self.animation_computation {
+                    AnimationComputation::PreComputed |
+                    AnimationComputation::ComputeInRealTime => 1,
+                    AnimationComputation::NotAnimated => 0
+                }
             });
             self.model_matrices.push(model_matrix);
         }
@@ -195,7 +208,11 @@ impl Object {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
             self.views.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),                
-                is_animated: 0                
+                is_animated: match self.animation_computation {
+                    AnimationComputation::PreComputed |
+                    AnimationComputation::ComputeInRealTime => 1,
+                    AnimationComputation::NotAnimated => 0
+                }
             });
             self.model_matrices.push(model_matrix);
         }
@@ -465,8 +482,8 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                         }                        
                     };
 
-                    let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, &texture_item.image_format, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
-                    //let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                    //let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, &texture_item.image_format, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                    let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
                                     
                     /*
                     let texture_image = image::load_from_memory_with_format(texture_item.payload.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");
@@ -579,7 +596,10 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
         views.push(ModelInstance {
             model_matrix: model_matrix.to_cols_array(),
-            is_animated: 0
+            is_animated: match model_data.is_animated {
+                true => 1,
+                false => 0                
+            }
         });
 
         model_matrices.push(model_matrix);
@@ -872,6 +892,10 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         node_map: model_data.node_map,
         skins,
         meshes,
+        animation_computation: match model_data.is_animated {
+            true => AnimationComputation::PreComputed,
+            false => AnimationComputation::NotAnimated
+        },
         animations,
         instance_buffer,        
         joint_matrices_buffer,
