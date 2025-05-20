@@ -16,14 +16,13 @@ pub struct Object {
     pub animation_computation: AnimationComputation,
     pub animations: Vec<ModelAnimation>,
     pub instance_buffer: Buffer,
-    pub instances: Vec<ObjectInstance>,
-    pub model_matrices: Vec<Mat4>,
+    pub instances: Vec<ObjectInstance>,    
     pub materials: Vec<ObjectMaterial>,
     pub joint_matrices_buffer: Buffer,
     pub joint_matrices_bind_group: BindGroup,
-    pub views: Vec<ModelInstance>,
-    pub views_size: u64,
-    pub instances_amount: u32    
+    pub model_instances: Vec<ModelInstance>,
+    pub model_instance_size: u64,
+    pub instances_amount: u32
 }
 
 pub struct ModelNode {
@@ -131,93 +130,92 @@ pub struct ModelAnimationChannel {
 }
 
 impl Object {
-    pub fn update_view(&mut self) {
-        self.views.clear();
-        self.model_matrices.clear();
+    pub fn update_all_views(&mut self) {
+        self.model_instances.clear();        
 
         for instance in &self.instances {
             let model_matrix = generate_model_matrix(&instance.view_source);
-            self.views.push(ModelInstance {
+            self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
                 is_animated: match self.animation_computation {
                     AnimationComputation::PreComputed |
                     AnimationComputation::ComputeInRealTime => 1,
                     AnimationComputation::NotAnimated => 0
                 }
-            });
-            self.model_matrices.push(model_matrix);
+            });            
         }
 
-        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
+        self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
+    pub fn update_instance_view(&mut self, instance_index: usize) {        
+        let instance = &self.instances[instance_index];
+        let model_matrix = generate_model_matrix(&instance.view_source);
+
+        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();            
+    }
+
     pub fn update_view_with_translation(&mut self, translation: &[f32; 3]) {
-        self.views.clear();
-        self.model_matrices.clear();
+        self.model_instances.clear();        
 
         let translation_matrix = glam::Mat4::from_translation(glam::Vec3::new(translation[0], translation[1], translation[2]));        
 
         for instance in &self.instances {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
-            self.views.push(ModelInstance {
+            self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
                 is_animated: match self.animation_computation {
                     AnimationComputation::PreComputed |
                     AnimationComputation::ComputeInRealTime => 1,
                     AnimationComputation::NotAnimated => 0
                 }
-            });
-            self.model_matrices.push(model_matrix);
+            });            
         }
 
-        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
+        self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
     pub fn update_view_with_rotation(&mut self, rotation: Quat) {
-        self.views.clear();
-        self.model_matrices.clear();
+        self.model_instances.clear();        
 
         let rotation_matrix = glam::Mat4::from_quat(rotation);
 
         for instance in &self.instances {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
-            self.views.push(ModelInstance {
+            self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
                 is_animated: match self.animation_computation {
                     AnimationComputation::PreComputed |
                     AnimationComputation::ComputeInRealTime => 1,
                     AnimationComputation::NotAnimated => 0
                 }
-            });
-            self.model_matrices.push(model_matrix);
+            });            
         }
 
-        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
+        self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 
     pub fn update_view_with_scale(&mut self, scale: &[f32; 3]) {
-        self.views.clear();
-        self.model_matrices.clear();
+        self.model_instances.clear();        
 
         let scale_matrix = glam::Mat4::from_scale(glam::Vec3::new(scale[0], scale[1], scale[2]));
 
         for instance in &self.instances {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
-            self.views.push(ModelInstance {
+            self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),                
                 is_animated: match self.animation_computation {
                     AnimationComputation::PreComputed |
                     AnimationComputation::ComputeInRealTime => 1,
                     AnimationComputation::NotAnimated => 0
                 }
-            });
-            self.model_matrices.push(model_matrix);
+            });            
         }
 
-        self.views_size = self.views.len() as u64 * INSTANCE_SIZE;
+        self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
         self.instances_amount = self.instances.len() as u32;
     }
 }
@@ -900,11 +898,10 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         instance_buffer,        
         joint_matrices_buffer,
         joint_matrices_bind_group,
-        instances,
-        model_matrices,
+        instances,        
         materials,
-        views,
-        views_size,
+        model_instances: views,
+        model_instance_size: views_size,
         instances_amount        
     }
 }

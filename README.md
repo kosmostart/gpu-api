@@ -4,7 +4,7 @@
 
 This is collection of [`wgpu`](https://github.com/gfx-rs/wgpu/) pipelines, wich can be used for single render pass.
 
-It Supports:
+It supports:
 
 - basic shapes
 - images

@@ -38,7 +38,8 @@ impl Camera {
         self.projection = projection_view;
     }
 
-    pub fn update_with_translation(&mut self) {
+    pub fn update_with_translation(&mut self, width: f32, height: f32) {
+        self.update(width, height);
         let (translation, projection) = generate_projection(&self.projection_view, self.x, self.y, self.z);
         self.translation = translation;
         self.projection = projection;

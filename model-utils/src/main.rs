@@ -6,11 +6,11 @@ use model_load::{load, gpu_api_dto};
 
 fn main() {
     env_logger::init();
-    process_model("box", "box", "box.glb", false);
+    process_model("paladin", "test", "Paladin.glb", true);
 }
 
 fn process_model(model_name: &str, folder_name: &str, file_name: &str, is_animated: bool) {    
-    let (model_data, _loaded_images) = load(model_name, &format!("../models/{}/{}", folder_name, file_name), true, false, vec![], is_animated);
+    let (model_data, _loaded_images) = load(model_name, &format!("../models/{}/{}", folder_name, file_name), true, false, vec![74], is_animated);
     
     //let mut texture_index = 0;        
 

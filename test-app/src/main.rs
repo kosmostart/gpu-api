@@ -238,8 +238,6 @@ async fn run() {
 */
 
     let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);
-    //let (model_data, loaded_images) = model_load::load("test", "../models/test/xgimega_tier_2.gltf", false, true, vec![]);
-    //let (model_data, loaded_images) = model_load::load("test", "../models/test/Warrior.glb", false, true, vec![71], true);
     
     let view_source = ViewSource {
         x: 0.0,
@@ -574,7 +572,7 @@ async fn run() {
                                             continue;
                                         }                                        
 
-                                        let animation_index = 1;
+                                        let animation_index = 2;
 
                                         match object.animation_computation {
                                             AnimationComputation::NotAnimated => {
@@ -788,11 +786,11 @@ async fn run() {
                                             &mut encoder,
                                             &object.instance_buffer,
                                             0,
-                                            wgpu::BufferSize::new(object.views_size).expect("Failed to allocate view slice"),
+                                            wgpu::BufferSize::new(object.model_instance_size).expect("Failed to allocate view slice"),
                                             &device
                                         );
                     
-                                        view_slice.copy_from_slice(bytemuck::cast_slice(&object.views));
+                                        view_slice.copy_from_slice(bytemuck::cast_slice(&object.model_instances));
                                     }
                                 }
                             }
