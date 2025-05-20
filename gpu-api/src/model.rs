@@ -3,7 +3,7 @@ use glam::{Mat4, Quat};
 use image::{ImageBuffer, DynamicImage};
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{AlphaMode, Animation, AnimationComputation, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
+use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
 use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_AMOUNT}};
 
 pub struct Object {
@@ -13,7 +13,7 @@ pub struct Object {
     pub node_map: std::collections::BTreeMap<usize, usize>,
     pub skins: Vec<ModelSkin>,
     pub meshes: Vec<Mesh>,
-    pub animation_computation: AnimationComputation,
+    pub animation_computation_mode: AnimationComputationMode,
     pub animations: Vec<ModelAnimation>,
     pub instance_buffer: Buffer,
     pub instances: Vec<ObjectInstance>,    
@@ -137,10 +137,10 @@ impl Object {
             let model_matrix = generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: match self.animation_computation {
-                    AnimationComputation::PreComputed |
-                    AnimationComputation::ComputeInRealTime => 1,
-                    AnimationComputation::NotAnimated => 0
+                is_animated: match self.animation_computation_mode {
+                    AnimationComputationMode::PreComputed |
+                    AnimationComputationMode::ComputeInRealTime => 1,
+                    AnimationComputationMode::NotAnimated => 0
                 }
             });            
         }
@@ -165,10 +165,10 @@ impl Object {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: match self.animation_computation {
-                    AnimationComputation::PreComputed |
-                    AnimationComputation::ComputeInRealTime => 1,
-                    AnimationComputation::NotAnimated => 0
+                is_animated: match self.animation_computation_mode {
+                    AnimationComputationMode::PreComputed |
+                    AnimationComputationMode::ComputeInRealTime => 1,
+                    AnimationComputationMode::NotAnimated => 0
                 }
             });            
         }
@@ -186,10 +186,10 @@ impl Object {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),
-                is_animated: match self.animation_computation {
-                    AnimationComputation::PreComputed |
-                    AnimationComputation::ComputeInRealTime => 1,
-                    AnimationComputation::NotAnimated => 0
+                is_animated: match self.animation_computation_mode {
+                    AnimationComputationMode::PreComputed |
+                    AnimationComputationMode::ComputeInRealTime => 1,
+                    AnimationComputationMode::NotAnimated => 0
                 }
             });            
         }
@@ -207,10 +207,10 @@ impl Object {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
                 model_matrix: model_matrix.to_cols_array(),                
-                is_animated: match self.animation_computation {
-                    AnimationComputation::PreComputed |
-                    AnimationComputation::ComputeInRealTime => 1,
-                    AnimationComputation::NotAnimated => 0
+                is_animated: match self.animation_computation_mode {
+                    AnimationComputationMode::PreComputed |
+                    AnimationComputationMode::ComputeInRealTime => 1,
+                    AnimationComputationMode::NotAnimated => 0
                 }
             });            
         }
@@ -890,9 +890,9 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         node_map: model_data.node_map,
         skins,
         meshes,
-        animation_computation: match model_data.is_animated {
-            true => AnimationComputation::PreComputed,
-            false => AnimationComputation::NotAnimated
+        animation_computation_mode: match model_data.is_animated {
+            true => AnimationComputationMode::PreComputed,
+            false => AnimationComputationMode::NotAnimated
         },
         animations,
         instance_buffer,        

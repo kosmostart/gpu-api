@@ -61,7 +61,7 @@ pub struct PrimitiveData {
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
-pub enum AnimationComputation {
+pub enum AnimationComputationMode {
     NotAnimated,
     ComputeInRealTime,
     PreComputed

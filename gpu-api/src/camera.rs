@@ -22,33 +22,24 @@ pub struct Camera {
     pub camera_position: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,
-    pub projection_view: Mat4,
-    pub translation: Mat4,
+    pub projection_view: Mat4,    
     pub projection: Mat4
 }
 
 impl Camera {
     pub fn update(&mut self, width: f32, height: f32) {
-        let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, self.angle_xz, self.angle_y, self.dist);
+        let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, self.x, self.y, self.z, self.angle_xz, self.angle_y, self.dist);
 
         self.camera_position = camera_position;
         self.projection_source = projection_source;
         self.view = view;
         self.projection_view = projection_view;
         self.projection = projection_view;
-    }
-
-    pub fn update_with_translation(&mut self, width: f32, height: f32) {
-        self.update(width, height);
-        let (translation, projection) = generate_projection(&self.projection_view, self.x, self.y, self.z);
-        self.translation = translation;
-        self.projection = projection;
     }    
 }
 
 pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist: f32, x: f32, y: f32, z: f32) -> Camera {    
-    let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, angle_xz, angle_y, dist);
-    let (translation, projection) = generate_projection(&projection_view, x, y, z);
+    let (camera_position, projection_source, view, projection_view) = generate_projection_view(width, height, x, y, z, angle_xz, angle_y, dist);    
 
     Camera {
         x,
@@ -60,24 +51,19 @@ pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist:
         camera_position,
         projection_source,
         view,
-        projection_view,
-        translation,
-        projection
+        projection_view,        
+        projection: projection_view
     }
 }
 
-pub fn generate_projection_view(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist: f32) -> (Vec3, Mat4, Mat4, Mat4) {
+pub fn generate_projection_view(width: f32, height: f32, center_x: f32, center_y: f32, center_z: f32, angle_xz: f32, angle_y: f32, dist: f32) -> (Vec3, Mat4, Mat4, Mat4) {
     let aspect_ratio = width / height;        
     let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
 
-    let center_x = 0.0;
-    let center_y = 0.0;
-    let center_z = 0.0;    
-
     let camera_position = glam::Vec3::new(
-        angle_xz.cos() * angle_y.sin() * dist,
+        angle_xz.cos() * angle_y.sin() * dist + center_x,
         angle_xz.sin() * dist + center_y,
-        angle_xz.cos() * angle_y.cos() * dist
+        angle_xz.cos() * angle_y.cos() * dist + center_z
     );
 
     let view = glam::Mat4::look_at_rh(
@@ -87,10 +73,4 @@ pub fn generate_projection_view(width: f32, height: f32, angle_xz: f32, angle_y:
     );    
 
     (camera_position, projection_source, view, projection_source * view)
-}
-
-pub fn generate_projection(projection_view: &Mat4, x: f32, y: f32, z: f32) -> (Mat4, Mat4) {
-    let translation = glam::Mat4::from_translation(glam::Vec3::new(x, y, z));
-
-    (translation, projection_view.clone() * translation)
 }
