@@ -179,7 +179,8 @@ pub struct ViewSource {
     pub z: f32,
     pub scale_x: f32,
     pub scale_y: f32,
-    pub scale_z: f32
+    pub scale_z: f32,
+    pub rotation_y: f32
 }
 
 pub fn deserialize_model_data(buf: &[u8]) -> ModelData {    

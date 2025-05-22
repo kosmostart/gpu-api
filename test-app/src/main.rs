@@ -6,7 +6,7 @@ use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::CameraUniform, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, model_pipeline::CAMERA_UNIFORM_SIZE, quad_pipeline}};
+use gpu_api::{bytemuck, camera::CameraUniform, frame_counter::FrameCounter, glam::{vec3, Mat4, Vec3}, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, model_pipeline::CAMERA_UNIFORM_SIZE, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -245,12 +245,11 @@ async fn run() {
         z: 0.0,        
         scale_x: 5.0,
         scale_y: 5.0,
-        scale_z: 5.0
+        scale_z: 5.0,
+        rotation_y: 0.0
     };
     
     let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, frame_cycle_length);
-    
-    //object.update_view_with_rotation(gpu_api::glam::Quat::from_rotation_y(-1.0));
 
     object_group.objects.push(object);
 

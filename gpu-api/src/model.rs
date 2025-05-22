@@ -83,7 +83,7 @@ pub struct ObjectGroup {
 }
 
 pub struct ObjectInstance {
-    pub view_source: ViewSource,
+    pub view_source: ViewSource,    
     pub is_moving: bool,
     pub move_target: glam::Vec3,
     pub move_direction_normalized: glam::Vec3,
@@ -153,8 +153,17 @@ impl Object {
         let instance = &self.instances[instance_index];
         let model_matrix = generate_model_matrix(&instance.view_source);
 
-        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();            
+        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();
     }
+
+    pub fn update_instance_view_with_rotation(&mut self, instance_index: usize) {
+        let instance = &mut self.instances[instance_index];            
+        let quat = Quat::from_rotation_y(instance.view_source.rotation_y);
+        let rotation_matrix = glam::Mat4::from_quat(quat);
+        let model_matrix = generate_model_matrix(&instance.view_source) * rotation_matrix;
+
+        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();        
+    }    
 
     pub fn update_view_with_translation(&mut self, translation: &[f32; 3]) {
         self.model_instances.clear();        
@@ -603,7 +612,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         model_matrices.push(model_matrix);
 
         instances.push(ObjectInstance {
-            view_source,
+            view_source,            
             is_moving: false,
             move_target: glam::vec3(0.0, 0.0, 0.0),
             move_direction_normalized: glam::vec3(0.0, 0.0, 0.0),
