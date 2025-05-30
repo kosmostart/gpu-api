@@ -6,7 +6,6 @@ use camera::Camera;
 pub use glam;
 use glam::vec3;
 pub use gpu_api_dto;
-pub use image;
 use log::warn;
 pub use wgpu;
 

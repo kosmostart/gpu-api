@@ -1,7 +1,7 @@
 use log::*;
 use glam::{Mat4, Quat};
-use image::{ImageBuffer, DynamicImage};
-use lz4_flex::decompress_size_prepended;
+use gpu_api_dto::image::{self, ImageBuffer, DynamicImage};
+use gpu_api_dto::lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
 use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_AMOUNT}};

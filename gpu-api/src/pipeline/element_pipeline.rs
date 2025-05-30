@@ -1,6 +1,7 @@
 use std::{borrow::Cow, mem::size_of};
 use wgpu::{Adapter, BindGroup, BindGroupLayout, DepthStencilState, Device, PipelineLayout, Queue, RenderPass, RenderPipeline, ShaderModule, Surface, TextureFormat};
 use wgpu::util::DeviceExt;
+use gpu_api_dto::image;
 use crate::texture::Texture;
 
 #[repr(C)]

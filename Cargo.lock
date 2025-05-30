@@ -1047,10 +1047,8 @@ dependencies = [
  "bytemuck_derive",
  "glam",
  "gpu-api-dto",
- "image",
  "ktx2",
  "log",
- "lz4_flex",
  "serde",
  "serde_derive",
  "web-time",
@@ -1062,6 +1060,8 @@ name = "gpu-api-dto"
 version = "0.1.0"
 dependencies = [
  "bitcode",
+ "image",
+ "lz4_flex",
  "serde",
  "serde_derive",
 ]
