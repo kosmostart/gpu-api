@@ -17,46 +17,6 @@ pub struct ModelData {
     pub animations: Vec<Animation>    
 }
 
-pub fn create_material_data(texture_data: Vec<(TextureType, &[u8])>) -> MaterialData {
-    let mut textures = vec![];
-    let mut texture_index = 0;
-
-    for (texture_type, data) in texture_data {
-        let loaded_image = image::load_from_memory(data).expect("Failed to load texture image");
-    
-        let image_width = loaded_image.width();
-        let image_height = loaded_image.height();
-    
-        let texture_data = compress_prepend_size(loaded_image.to_rgba8().as_raw());
-        
-        textures.push(TextureData {
-            index: texture_index,
-            name: None,
-            image_index: texture_index,
-            loaded_image_index: texture_index,
-            texture_type,
-            image_format: ImageFormat::R8G8B8A8,
-            compression_format: TextureCompressionFormat::NotCompressed,
-            width: image_width,
-            height: image_height,
-            payload: Some(texture_data)
-        });            
-
-        texture_index = texture_index + 1;
-    };
-
-    MaterialData {
-        index: 0,
-        name: None,
-        alpa_mode: AlphaMode::Blend,
-        textures,
-        base_color_factor: [1.0; 4],
-        metallic_factor: 1.0,
-        roughness_factor: 1.0,
-        emissive_factor: [0.0; 3]
-    }
-}
-
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct Node {
     pub index: usize,    
@@ -204,6 +164,48 @@ pub struct MaterialData {
     pub metallic_factor: f32,
     pub roughness_factor: f32,
     pub emissive_factor: [f32; 3]
+}
+
+impl MaterialData {
+    pub fn new(texture_data: Vec<(TextureType, &[u8])>) -> MaterialData {
+        let mut textures = vec![];
+        let mut texture_index = 0;
+
+        for (texture_type, data) in texture_data {
+            let loaded_image = image::load_from_memory(data).expect("Failed to load texture image");
+        
+            let image_width = loaded_image.width();
+            let image_height = loaded_image.height();
+        
+            let texture_data = compress_prepend_size(loaded_image.to_rgba8().as_raw());
+            
+            textures.push(TextureData {
+                index: texture_index,
+                name: None,
+                image_index: texture_index,
+                loaded_image_index: texture_index,
+                texture_type,
+                image_format: ImageFormat::R8G8B8A8,
+                compression_format: TextureCompressionFormat::NotCompressed,
+                width: image_width,
+                height: image_height,
+                payload: Some(texture_data)
+            });            
+
+            texture_index = texture_index + 1;
+        };
+
+        MaterialData {
+            index: 0,
+            name: None,
+            alpa_mode: AlphaMode::Blend,
+            textures,
+            base_color_factor: [1.0; 4],
+            metallic_factor: 1.0,
+            roughness_factor: 1.0,
+            emissive_factor: [0.0; 3]
+        }
+    }
 }
 
 #[derive(Encode, Decode, Debug, Clone)]
