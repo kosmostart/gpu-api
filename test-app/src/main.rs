@@ -523,17 +523,17 @@ async fn run() {
                             }
                             
                             {
-                                let instance_bytes = bytemuck::cast_slice(&quads);
+                                let vertex_bytes = bytemuck::cast_slice(&quads);
             
-                                let mut instance_buffer = staging_belt.write_buffer(
+                                let mut vertex_buffer = staging_belt.write_buffer(
                                     &mut encoder,
                                     &quad_pipeline.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).unwrap(),
                                     &device,
                                 );
             
-                                instance_buffer.copy_from_slice(instance_bytes);
+                                vertex_buffer.copy_from_slice(vertex_bytes);
                             }                            
 
                             camera.update(layout.size.width as f32, layout.size.height as f32);
