@@ -515,7 +515,7 @@ async fn run() {
                                     &quad_pipeline.uniform_buffer,
                                     0,
                                     wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
-                                        .unwrap(),
+                                        .expect("Failed to create quad uniform buffer size"),
                                     &device
                                 );
             
@@ -529,7 +529,8 @@ async fn run() {
                                     &mut encoder,
                                     &quad_pipeline.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).unwrap(),
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64)
+                                        .expect("Failed to create quad uniform buffer size"),
                                     &device,
                                 );
             
