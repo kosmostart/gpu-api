@@ -535,7 +535,7 @@ async fn run() {
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
-                            }                            
+                            }
 
                             camera.update(layout.size.width as f32, layout.size.height as f32);
             
