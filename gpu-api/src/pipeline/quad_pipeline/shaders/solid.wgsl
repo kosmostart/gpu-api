@@ -27,7 +27,7 @@ struct SolidVertexOutput {
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
     @location(9) component_coordinates: vec4<f32>,    
-    @location(10) has_overlay: u32,
+    @location(10) @interpolate(flat) has_overlay: u32,
     @location(11) overlay_coordinates: vec4<f32>
 }
 
