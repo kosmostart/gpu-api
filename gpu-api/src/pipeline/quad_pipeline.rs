@@ -4,7 +4,7 @@ use log::*;
 use wgpu::{util::DeviceExt, DepthStencilState, RenderPass, TextureFormat};
 use glam::{Mat4, Vec3};
 
-pub const MAX_QUADS_AMOUNT: u64 = 1000;
+pub const MAX_QUADS_COUNT: u64 = 1000;
 
 #[derive(Debug)]
 pub struct Pipeline {
@@ -15,12 +15,12 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, amount: u32) {
+    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, count: u32) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
 
-        render_pass.draw(0..6, 0..amount);
+        render_pass.draw(0..6, 0..count);
     }
 
     pub fn new(device: &wgpu::Device, depth_stencil: Option<DepthStencilState>) -> Pipeline {
@@ -171,7 +171,7 @@ impl Pipeline {
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Quad instance buffer"),
-            size: mem::size_of::<Quad>() as u64 * MAX_QUADS_AMOUNT,
+            size: mem::size_of::<Quad>() as u64 * MAX_QUADS_COUNT,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false
         });

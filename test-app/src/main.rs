@@ -565,7 +565,7 @@ async fn run() {
                                             continue;
                                         }
                                         
-                                        if object.instances_amount == 0 {
+                                        if object.instances_count == 0 {
                                             continue;
                                         }                                        
 
@@ -655,7 +655,7 @@ async fn run() {
                                                     }                                            
                                                 }                                    
 
-                                                let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT] = [Mat4::IDENTITY.to_cols_array(); gpu_api::pipeline::model_pipeline::JOINT_MATRICES_AMOUNT];
+                                                let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT];
                                                 
                                                 let mut joint_matrix_index = 0;
                                                 let skin_index = 0;

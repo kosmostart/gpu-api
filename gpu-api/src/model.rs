@@ -4,7 +4,7 @@ use gpu_api_dto::image::{self, ImageBuffer, DynamicImage};
 use gpu_api_dto::lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
-use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_AMOUNT}};
+use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
 
 pub struct Object {
     pub name: String,
@@ -22,7 +22,7 @@ pub struct Object {
     pub joint_matrices_bind_group: BindGroup,
     pub model_instances: Vec<ModelInstance>,
     pub model_instance_size: u64,
-    pub instances_amount: u32
+    pub instances_count: u32
 }
 
 pub struct ModelNode {
@@ -103,7 +103,7 @@ pub struct ModelAnimation {
     pub channels: Vec<ModelAnimationChannel>,
     pub frame_index: usize,
     pub frame_cycle_count: usize,
-    pub joint_matrices: Vec<[[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT]>,
+    pub joint_matrices: Vec<[[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT]>,
     pub mesh_node_transforms: Vec<MeshNodeTransform>
 }
 
@@ -146,7 +146,7 @@ impl Object {
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
-        self.instances_amount = self.instances.len() as u32;
+        self.instances_count = self.instances.len() as u32;
     }
 
     pub fn update_instance_view(&mut self, instance_index: usize) {        
@@ -183,7 +183,7 @@ impl Object {
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
-        self.instances_amount = self.instances.len() as u32;
+        self.instances_count = self.instances.len() as u32;
     }
 
     pub fn update_view_with_rotation(&mut self, rotation: Quat) {
@@ -204,7 +204,7 @@ impl Object {
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
-        self.instances_amount = self.instances.len() as u32;
+        self.instances_count = self.instances.len() as u32;
     }
 
     pub fn update_view_with_scale(&mut self, scale: &[f32; 3]) {
@@ -225,7 +225,7 @@ impl Object {
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
-        self.instances_amount = self.instances.len() as u32;
+        self.instances_count = self.instances.len() as u32;
     }
 }
 
@@ -320,7 +320,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
     let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Instance Buffer"),
-        size: INSTANCE_SIZE * MAX_MODEL_INSTANCES_AMOUNT,
+        size: INSTANCE_SIZE * MAX_MODEL_INSTANCES_COUNT,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false
     });
@@ -628,7 +628,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
     let views_size = views.len() as u64 * INSTANCE_SIZE;
 
-    let instances_amount = instances.len() as u32;
+    let instances_count = instances.len() as u32;
 
     let mut animations = vec![];
 
@@ -671,7 +671,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         });
     }
 
-    let joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_AMOUNT];
+    let joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_COUNT];
 
     let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 
@@ -825,7 +825,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                 }
             }           
 
-            let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_AMOUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_AMOUNT];
+            let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_COUNT];
             
             let mut joint_matrix_index = 0;
             let skin_index = 0;            
@@ -911,6 +911,6 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
         materials,
         model_instances: views,
         model_instance_size: views_size,
-        instances_amount        
+        instances_count        
     }
 }

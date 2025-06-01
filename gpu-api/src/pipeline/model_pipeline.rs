@@ -9,8 +9,8 @@ use crate::texture::Texture;
 
 pub const CAMERA_UNIFORM_SIZE: u64 = 144;
 pub const INSTANCE_SIZE: u64 = 68;
-pub const MAX_MODEL_INSTANCES_AMOUNT: u64 = 100000;
-pub const JOINT_MATRICES_AMOUNT: usize = 100;
+pub const MAX_MODEL_INSTANCES_COUNT: u64 = 100000;
+pub const JOINT_MATRICES_COUNT: usize = 100;
 pub const JOINT_MATRICES_UNIFORM_SIZE: u64 = 6400;
 pub const NODE_TRANSFORM_UNIFORM_SIZE: u64 = 80;
 pub const MATERIAL_FACTORS_UNIFORM_SIZE: u64 = 48;
@@ -82,13 +82,13 @@ impl Pipeline {
             }
             
             for object in &object_group.objects {
-                if object.instances_amount == 0 {
+                if object.instances_count == 0 {
                     continue;
                 }
                 
                 render_pass.set_vertex_buffer(1, object.instance_buffer.slice(..)); // Instances
                         
-                let instances_range = 0..object.instances_amount;
+                let instances_range = 0..object.instances_count;
                 
                 for mesh in &object.meshes {
                     for primitive in &mesh.primitives {                        
