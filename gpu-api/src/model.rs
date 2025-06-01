@@ -4,7 +4,7 @@ use gpu_api_dto::image::{self, ImageBuffer, DynamicImage};
 use gpu_api_dto::lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
 use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
-use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_AMOUNT}};
+use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_AMOUNT}};
 
 pub struct Object {
     pub name: String,
@@ -320,7 +320,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
 
     let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Instance Buffer"),
-        size: INSTANCE_SIZE * MAX_MODEL_AMOUNT,
+        size: INSTANCE_SIZE * MAX_MODEL_INSTANCES_AMOUNT,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false
     });

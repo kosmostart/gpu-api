@@ -12,6 +12,9 @@ use element::{Color, ElementCfg, create_element};
 
 mod element;
 
+pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
+pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
+
 #[derive(Debug)]
 pub enum AppEvent {
 }
@@ -201,9 +204,7 @@ async fn run() {
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    };
-
-    let frame_cycle_length = 200;
+    };    
 
     /*
     let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
@@ -249,7 +250,7 @@ async fn run() {
         rotation_y: 0.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, frame_cycle_length);
+    let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION);
 
     object_group.objects.push(object);
 
@@ -304,7 +305,7 @@ async fn run() {
     let mut object_groups = vec![];
     object_groups.push(object_group);
     
-    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, wgpu::TextureFormat::Rgba8UnormSrgb, depth_stencil_state);
+    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, depth_stencil_state);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
     let mut quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
@@ -330,7 +331,8 @@ async fn run() {
             overlay_coordinates,
             shadow_color,
             shadow_offset,
-            shadow_blur_radius
+            shadow_blur_radius,
+            snap: 0
         },
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -344,7 +346,8 @@ async fn run() {
             overlay_coordinates,
             shadow_color,
             shadow_offset,
-            shadow_blur_radius
+            shadow_blur_radius,
+            snap: 0
         },
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -358,13 +361,14 @@ async fn run() {
             overlay_coordinates,
             shadow_color,
             shadow_offset,
-            shadow_blur_radius
+            shadow_blur_radius,
+            snap: 0
         }        
     ];
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
 
-    let mut frame_counter = FrameCounter::new(200);
+    let mut frame_counter = FrameCounter::new(FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER);
 
     event_loop.run(move |event, target| {        
         target.set_control_flow(ControlFlow::Wait);
@@ -518,26 +522,19 @@ async fn run() {
                                 uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
                             }
                             
-                            let amount = {
-                                let i = 0;
-                                let total = quads.len();
-                                let end = (i + quad_pipeline::MAX_INSTANCES).min(total);
-                                let res = end - i;
-            
-                                let instance_bytes = bytemuck::cast_slice(&quads[i..end]);
+                            {
+                                let instance_bytes = bytemuck::cast_slice(&quads);
             
                                 let mut instance_buffer = staging_belt.write_buffer(
                                     &mut encoder,
-                                    &quad_pipeline.instance_buffer,
+                                    &quad_pipeline.vertex_buffer,
                                     0,
                                     wgpu::BufferSize::new(instance_bytes.len() as u64).unwrap(),
                                     &device,
                                 );
             
                                 instance_buffer.copy_from_slice(instance_bytes);
-            
-                                res
-                            };
+                            }                            
 
                             camera.update(layout.size.width as f32, layout.size.height as f32);
             
@@ -831,7 +828,7 @@ async fn run() {
             
                                 model_pipeline.draw(&mut render_pass, &object_groups);
                                 //element_pipeline.draw(&mut render_pass, indices_count);
-                                quad_pipeline.draw(&mut render_pass, amount as u32);
+                                quad_pipeline.draw(&mut render_pass, quads.len() as u32);
                             }
             
                             staging_belt.finish();

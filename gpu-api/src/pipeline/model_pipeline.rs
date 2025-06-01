@@ -9,7 +9,7 @@ use crate::texture::Texture;
 
 pub const CAMERA_UNIFORM_SIZE: u64 = 144;
 pub const INSTANCE_SIZE: u64 = 68;
-pub const MAX_MODEL_AMOUNT: u64 = 100000;
+pub const MAX_MODEL_INSTANCES_AMOUNT: u64 = 100000;
 pub const JOINT_MATRICES_AMOUNT: usize = 100;
 pub const JOINT_MATRICES_UNIFORM_SIZE: u64 = 6400;
 pub const NODE_TRANSFORM_UNIFORM_SIZE: u64 = 80;
