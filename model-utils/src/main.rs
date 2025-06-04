@@ -6,7 +6,7 @@ use model_load::{load, gpu_api_dto};
 
 fn main() {
     env_logger::init();
-    process_model("box", "box", "box.glb", true);
+    process_model("box", "box", "box.glb", false);
 }
 
 fn process_model(model_name: &str, folder_name: &str, file_name: &str, is_animated: bool) {    
