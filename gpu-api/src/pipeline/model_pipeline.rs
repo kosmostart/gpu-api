@@ -100,7 +100,7 @@ impl Pipeline {
                         render_pass.set_index_buffer(primitive.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                         render_pass.draw_indexed(0..primitive.num_elements, 0, instances_range.clone());
                     }
-                }                    
+                }
             }
         }            
     }

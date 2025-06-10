@@ -2,8 +2,11 @@ use log::*;
 use glam::{Mat4, Quat};
 use gpu_api_dto::image::{self, ImageBuffer, DynamicImage};
 use gpu_api_dto::lz4_flex::decompress_size_prepended;
+use wgpu::util::StagingBelt;
+use wgpu::CommandEncoder;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, Skin, TextureType, ViewSource};
+use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, PrimitiveData, Skin, TextureType, ViewSource};
+use crate::pipeline::model_pipeline::Vertex;
 use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
 
 pub struct Object {
@@ -63,6 +66,46 @@ pub struct Primitive {
     pub index_buffer: wgpu::Buffer,
     pub num_elements: u32,
     pub material_index: usize
+}
+
+impl Primitive {
+    pub fn get_pipeline_vertices(primitive_data: &PrimitiveData) -> Vec<Vertex> {
+        let mut index = 0;
+        let mut vertices = vec![];
+
+        for position in &primitive_data.positions {
+            vertices.push(model_pipeline::Vertex {
+                position: *position,
+                texture_coordinates: if primitive_data.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive_data.texture_coordinates[index]},
+                normal: if primitive_data.normals.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.normals[index]},
+                tangent: if primitive_data.tangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.tangents[index]},
+                bitangent: if primitive_data.bitangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.tangents[index]},
+                joints: if primitive_data.joints.is_empty() {[0, 0, 0, 0]} else {primitive_data.joints[index]},
+                weights: if primitive_data.weights.is_empty() {[1.0, 1.0, 1.0, 1.0]} else {primitive_data.weights[index]}
+            });
+
+            index = index + 1;
+        }
+        
+        vertices        
+    }
+
+    pub fn update_buffers(&mut self, device: &Device, vertices: &Vec<Vertex>, indices: &Vec<u32>) {
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(&format!("{} Vertex Buffer", "dog")),
+            contents: bytemuck::cast_slice(vertices),
+            usage: wgpu::BufferUsages::VERTEX
+        });
+    
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(&format!("{} Index Buffer", "dog")),
+            contents: bytemuck::cast_slice(indices),
+            usage: wgpu::BufferUsages::INDEX
+        });
+
+        self.vertex_buffer = vertex_buffer;
+        self.index_buffer = index_buffer;
+    }
 }
 
 pub struct ObjectMaterial {
@@ -242,42 +285,27 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
     for mesh in model_data.meshes {
         let mut primitives = vec![];
 
-        for primitive in mesh.primitives {
-            let mut index = 0;
-            let mut vertices = vec![];
-
-            for position in primitive.positions {
-                vertices.push(model_pipeline::Vertex {
-                    position,
-                    texture_coordinates: if primitive.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive.texture_coordinates[index]},
-                    normal: if primitive.normals.is_empty() {[1.0, 1.0, 1.0]} else {primitive.normals[index]},
-                    tangent: if primitive.tangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive.tangents[index]},
-                    bitangent: if primitive.bitangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive.tangents[index]},
-                    joints: if primitive.joints.is_empty() {[0, 0, 0, 0]} else {primitive.joints[index]},
-                    weights: if primitive.weights.is_empty() {[1.0, 1.0, 1.0, 1.0]} else {primitive.weights[index]}
-                });
-
-                index = index + 1;
-            }            
+        for primitive_data in mesh.primitives {            
+            let vertices = Primitive::get_pipeline_vertices(&primitive_data);
 
             let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&format!("{} Vertex Buffer", "dog")),
                 contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX
             });
     
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&format!("{} Index Buffer", "dog")),
-                contents: bytemuck::cast_slice(&primitive.indices),
-                usage: wgpu::BufferUsages::INDEX,
+                contents: bytemuck::cast_slice(&primitive_data.indices),
+                usage: wgpu::BufferUsages::INDEX
             });
     
             primitives.push(Primitive {
                 name: "".to_owned(),
                 vertex_buffer,
                 index_buffer,
-                num_elements: primitive.indices.len() as u32,
-                material_index: primitive.material_index.expect("Primitive material index is empty")
+                num_elements: primitive_data.indices.len() as u32,
+                material_index: primitive_data.material_index.expect("Primitive material index is empty")
             });
         }
 
