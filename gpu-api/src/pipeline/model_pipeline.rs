@@ -1,11 +1,13 @@
-use std::num::NonZeroU32;
 use std::borrow::Cow;
-use log::*;
-use wgpu::{Device, Surface, Adapter, Queue, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler, TextureView};
+use wgpu::{Device, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler};
 use wgpu::util::DeviceExt;
 use crate::camera::{create_camera, Camera, CameraUniform};
-use crate::model::{Object, ObjectGroup};
+use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::texture::Texture;
+use model::ObjectGroup;
+
+pub mod model;
+pub mod model_instance;
 
 pub const CAMERA_UNIFORM_SIZE: u64 = 144;
 pub const INSTANCE_SIZE: u64 = 68;
@@ -109,7 +111,7 @@ impl Pipeline {
 pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f32, height: f32, depth_stencil: Option<wgpu::DepthStencilState>) -> (Camera, Pipeline) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("model.wgsl"),
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model.wgsl")))
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model_pipeline/shaders/model.wgsl")))
     });    
 
     let material_bind_group_layout = device.create_bind_group_layout(        
@@ -403,7 +405,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
                         }
                     ]
                 },
-                crate::model_instance::ModelInstance::vertex_buffer_layout()
+                ModelInstance::vertex_buffer_layout()
             ]
         },
         fragment: Some(wgpu::FragmentState {

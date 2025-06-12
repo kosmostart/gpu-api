@@ -1,13 +1,12 @@
 use log::*;
 use glam::{Mat4, Quat};
-use gpu_api_dto::image::{self, ImageBuffer, DynamicImage};
+use gpu_api_dto::image::{self, DynamicImage};
 use gpu_api_dto::lz4_flex::decompress_size_prepended;
-use wgpu::util::StagingBelt;
-use wgpu::CommandEncoder;
-use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue, Sampler, BindGroupLayout};
-use gpu_api_dto::{AlphaMode, Animation, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, Node, PrimitiveData, Skin, TextureType, ViewSource};
+use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue};
+use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
+use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;
-use crate::{model_instance::{ModelInstance}, pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
+use crate::{pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
 
 pub struct Object {
     pub name: String,

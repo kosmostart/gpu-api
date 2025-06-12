@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
-use wgpu::{util::DeviceExt, MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
+use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::CameraUniform, frame_counter::FrameCounter, glam::{vec3, Mat4, Vec3}, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, model_pipeline::CAMERA_UNIFORM_SIZE, quad_pipeline}};
+use gpu_api::{bytemuck, camera::CameraUniform, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::model_pipeline::model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, model_pipeline::CAMERA_UNIFORM_SIZE, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
