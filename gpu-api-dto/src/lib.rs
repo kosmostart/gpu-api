@@ -147,6 +147,17 @@ pub enum TextureType {
     Emissive
 }
 
+impl TextureType {
+    pub fn is_srgb(&self) -> bool {
+        match self {
+            TextureType::Normal |
+            TextureType::Occlusion |
+            TextureType::MetallicRoughness => true,
+            _ => false
+        }
+    }
+}
+
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum AlphaMode {
     Opaque,
@@ -220,17 +231,6 @@ pub struct TextureData {
     pub width: u32,
     pub height: u32,
     pub payload: Option<Vec<u8>>
-}
-
-impl TextureData {
-    pub fn is_srgb(&self) -> bool {
-        match self.texture_type {
-            TextureType::Normal |
-            TextureType::Occlusion |
-            TextureType::MetallicRoughness => true,
-            _ => false
-        }
-    }
 }
 
 #[derive(Encode, Decode, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]

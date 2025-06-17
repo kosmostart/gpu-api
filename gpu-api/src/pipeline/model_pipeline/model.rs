@@ -368,7 +368,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
     
                     log::warn!("Creating texture {:?} from image: {}, index {}", texture_item.texture_type, model_data.name, texture_item.index);                                 
             
-                    let texture = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.loaded_image_index], &texture_item.image_format, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                    let texture = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.loaded_image_index], &texture_item.image_format, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
                     //let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &loaded_images[texture_item.loaded_image_index], texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
             
                     match texture_item.texture_type {
@@ -517,7 +517,7 @@ pub fn create_object(device: &Device, queue: &Queue, pipeline: &model_pipeline::
                     };
 
                     //let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, &texture_item.image_format, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
-                    let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                    let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
                                     
                     /*
                     let texture_image = image::load_from_memory_with_format(texture_item.payload.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");

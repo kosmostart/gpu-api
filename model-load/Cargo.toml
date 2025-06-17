@@ -10,7 +10,7 @@ edition = "2024"
 log = "*"
 image = "*"
 glam = "*"
-lz4_flex = "*"
+bytemuck = "*"
 gltf = { version = "*", features = [
     "KHR_materials_pbrSpecularGlossiness",
     "KHR_lights_punctual"

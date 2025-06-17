@@ -5,8 +5,10 @@ use log::*;
 use gltf::{image::Format, iter, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
 use gpu_api_dto::{AlphaMode, Animation, AnimationChannel, AnimationProperty, ImageFormat, Interpolation, Joint, MaterialData, MeshData, ModelData, Node, PrimitiveData, Skin, TextureCompressionFormat, TextureData, TextureType};
 pub use gpu_api_dto;
-use lz4_flex::compress_prepend_size;
-pub use lz4_flex;
+
+use crate::material::create_material_data;
+
+pub mod material;
 
 pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: bool, attached_nodes_indices: Vec<usize>, is_animated: bool) -> (ModelData, Option<Vec<DynamicImage>>) {
     info!("Loading model {} from path {}", model_name, model_path);    
@@ -175,7 +177,7 @@ pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: boo
         let mut primitives = vec![];        
 
         for primitive in mesh.primitives() {            
-            info!("Found primitive {}, mode {:?}", primitive.index(), primitive.mode());
+            info!("Found primitive {}, mode {:?}, material {:?} {:?}", primitive.index(), primitive.mode(), primitive.material().index(), primitive.material().name());
             //info!("{:#?}", primitive.attributes());            
 
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));            
@@ -472,181 +474,16 @@ pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: boo
     info!("{} meshes total: {}", model_name, meshes.len());    
     info!("{} images total: {}", model_name, images.len());    
 
-    fn create_texture_data(model_dir: &str, buffers: &Vec<gltf::buffer::Data>, texture: &gltf::Texture<'_>, texture_type: TextureType, images: &Vec<gltf::image::Data>, add_images: bool, add_pixes: bool, loaded_images: &mut Vec<DynamicImage>) -> TextureData {        
-        let image = texture.source();
-        info!("Creating texture, image {:?}, image index {}", image.name(), image.index());
-        let image_gltf_data = &images[image.index()];
-        info!("format {:?}", image_gltf_data.format);
-
-        let sampler = texture.sampler();
-        info!("{:?} {:?} {:?} {:?}", sampler.mag_filter(), sampler.min_filter(), sampler.wrap_s(), sampler.wrap_t());
-
-        let image_format = match image_gltf_data.format {
-            Format::R8G8B8 => ImageFormat::R8G8B8,
-            Format::R8G8B8A8 => ImageFormat::R8G8B8A8,
-            Format::R16G16B16 => ImageFormat::R16G16B16,
-            Format::R16G16B16A16 => ImageFormat::R16G16B16A16,
-            _ => ImageFormat::Other
-        };
-
-        let loaded_image_index = loaded_images.len();
-
-        if add_images {
-            match image.source() {
-                gltf::image::Source::View { view, mime_type } => {
-                    info!("Mime type {}, buffer index {}", mime_type, view.buffer().index());
     
-                    let start = view.offset();
-                    let end = start + view.length();
-                    
-                    let image_slice = &buffers[view.buffer().index()].0[start..end];
-    
-                    loaded_images.push(image::load_from_memory(image_slice).expect("Failed to load image from buffer"));                    
-                }
-                gltf::image::Source::Uri { uri, mime_type } => {
-                    info!("Mime type {:?}, uri {}", mime_type, uri);
-
-                    loaded_images.push(ImageReader::open("../models/".to_owned() + model_dir + "/" + uri).expect("Failed to open image").decode().expect("Failed to decode image"));
-                }
-            }
-        }            
-
-        TextureData {
-            index: texture.index(),
-            name: texture.name().map(|r| r.to_owned()),
-            image_index: image.index(),
-            loaded_image_index,
-            image_format,
-            compression_format: TextureCompressionFormat::NotCompressed,
-            texture_type,
-            width: image_gltf_data.width,
-            height: image_gltf_data.height,
-            payload: match add_pixes {
-                true => Some(compress_prepend_size(&image_gltf_data.pixels)),
-                false => None
-            }
-        }
-    }
 
     let mut materials = vec![];
     let mut loaded_images = vec![];
     let mut material_index = 0;
 
     for material in document.materials() {
-        info!("Found material {:?}, {:?}", material.index(), material.name());
-
-        let mut textures = vec![];        
+        let material_data = create_material_data(model_name, material_index, &buffers, &images, add_images, add_pixes, &mut loaded_images, &material);
         
-        match material.pbr_specular_glossiness() {
-            Some(pbr_specular_glossiness) => {
-                match pbr_specular_glossiness.diffuse_texture() {
-                    Some(diffuse_texture) => {
-                        info!("Found pbr specular glossiness diffuse texture, index {}, {:?}", diffuse_texture.texture().index(), diffuse_texture.texture().name());
-                        let texture_data = create_texture_data(model_name, &buffers, &diffuse_texture.texture(), TextureType::SpecularGlossinessDiffuse, &images, add_images, add_pixes, &mut loaded_images);
-                        textures.push(texture_data);
-                    }
-                    None => {}
-                }
-                match pbr_specular_glossiness.specular_glossiness_texture() {
-                    Some(specular_glossiness_texture) => {
-                        info!("Found pbr specular glossiness specular glossiness texture, index {}, {:?}", specular_glossiness_texture.texture().index(), specular_glossiness_texture.texture().name());
-                        let texture_data = create_texture_data(model_name, &buffers, &specular_glossiness_texture.texture(), TextureType::SpecularGlossiness, &images, add_images, add_pixes, &mut loaded_images);
-                        textures.push(texture_data);
-                    }
-                    None => {}
-                }
-            }
-            None => {}
-        }
-
-        let pbr_metallic_roughness = material.pbr_metallic_roughness();        
-
-        match pbr_metallic_roughness.base_color_texture() {
-            Some(base_color_texture) => {                
-                info!("Found base color texture, index {}, {:?}", base_color_texture.texture().index(), base_color_texture.texture().name());
-                let texture_data = create_texture_data(model_name, &buffers, &base_color_texture.texture(), TextureType::BaseColor, &images, add_images, add_pixes, &mut loaded_images);
-                textures.push(texture_data);
-            }
-            None => {
-                continue;
-            }
-        }
-        match pbr_metallic_roughness.metallic_roughness_texture() {
-            Some(metallic_roughness_texture) => {
-                info!("Found metallic roughness texture, index {}, {:?}", metallic_roughness_texture.texture().index(), metallic_roughness_texture.texture().name());
-                let texture_data = create_texture_data(model_name, &buffers, &metallic_roughness_texture.texture(), TextureType::MetallicRoughness, &images, add_images, add_pixes, &mut loaded_images);
-                textures.push(texture_data);
-            }
-            None => {
-                match pbr_metallic_roughness.base_color_texture() {
-                    Some(base_color_texture) => {                
-                        info!("Found base color texture, index {}, {:?}", base_color_texture.texture().index(), base_color_texture.texture().name());
-                        let texture_data = create_texture_data(model_name, &buffers, &base_color_texture.texture(), TextureType::MetallicRoughness, &images, add_images, add_pixes, &mut loaded_images);
-                        textures.push(texture_data);
-                    }
-                    None => {
-                        continue;
-                    }
-                }
-            }
-        }
-        match material.normal_texture() {
-            Some(normal_texture) => {
-                info!("Found normal texture, index {}, {:?}", normal_texture.texture().index(), normal_texture.texture().name());
-                let texture_data = create_texture_data(model_name, &buffers, &normal_texture.texture(), TextureType::Normal, &images, add_images, add_pixes, &mut loaded_images);
-                textures.push(texture_data);
-            }
-            None => {
-                match pbr_metallic_roughness.base_color_texture() {
-                    Some(base_color_texture) => {                
-                        info!("Found base color texture, index {}, {:?}", base_color_texture.texture().index(), base_color_texture.texture().name());
-                        let texture_data = create_texture_data(model_name, &buffers, &base_color_texture.texture(), TextureType::Normal, &images, add_images, add_pixes, &mut loaded_images);
-                        textures.push(texture_data);
-                    }
-                    None => {
-                        continue;
-                    }
-                }
-            }
-        }
-        match material.occlusion_texture() {
-            Some(occlusion_texture) => {
-                info!("Found occlusion texture, index {}, {:?}", occlusion_texture.texture().index(), occlusion_texture.texture().name());
-                let texture_data = create_texture_data(model_name, &buffers, &occlusion_texture.texture(), TextureType::Occlusion, &images, add_images, add_pixes, &mut loaded_images);
-                textures.push(texture_data);
-            }
-            None => {}
-        }
-        match material.emissive_texture() {
-            Some(emmisive_texture) => {
-                info!("Found emmisive texture, index {}", emmisive_texture.texture().index());
-                let texture_data = create_texture_data(model_name, &buffers, &emmisive_texture.texture(), TextureType::Emissive, &images, add_images, add_pixes, &mut loaded_images);
-                textures.push(texture_data);
-            }
-            None => {}
-        }
-
-        info!("Found material: index {}, {:?}", material_index, material.name());
-
-        info!("Base color factor {:?}", pbr_metallic_roughness.base_color_factor());
-        info!("Metallic factor {}", pbr_metallic_roughness.metallic_factor());
-        info!("Roughness factor {}", pbr_metallic_roughness.roughness_factor());
-        info!("Emissive factor {:?}",  material.emissive_factor());
-
-        materials.push(MaterialData {
-            index: material_index,
-            name: material.name().map(|r| r.to_owned()),
-            alpa_mode: match material.alpha_mode() {
-                gltf::material::AlphaMode::Blend => AlphaMode::Blend,
-                gltf::material::AlphaMode::Mask => AlphaMode::Mask,
-                gltf::material::AlphaMode::Opaque => AlphaMode::Opaque
-            },
-            textures,
-            base_color_factor: pbr_metallic_roughness.base_color_factor(),
-            metallic_factor: pbr_metallic_roughness.metallic_factor(),
-            roughness_factor: pbr_metallic_roughness.roughness_factor(),
-            emissive_factor: material.emissive_factor()
-        });
+        materials.push(material_data);
 
         material_index = material_index + 1;
     }

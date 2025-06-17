@@ -42,7 +42,7 @@ async fn run() {
 
     window_attributes = window_attributes
         .with_title("Test application")
-        .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0));
+        .with_inner_size(winit::dpi::LogicalSize::new(1700.0, 950.0));
         
     #[cfg(target_arch = "wasm32")]
     {
@@ -238,15 +238,15 @@ async fn run() {
     objects.push(object);
 */
 
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);
+    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);    
     
     let view_source = ViewSource {
         x: 0.0,
         y: 0.0,
         z: 0.0,        
-        scale_x: 5.0,
-        scale_y: 5.0,
-        scale_z: 5.0,
+        scale_x: 10.0,
+        scale_y: 10.0,
+        scale_z: 10.0,
         rotation_y: 0.0
     };
     

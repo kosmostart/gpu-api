@@ -1731,12 +1731,12 @@ dependencies = [
 name = "model-load"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "glam",
  "gltf",
  "gpu-api-dto",
  "image",
  "log",
- "lz4_flex",
 ]
 
 [[package]]

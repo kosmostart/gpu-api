@@ -1,7 +1,7 @@
 use std::{io::Write, process::Command};
 use log::*;
 use image::{GenericImageView, ImageReader};
-use model_load::lz4_flex::block::compress_prepend_size;
+use model_load::gpu_api_dto::lz4_flex::block::compress_prepend_size;
 use model_load::{load, gpu_api_dto};
 
 fn main() {
