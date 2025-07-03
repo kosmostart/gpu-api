@@ -127,7 +127,7 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
 
     if (instance.is_animated == 1) {
         if (node_uniform.info[0] == 1) {
-            model_matrix = model_matrix * node_uniform.transform;            
+            model_matrix = model_matrix * node_uniform.transform;
         } else {
             var skin_matrix: mat4x4<f32> = 
                 vertex_input.weights[0] * joint_uniform.joint_matrices[vertex_input.joints[0]] +

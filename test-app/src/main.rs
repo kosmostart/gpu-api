@@ -6,7 +6,7 @@ use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::CameraUniform, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::model_pipeline::model::{create_object, ModelAnimationChannel, ObjectGroup}, pipeline::{self, model_pipeline::CAMERA_UNIFORM_SIZE, quad_pipeline}};
+use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, model_pipeline::{model::{create_object, ModelAnimationChannel, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 
@@ -198,8 +198,14 @@ async fn run() {
     });
 
     //let mut element_pipeline = pipeline::element_pipeline::new(&device, &queue, &scene1.vertices, &scene1.indices, depth_stencil_state.clone());
+
+    let angle_xz = 0.4;
+    let angle_y = 1.4;
+    let dist = 30.0;    
+
+    let mut camera = create_camera(layout.size.width as f32, layout.size.height as f32, angle_xz, angle_y, dist, 0.0, 0.0, 0.0);
     
-    let (mut camera, model_pipeline) = pipeline::model_pipeline::new(&device, &config, layout.size.width as f32, layout.size.height as f32, model_depth_stencil_state).await;
+    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera, model_depth_stencil_state);
 
     let mut object_group = ObjectGroup {
         active: true,
@@ -238,7 +244,7 @@ async fn run() {
     objects.push(object);
 */
 
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);    
+    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);
     
     let view_source = ViewSource {
         x: 0.0,

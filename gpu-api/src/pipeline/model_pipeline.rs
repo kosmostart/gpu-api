@@ -108,7 +108,7 @@ impl Pipeline {
     }
 }
 
-pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f32, height: f32, depth_stencil: Option<wgpu::DepthStencilState>) -> (Camera, Pipeline) {
+pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera, depth_stencil: Option<wgpu::DepthStencilState>) -> Pipeline {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("model.wgsl"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model_pipeline/shaders/model.wgsl")))
@@ -237,13 +237,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
         min_filter: wgpu::FilterMode::Linear,
         mipmap_filter: wgpu::FilterMode::Linear,
         ..Default::default()
-    });
-
-    let angle_xz = 0.4;
-    let angle_y = 1.4;
-    let dist = 30.0;
-
-    let camera = create_camera(width, height, angle_xz, angle_y, dist, 0.0, 0.0, 0.0);
+    });    
     
     let camera_uniform = CameraUniform {
         camera_position: camera.camera_position.to_array(),
@@ -440,7 +434,7 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
     let depth_texture = Texture::create_depth_texture(device, config, "Depth texture");
     let depth_sampler = Texture::create_depth_samper(device);
 
-    (camera, Pipeline {
+    Pipeline {
         shader,
         material_bind_group_layout,
         base_color_sampler,        
@@ -457,5 +451,5 @@ pub async fn new(device: &Device, config: &wgpu::SurfaceConfiguration, width: f3
         pipeline_layout,
         swapchain_format: TextureFormat::Rgba8UnormSrgb,
         render_pipeline      
-    })
+    }
 }

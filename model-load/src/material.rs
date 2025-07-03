@@ -43,7 +43,7 @@ pub fn create_material_data(model_name: &str, material_index: usize, buffers: &V
         }
         None => {
             warn!("No base_color_texture");
-            let texture_data = create_texture_data_from_file(model_name, "placeholder", TextureType::BaseColor, add_images, add_pixes, loaded_images);
+            let texture_data = create_texture_data_from_file(model_name, "DarkKnight_Eyes_Albedo", TextureType::BaseColor, add_images, add_pixes, loaded_images);
             textures.push(texture_data);
         }
     }
@@ -62,7 +62,7 @@ pub fn create_material_data(model_name: &str, material_index: usize, buffers: &V
                 }
                 None => {
                     warn!("No metallic_roughness_texture");
-                    let texture_data = create_texture_data_from_file(model_name, "placeholder", TextureType::MetallicRoughness, add_images, add_pixes, loaded_images);
+                    let texture_data = create_texture_data_from_file(model_name, "DarkKnight_Eyes_Metalness", TextureType::MetallicRoughness, add_images, add_pixes, loaded_images);
                     textures.push(texture_data);
                 }
             }
@@ -83,7 +83,7 @@ pub fn create_material_data(model_name: &str, material_index: usize, buffers: &V
                 }
                 None => {
                     warn!("No normal_texture");
-                    let texture_data = create_texture_data_from_file(model_name, "placeholder", TextureType::Normal, add_images, add_pixes, loaded_images);
+                    let texture_data = create_texture_data_from_file(model_name, "DarkKnight_Eyes_normal_map", TextureType::Normal, add_images, add_pixes, loaded_images);
                     textures.push(texture_data);
                 }
             }
@@ -205,7 +205,7 @@ pub fn create_texture_data_from_file(model_dir: &str, image_name: &str, texture_
 
     let loaded_image_index = loaded_images.len();
 
-    let image = ImageReader::open("../models/".to_owned() + model_dir + "/textures/" + image_name + ".png").expect("Failed to open image").decode().expect("Failed to decode image");
+    let image = ImageReader::open("../models/".to_owned() + model_dir + "/textures-3/" + image_name + ".png").expect("Failed to open image").decode().expect("Failed to decode image");
 
     let width = image.width();
     let height = image.height();
