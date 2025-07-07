@@ -1,3 +1,4 @@
+use gpu_api_dto::bytemuck;
 use glam::{Mat4, Vec3};
 
 #[repr(C)]

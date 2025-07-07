@@ -1,6 +1,6 @@
 use std::mem;
 use std::ops::Mul;
-use log::*;
+use gpu_api_dto::bytemuck;
 use wgpu::{util::DeviceExt, DepthStencilState, RenderPass, TextureFormat};
 use glam::{Mat4, Vec3};
 
