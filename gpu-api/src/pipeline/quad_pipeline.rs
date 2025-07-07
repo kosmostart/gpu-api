@@ -1,7 +1,6 @@
 use std::mem;
 use std::ops::Mul;
-use gpu_api_dto::bytemuck;
-use wgpu::{util::DeviceExt, DepthStencilState, RenderPass, TextureFormat};
+use wgpu::{DepthStencilState, RenderPass, TextureFormat};
 use glam::{Mat4, Vec3};
 
 pub const MAX_QUADS_COUNT: u64 = 1000;

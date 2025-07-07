@@ -1,5 +1,4 @@
 use std::mem;
-use gpu_api_dto::bytemuck;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

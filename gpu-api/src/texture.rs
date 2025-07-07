@@ -1,6 +1,5 @@
 use gpu_api_dto::{ImageFormat, TextureType};
 use gpu_api_dto::image::{self, GenericImageView, ImageError};
-use gpu_api_dto::bytemuck;
 use wgpu::{util::DeviceExt, Device, Sampler};
 
 pub struct Texture {

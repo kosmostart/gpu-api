@@ -7,8 +7,6 @@ edition = "2024"
 
 [dependencies]
 
-bytemuck = "*"
-bytemuck_derive = "*"
 bitcode = "*"
 serde = "*"
 serde_derive = "*"

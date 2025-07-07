@@ -8,8 +8,8 @@ edition = "2024"
 [dependencies]
 
 log = "*"
-serde = "*"
-serde_derive = "*"
+bytemuck = "*"
+bytemuck_derive = "*"
 glam = "*"
 wgpu = "*"
 ktx2 = "*"

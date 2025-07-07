@@ -6,7 +6,7 @@ use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{gpu_api_dto::bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, model_pipeline::{model::{create_object, ModelAnimationChannel, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
+use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, model_pipeline::{model::{create_object, ModelAnimationChannel, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 use element::{Color, ElementCfg, create_element};
 

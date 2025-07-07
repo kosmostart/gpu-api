@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 use wgpu::{Device, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler};
 use wgpu::util::DeviceExt;
-use gpu_api_dto::bytemuck;
-use crate::camera::{create_camera, Camera, CameraUniform};
+use crate::camera::{Camera, CameraUniform};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::texture::Texture;
 use model::ObjectGroup;

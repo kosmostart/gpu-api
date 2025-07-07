@@ -1,8 +1,6 @@
 use bitcode::{Encode, Decode};
 use lz4_flex::compress_prepend_size;
 
-pub use bytemuck;
-pub use bytemuck_derive;
 pub use bitcode;
 pub use lz4_flex;
 pub use image;
