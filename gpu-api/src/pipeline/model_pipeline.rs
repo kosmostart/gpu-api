@@ -66,7 +66,7 @@ pub struct Pipeline {
     pub depth_sampler: Sampler,
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
-    pub camera_bind_group: BindGroup,    
+    pub camera_bind_group: BindGroup,
     pub joint_matrices_bind_group_layout: BindGroupLayout,
     pub node_transform_bind_group_layout: BindGroupLayout,
     pub pipeline_layout: PipelineLayout,
@@ -111,7 +111,7 @@ impl Pipeline {
 pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera, depth_stencil: Option<wgpu::DepthStencilState>) -> Pipeline {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("model.wgsl"),
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("model_pipeline/shaders/model.wgsl")))
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/model.wgsl")))
     });    
 
     let material_bind_group_layout = device.create_bind_group_layout(        

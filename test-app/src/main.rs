@@ -6,11 +6,8 @@ use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, model_pipeline::{model::{create_object, ModelAnimationChannel, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
+use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
-use element::{Color, ElementCfg, create_element};
-
-mod element;
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
 pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
@@ -19,22 +16,9 @@ pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
 pub enum AppEvent {
 }
 
-#[derive(Debug)]
-pub struct Halfes {
-    pub x: f32,
-    pub y: f32
-}
-
 pub struct Layout {    
-    pub size: PhysicalSize<u32>,
-    pub halfes: Halfes,    
+    pub size: PhysicalSize<u32>,    
     pub cursor_physical_position: Option<PhysicalPosition<f64>>    
-}
-
-pub struct Scene {
-    vertices: Vec<pipeline::element_pipeline::Vertex>,
-    indices: Vec<u32>,
-    element_index: u32
 }
 
 async fn run() {    
@@ -96,19 +80,12 @@ async fn run() {
         .expect("Failed to create device");    
 
     let size = window.inner_size();
-    let scale_factor = window.scale_factor();
+    let scale_factor = window.scale_factor();  
 
-    let halfes = Halfes {
-        x: (size.width / 2) as f32,
-        y: (size.height / 2)  as f32
-    };    
-
-    info!("{:?}, {}", size, scale_factor);
-    info!("{:?}", halfes);    
+    info!("{:?}, {}", size, scale_factor);   
 
     let mut layout = Layout {        
-        size,
-        halfes,        
+        size,     
         cursor_physical_position: None        
     };        
 
@@ -120,67 +97,7 @@ async fn run() {
     config.view_formats.push(wgpu::TextureFormat::Rgba8UnormSrgb);
 
     surface.configure(&device, &config);
-
-    let background_color = Color {
-        r: 0.10196,
-        g: 0.10196,
-        b: 0.10196,
-        a: 1.0
-    };
-
-    let border_color = Color {
-        r: 0.0,
-        g: 1.0,
-        b: 0.0,
-        a: 1.0
-    };
-
-    let mut scene1 = Scene {
-        vertices: vec![],
-        indices: vec![],
-        element_index: 0
-    };
-
-    let mut scene2 = Scene {
-        vertices: vec![],
-        indices: vec![],
-        element_index: 0
-    };
-
-    while scene1.element_index < 100 {
-        let element_cfg = ElementCfg { 
-            x: scene1.element_index as i32 * 10 + 30,
-            y: 30, 
-            width: 30, 
-            height: 30,
-            background_color, 
-            border_color: Some(border_color)
-        };
     
-        create_element(&layout, element_cfg, &mut scene1);
-
-        scene1.element_index = scene1.element_index + 1;
-    }
-
-    while scene2.element_index < 100 {
-        let element_cfg = ElementCfg { 
-            x: scene2.element_index as i32 * 10 + 30,
-            y: 130,
-            width: 30, 
-            height: 30,
-            background_color, 
-            border_color: Some(border_color)
-        };
-    
-        create_element(&layout, element_cfg, &mut scene2);
-
-        scene2.element_index = scene2.element_index + 1;
-    }
-    
-    let mut current_scene = "scene1".to_owned();
-
-    let mut indices_count = scene1.indices.len() as u32;
-
     let depth_stencil_state = Some(wgpu::DepthStencilState {
         format: wgpu::TextureFormat::Depth32Float,
         depth_write_enabled: true,
@@ -197,7 +114,7 @@ async fn run() {
         bias: wgpu::DepthBiasState::default()
     });
 
-    //let mut element_pipeline = pipeline::element_pipeline::new(&device, &queue, &scene1.vertices, &scene1.indices, depth_stencil_state.clone());
+    let mut image_pipeline = pipeline::image_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
 
     let angle_xz = 0.4;
     let angle_y = 1.4;
@@ -224,7 +141,7 @@ async fn run() {
         scale_z: 0.1
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);    
     */
     
@@ -240,7 +157,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     objects.push(object);
 */
 
@@ -256,7 +173,7 @@ async fn run() {
         rotation_y: 0.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION);
 
     object_group.objects.push(object);
 
@@ -272,7 +189,7 @@ async fn run() {
         scale_z: 5.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
  */
     /*    
@@ -287,7 +204,7 @@ async fn run() {
         scale_z: 1.0
     };
     
-    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     */
 
@@ -304,7 +221,7 @@ async fn run() {
         scale_z: 1.0
     };    
 
-    let object = create_object(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
     object_group.objects.push(object);
     */
 
@@ -324,6 +241,41 @@ async fn run() {
     let shadow_offset = [0.0, 0.0];
     let shadow_blur_radius = 0.0;
 
+    let mut image_objects = vec![];
+
+    let hi_image = ImageObject::new(&device, &queue, &image_pipeline, "hi", vec![
+        ImageQuad {
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [10.0, 10.0, 10.0, 10.0],
+            border_width: 0.0,
+            position: [0.0, 0.0],
+            size: [100.0, 100.0],
+            component_coordinates,
+            //has_overlay,
+            //overlay_coordinates,
+            shadow_color,
+            shadow_offset,
+            shadow_blur_radius,
+            snap: 0
+        },
+        ImageQuad {
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [10.0, 10.0, 10.0, 10.0],
+            border_width: 0.0,
+            position: [220.0, 220.0],
+            size: [200.0, 200.0],
+            component_coordinates,
+            //has_overlay,
+            //overlay_coordinates,
+            shadow_color,
+            shadow_offset,
+            shadow_blur_radius,
+            snap: 0
+        }
+    ]);
+
+    image_objects.push(hi_image);
+
     let quads = vec![        
         quad_pipeline::Quad {
             border_color: [0.0, 0.5, 0.0, 1.0],
@@ -333,8 +285,8 @@ async fn run() {
             position: [100.0, 100.0],
             size: [100.0, 100.0],
             component_coordinates,
-            has_overlay,
-            overlay_coordinates,
+            //has_overlay,
+            //overlay_coordinates,
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -348,8 +300,8 @@ async fn run() {
             position: [300.0, 100.0],
             size: [30.0, 30.0],
             component_coordinates,
-            has_overlay,
-            overlay_coordinates,
+            //has_overlay,
+            //overlay_coordinates,
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -363,8 +315,8 @@ async fn run() {
             position: [500.0, 500.0],
             size: [100.0, 100.0],
             component_coordinates,
-            has_overlay,
-            overlay_coordinates,
+            //has_overlay,
+            //overlay_coordinates,
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -392,14 +344,7 @@ async fn run() {
                         let scale_factor = window.scale_factor();
                         info!("{:?}, {}", new_size, scale_factor);
 
-                        layout.size = new_size;
-
-                        layout.halfes = Halfes {
-                            x: layout.size.width as f32 / 2.0,
-                            y: layout.size.height as f32  / 2.0
-                        };
-                        
-                        info!("{:?}", layout.halfes);
+                        layout.size = new_size;          
 
                         quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
@@ -417,59 +362,7 @@ async fn run() {
                         match state {
                             ElementState::Pressed => {                                
                             }
-                            ElementState::Released => {
-                                match current_scene.as_ref() {
-                                    "scene1" => {
-                                        /*
-                                        element_pipeline.vertex_buffer = device.create_buffer_init(
-                                            &wgpu::util::BufferInitDescriptor {
-                                                label: Some("Vertex Buffer"),
-                                                contents: bytemuck::cast_slice(&scene1.vertices),
-                                                usage: wgpu::BufferUsages::VERTEX
-                                            }
-                                        );
-                                    
-                                        element_pipeline.index_buffer = device.create_buffer_init(
-                                            &wgpu::util::BufferInitDescriptor {
-                                                label: Some("Index Buffer"),
-                                                contents: bytemuck::cast_slice(&scene1.indices),
-                                                usage: wgpu::BufferUsages::INDEX
-                                            }
-                                        );
-                                        
-                                        indices_count = scene1.indices.len() as u32;
-    
-                                        current_scene = "scene2".to_owned();
-                                        */
-                                    }
-                                    "scene2" => {
-                                        /*
-                                        element_pipeline.vertex_buffer = device.create_buffer_init(
-                                            &wgpu::util::BufferInitDescriptor {
-                                                label: Some("Vertex Buffer"),
-                                                contents: bytemuck::cast_slice(&scene2.vertices),
-                                                usage: wgpu::BufferUsages::VERTEX
-                                            }
-                                        );
-                                    
-                                        element_pipeline.index_buffer = device.create_buffer_init(
-                                            &wgpu::util::BufferInitDescriptor {
-                                                label: Some("Index Buffer"),
-                                                contents: bytemuck::cast_slice(&scene2.indices),
-                                                usage: wgpu::BufferUsages::INDEX
-                                            }
-                                        );
-                                        */
-                                        
-                                        indices_count = scene2.indices.len() as u32;
-    
-                                        current_scene = "scene1".to_owned();
-                                    }
-                                    _ => {}
-                                }
-                                 
-
-                                window.request_redraw();
+                            ElementState::Released => {                                                                                        
                             }                            
                         }
                     }
@@ -513,15 +406,43 @@ async fn run() {
                             let frame = surface.get_current_texture().expect("Get next frame");                        
                             let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
                             texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
-                            let view = &frame.texture.create_view(&texture_view_descriptor);                        
+                            let view = &frame.texture.create_view(&texture_view_descriptor);
+
+                            if image_objects.len() > 0 {
+                                {
+                                    let mut uniform_buffer = staging_belt.write_buffer(
+                                        &mut encoder,
+                                        &image_pipeline.uniform_buffer,
+                                        0,
+                                        wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
+                                            .expect("Failed to create quad uniform buffer size"),
+                                        &device
+                                    );
+                
+                                    uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
+                                }
+                            }
+
+                            for image_object in &image_objects {
+                                let vertex_bytes = bytemuck::cast_slice(&image_object.quads);
+                
+                                let mut vertex_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &image_object.vertex_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create image object buffer size"),
+                                    &device,
+                                );
+            
+                                vertex_buffer.copy_from_slice(vertex_bytes);
+                            }
             
                             {
                                 let mut uniform_buffer = staging_belt.write_buffer(
                                     &mut encoder,
                                     &quad_pipeline.uniform_buffer,
                                     0,
-                                    wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
-                                        .expect("Failed to create quad uniform buffer size"),
+                                    wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64).expect("Failed to create quad uniform buffer size"),
                                     &device
                                 );
             
@@ -535,8 +456,7 @@ async fn run() {
                                     &mut encoder,
                                     &quad_pipeline.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(vertex_bytes.len() as u64)
-                                        .expect("Failed to create quad uniform buffer size"),
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create quad buffer size"),
                                     &device,
                                 );
             
@@ -687,33 +607,9 @@ async fn run() {
                                                         }
                                                         None => {}
                                                     }
-                                                }                                                
-                                                                                                
-                                                /*
-                                                // Inverse node global transform            
-
-                                                for node in &nodes {                
-                                                    match node.skin_index {
-                                                        Some(skin_index) => {
-                                                            let inverse_node_global_transform = node.global_transform_matrix;
-                                                            let mut joint_matrix_index = 0;
-
-                                                            for joint in &skins[skin_index].joints {                
-                                                                let joint_matrix = inverse_node_global_transform * nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;            
-                                                
-                                                                //let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-                                                                
-                                                                joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
-                                                
-                                                                joint_matrix_index = joint_matrix_index + 1;
-                                                            }
-                                                        }
-                                                        None => {}
-                                                    }                
                                                 }
-                                                */                                    
 
-                                                let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();                                                
+                                                let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 
                                                 {                                                                
                                                     let mut joint_matrices_slice = staging_belt.write_buffer(
@@ -835,7 +731,7 @@ async fn run() {
                                 );                                                        
             
                                 model_pipeline.draw(&mut render_pass, &object_groups);
-                                //element_pipeline.draw(&mut render_pass, indices_count);
+                                image_pipeline.draw(&mut render_pass, &image_objects);
                                 quad_pipeline.draw(&mut render_pass, quads.len() as u32);
                             }
             
