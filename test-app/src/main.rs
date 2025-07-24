@@ -6,7 +6,7 @@ use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
+use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{image, AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
@@ -243,7 +243,10 @@ async fn run() {
 
     let mut image_objects = vec![];
 
-    let hi_image = ImageObject::new(&device, &queue, &image_pipeline, "hi", vec![
+    let image_bytes = include_bytes!("../../textures/happy-tree.png");
+    let img = image::load_from_memory(image_bytes).expect("Failed to load texture");
+
+    let hi_image = ImageObject::new(&device, &queue, &image_pipeline, "hi", &img, vec![
         ImageQuad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],

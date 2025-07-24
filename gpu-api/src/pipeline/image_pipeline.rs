@@ -1,6 +1,6 @@
 use std::mem;
 use wgpu::{DepthStencilState, RenderPass, TextureFormat};
-use gpu_api_dto::image;
+use gpu_api_dto::image::{self, DynamicImage};
 use crate::pipeline::{quad_pipeline::{Transformation, Uniforms}};
 
 pub const MAX_IMAGE_QUADS_COUNT: u64 = 1000;
@@ -67,11 +67,8 @@ pub struct ImageObject {
 }
 
 impl ImageObject {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, pipeline: &Pipeline, name: &str, quads: Vec<ImageQuad>) -> ImageObject {
-        let image_bytes = include_bytes!("../../../textures/happy-tree.png");
-
-        let img = image::load_from_memory(image_bytes).expect("Failed to load texture");
-        let image_texture = crate::texture::Texture::from_image(&device, &queue, &img, &gpu_api_dto::ImageFormat::R8G8B8A8, false, Some("happy-tree.png")).expect("Failed to create texture from image");
+    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, pipeline: &Pipeline, name: &str, img: &DynamicImage, quads: Vec<ImageQuad>) -> ImageObject {        
+        let image_texture = crate::texture::Texture::from_image(&device, &queue, img, &gpu_api_dto::ImageFormat::R8G8B8A8, false, Some("happy-tree.png")).expect("Failed to create texture from image");
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Quad instance buffer"),
