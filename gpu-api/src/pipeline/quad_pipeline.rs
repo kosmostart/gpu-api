@@ -93,7 +93,7 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, count: u32) {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, count: u32) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

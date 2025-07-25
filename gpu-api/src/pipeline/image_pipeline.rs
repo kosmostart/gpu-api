@@ -105,8 +105,12 @@ impl ImageObject {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, image_objects: &Vec<ImageObject>) {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, image_objects: &Vec<ImageObject>) {
         for image_object in image_objects {
+            if image_object.quads.len() == 0 {
+                continue;
+            }
+
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.set_bind_group(1, &image_object.image_bind_group, &[]);
