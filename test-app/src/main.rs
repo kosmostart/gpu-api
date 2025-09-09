@@ -381,10 +381,8 @@ async fn run() {
                             MouseScrollDelta::PixelDelta(position) => {
                                 if position.y > 0.0 {
                                     camera.dist = camera.dist - 10.0;
-                                    info!("1");
                                 } else {
                                     camera.dist = camera.dist + 10.0;
-                                    info!("2");
                                 }
                             }
                         }        

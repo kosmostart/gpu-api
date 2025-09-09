@@ -93,7 +93,7 @@ impl Pipeline {
                 let instances_range = 0..object.instances_count;
                 
                 for mesh in &object.meshes {
-                    for primitive in &mesh.primitives {                        
+                    for primitive in &mesh.primitives {
                         render_pass.set_bind_group(0, &object.materials[primitive.material_index].material_bind_group, &[]); // Material
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]); // Camera
                         render_pass.set_bind_group(2, &object.joint_matrices_bind_group, &[]); // Joint matrices
