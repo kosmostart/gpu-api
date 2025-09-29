@@ -104,6 +104,7 @@ impl Primitive {
 
         self.vertex_buffer = vertex_buffer;
         self.index_buffer = index_buffer;
+        self.num_elements = indices.len() as u32;
     }
 }
 

@@ -20,9 +20,7 @@ pub struct Camera {
     pub focus_point: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,    
-    pub projection: Mat4,
-    pub arcball_x: f32,
-    pub arcball_y: f32
+    pub projection: Mat4    
 }
 
 impl Camera {
@@ -48,9 +46,7 @@ pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist:
         focus_point,
         projection_source,
         view,        
-        projection,
-        arcball_x: 0.0,
-        arcball_y: 0.0
+        projection        
     }
 }
 

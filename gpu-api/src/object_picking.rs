@@ -31,9 +31,6 @@ pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f
     let q1 = point_near.cross(point_far);
     let q2 = ray_far_world3 - ray_near_world3;
 
-    //warn!("q1 {:?} {}", q1, q1.length());
-    //warn!("q2 {:?} {}", q2, q2.length());
-
     q1.length() / q2.length()
 }
 
@@ -49,9 +46,7 @@ pub fn screen_to_ray_direction(camera: &Camera, width: f32, height: f32, x: f32,
     ray_near_eye.w = 0.0;
 
     let ray_near_world = camera.view.inverse() * ray_near_eye;
-    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);
-    
-    //warn!("ray_near_world3 {:?}", ray_near_world3);
+    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);    
 
     ray_near_world3.normalize()
 }
@@ -151,40 +146,4 @@ pub fn ray_aabb_intersection2(ray_origin: &glam::Vec3, ray_direction_inv: &glam:
     let t_box_max = t_maxes.min_element();
 
     return t_box_min <= t_box_max;
-}
-
-pub fn screen_to_ray_orig(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> (glam::Vec4, glam::Vec3) {
-    let x_ndc = (2.0 * x / width) - 1.0;
-    let y_ndc = 1.0 - (2.0 * y / height);    
-
-    let ray_clip = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
-
-    let ray_eye = camera.projection_source.inverse() * ray_clip;
-
-    let ray_world = camera.view.inverse() * ray_eye;
-
-    let ray_direction = vec3(ray_world.x, ray_world.y, ray_world.z) - camera.camera_position;
-
-    (ray_world, ray_direction.normalize())
-}
-
-pub fn screen_to_world(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> glam::Vec4 {
-    //let x = 769.0;
-    //let y = 437.0;
-
-    let x_ndc = (2.0 * x / width) - 1.0;
-    let y_ndc = 1.0 - (2.0 * y / height);
-    let z_ndc = 0.9983375;
-
-    let w = camera.projection_source.row(2).w / (z_ndc + camera.projection_source.row(2).z);
-    
-    let clip_space = glam::vec4(x_ndc * w, y_ndc * w, z_ndc * w, w);    
-    warn!("Got clip space {:?}", clip_space);    
-
-    let camera_space = camera.projection_source.inverse() * clip_space;
-    warn!("Got camera space {:?}", camera_space);    
-        
-    let world_space = camera.view.inverse() * camera_space;    
-
-    world_space
 }
