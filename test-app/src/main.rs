@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
-use wgpu::{MemoryHints, RequestAdapterOptions, DeviceDescriptor, StoreOp};
+use wgpu::{DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
@@ -73,6 +73,7 @@ async fn run() {
                 } else {
                     wgpu::Limits::default()
                 },
+                experimental_features: ExperimentalFeatures::disabled(),
                 memory_hints: MemoryHints::Performance,
                 trace: wgpu::Trace::Off
             })

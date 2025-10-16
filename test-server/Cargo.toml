@@ -10,4 +10,5 @@ edition = "2024"
 log = "*"
 env_logger = "*"
 tokio = { version = "*", features = ["rt-multi-thread"] }
-warp = "*"
+axum = "*"
+tower-http = { version = "*", features = ["fs"] }
