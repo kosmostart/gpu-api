@@ -101,6 +101,14 @@ impl Pipeline {
         render_pass.draw(0..6, 0..count);
     }
 
+    pub fn draw_range<'a>(&'a self, render_pass: &mut RenderPass<'a>, range_start: u32, range_end: u32) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+
+        render_pass.draw(0..6, range_start..range_end);
+    }
+
     pub fn new(device: &wgpu::Device, depth_stencil: Option<DepthStencilState>) -> Pipeline {
         let constant_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
