@@ -115,7 +115,7 @@ async fn run() {
         bias: wgpu::DepthBiasState::default()
     });
 
-    let mut image_pipeline = pipeline::image_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
+    let image_pipeline = pipeline::image_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
 
     let angle_xz = 0.4;
     let angle_y = 1.4;
@@ -128,45 +128,13 @@ async fn run() {
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    };    
-
-    /*
-    let (model_data, loaded_images) = model_load::load("overlord", "../models/overlord/overlord.gltf");
+    };        
     
-    let view_source = ViewSource {
-        x: -25.0,
-        y: -20.0,
-        z: 10.0,        
-        scale_x: 0.1,
-        scale_y: 0.1,
-        scale_z: 0.1
-    };
-    
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);    
-    */
-    
-    /*
-    let (model_data, loaded_images) = model_load::load("helm", "../models/helm/DamagedHelmet.gltf");
-    
-    let view_source = ViewSource {
-        x: 10.0,
-        y: 8.0,
-        z: 0.0,        
-        scale_x: 1.0,
-        scale_y: 1.0,
-        scale_z: 1.0
-    };
-    
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    objects.push(object);
-*/
-
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/damaged-helmet/DamagedHelmet.gltf", false, true, vec![], false);
+    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/knight/knight.gltf", false, true, vec![], true);
     
     let view_source = ViewSource {
         x: 0.0,
-        y: 0.0,
+        y: -5.0,
         z: 0.0,        
         scale_x: 10.0,
         scale_y: 10.0,
@@ -178,65 +146,15 @@ async fn run() {
 
     object_group.objects.push(object);
 
-/*
-    let (model_data, loaded_images) = model_load::load("skin-test", "../models/skin-test/skin-test.glb");
-    
-    let view_source = ViewSource {
-        x: -2.0,
-        y: -5.0,
-        z: 0.0,        
-        scale_x: 5.0,
-        scale_y: 5.0,
-        scale_z: 5.0
-    };
-    
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);
- */
-    /*    
-    let (model_data, loaded_images) = model_load::load("box", "../models/box/box.glb");
-    
-    let view_source = ViewSource {
-        x: -10.0,
-        y: 0.0,
-        z: 0.0,        
-        scale_x: 1.0,
-        scale_y: 1.0,
-        scale_z: 1.0
-    };
-    
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);
-    */
-
-    /*    
-
-    let (model_data, loaded_images) = model_load::load("animated-cube", "../models/animated-cube/animated-cube.gltf");
-    
-    let view_source = ViewSource {
-        x: 5.0,
-        y: 7.0,
-        z: 0.0,        
-        scale_x: 1.0,
-        scale_y: 1.0,
-        scale_z: 1.0
-    };    
-
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, Some(loaded_images), vec![view_source]);
-    object_group.objects.push(object);
-    */
-
     let mut object_groups = vec![];
     object_groups.push(object_group);
     
-    let mut quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, depth_stencil_state);
+    let quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, depth_stencil_state);
 
     let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
     let mut quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
-    let component_coordinates = [0.0, 0.0, 950.0, 950.0];
-    let has_overlay = 0;
-    let overlay_coordinates = [0.0, 0.0, 0.0, 0.0];
+    let component_coordinates = [0.0, 0.0, 950.0, 950.0];    
 
     let shadow_color = [0.0, 0.0, 0.0, 0.0];
     let shadow_offset = [0.0, 0.0];
@@ -254,9 +172,7 @@ async fn run() {
             border_width: 0.0,
             position: [0.0, 0.0],
             size: [100.0, 100.0],
-            component_coordinates,
-            //has_overlay,
-            //overlay_coordinates,
+            component_coordinates,            
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -268,9 +184,7 @@ async fn run() {
             border_width: 0.0,
             position: [220.0, 220.0],
             size: [200.0, 200.0],
-            component_coordinates,
-            //has_overlay,
-            //overlay_coordinates,
+            component_coordinates,            
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -288,9 +202,7 @@ async fn run() {
             border_width: 0.0,
             position: [100.0, 100.0],
             size: [100.0, 100.0],
-            component_coordinates,
-            //has_overlay,
-            //overlay_coordinates,
+            component_coordinates,            
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -303,9 +215,7 @@ async fn run() {
             border_width: 0.0,
             position: [300.0, 100.0],
             size: [30.0, 30.0],
-            component_coordinates,
-            //has_overlay,
-            //overlay_coordinates,
+            component_coordinates,            
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
@@ -318,14 +228,12 @@ async fn run() {
             border_width: 1.0,
             position: [500.0, 500.0],
             size: [100.0, 100.0],
-            component_coordinates,
-            //has_overlay,
-            //overlay_coordinates,
+            component_coordinates,            
             shadow_color,
             shadow_offset,
             shadow_blur_radius,
             snap: 0
-        }        
+        }
     ];
 
     let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
@@ -497,7 +405,7 @@ async fn run() {
                                             continue;
                                         }                                        
 
-                                        let animation_index = 2;
+                                        let animation_index = 0;
 
                                         match object.animation_computation_mode {
                                             AnimationComputationMode::NotAnimated => {

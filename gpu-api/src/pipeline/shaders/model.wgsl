@@ -53,41 +53,6 @@ var<uniform> joint_uniform: JointUniform;
 @group(3) @binding(0)
 var<uniform> node_uniform: NodeUniform;
 
-struct DirLightInfo {
-    dir: vec4<f32>,
-    color: vec4<f32>,
-}
-
-struct PointLightInfo {
-    position: vec4<f32>,
-    color: vec4<f32>,
-}
-
-struct SpotLightInfo {
-    position: vec4<f32>,
-    color: vec4<f32>,
-    // x: inner angle, y: outter angle, z: angle decay, w: distance decay
-    angel_decay: vec4<f32>,
-}
-
-struct LightsInfo {
-    // x,y,z: dir light, point light, spotlight
-    light_count: vec4<u32>,
-    lights_info: array<vec4<f32>>,
-}
-
-struct SurfaceProps {
-    world_pos: vec3<f32>,
-    world_normal: vec3<f32>,
-    reflection_dir: vec3<f32>,
-    uv0: vec2f,
-    f0: vec3<f32>,
-    metallic: f32,
-    roughness: f32,
-    albedo: vec3<f32>,
-    surface_ao: f32,
-}
-
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
     @location(1) texture_coordinates: vec2<f32>,
@@ -109,9 +74,9 @@ struct InstanceInput {
 struct FragmentInput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) texture_coordinates: vec2<f32>,
-    @location(1) tangent_position: vec3<f32>,
-    @location(2) tangent_light_position: vec3<f32>,
-    @location(3) tangent_view_position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) tangent: vec3<f32>,
+    @location(3) bitangent: vec3<f32>    
 };
 
 @vertex
@@ -144,117 +109,69 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     let model_position = model_matrix * vec4<f32>(vertex_input.position, 1.0);
 
     fragment_input.clip_position = camera.projection * model_position;
-    fragment_input.texture_coordinates = vertex_input.texture_coordinates;
-
-    let world_normal = normalize((model_matrix * vec4<f32>(vertex_input.normal, 0.0)).xyz);
-    let world_tangent = normalize((model_matrix * vec4<f32>(vertex_input.tangent, 0.0)).xyz);
-    let world_bitangent = normalize((model_matrix * vec4<f32>(vertex_input.bitangent, 0.0)).xyz);
-
-    let tangent_matrix = transpose(mat3x3<f32>(
-        world_tangent,
-        world_bitangent,
-        world_normal,
-    ));    
-
-    let light_position = vec3<f32>(4.0, 2.0, 6.0);
-        
-    fragment_input.tangent_position = tangent_matrix * model_position.xyz;
-    fragment_input.tangent_view_position = tangent_matrix * camera.camera_position;
-    fragment_input.tangent_light_position = tangent_matrix * light_position;
+    fragment_input.texture_coordinates = vertex_input.texture_coordinates;              
+    fragment_input.normal = vertex_input.normal;
+    fragment_input.tangent = vertex_input.tangent;
+    fragment_input.bitangent = vertex_input.bitangent;
     
     return fragment_input;
 }
 
 @fragment
 fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> { 
-    let object_color = textureSample(base_color_texture, base_color_sampler, fragment_input.texture_coordinates);
-
     //return textureSample(base_color_texture, base_color_sampler, fragment_input.texture_coordinates);
 
-    let object_normal = textureSample(normal_texture, normal_sampler, fragment_input.texture_coordinates);
-
-    let ambient_strength = 0.1;
     let light_position = vec3<f32>(4.0, 2.0, 6.0);
     let light_color = vec3<f32>(1.0, 1.0, 1.0);
-    let ambient_color = light_color * ambient_strength;
+    let light_intensity = 15.0;
+    let world_pos = fragment_input.clip_position.xyz;
 
-    // Create the lighting vectors
-    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
-    let light_dir = normalize(fragment_input.tangent_light_position - fragment_input.tangent_position);
-    let view_direction = normalize(fragment_input.tangent_view_position - fragment_input.tangent_position);
-    let half_dir = normalize(view_direction + light_dir);
+    let N_tangent = textureSample(normal_texture, normal_sampler, fragment_input.texture_coordinates).rgb * 2.0 - 1.0;
+    let TBN = mat3x3<f32>(fragment_input.tangent, fragment_input.bitangent, fragment_input.normal);
+    let N = normalize(TBN * N_tangent);
 
-    let diffuse_strength = max(dot(tangent_normal, light_dir), 0.0);
-    let diffuse_color = light_color * diffuse_strength;    
-
-    let specular_strength = pow(max(dot(tangent_normal, half_dir), 0.0), 32.0);
-    let specular_color = specular_strength * light_color;
-
-    let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
-
-    return vec4<f32>(result, object_color.a);    
-}
-
-/*
-struct MaterialUniform {
-    albedo: vec3<f32>,
-    metallic: f32,
-    roughness: f32,
-    ao: f32, // Ambient Occlusion
-};
-
-struct LightUniform {
-    position: vec3<f32>,
-    color: vec3<f32>,
-    intensity: f32,
-};
-
-@group(2) @binding(0) var<uniform> material: MaterialUniform;
-@group(3) @binding(0) var<uniform> light: LightUniform;
-
-@group(4) @binding(0) var albedo_texture: texture_2d<f32>;
-@group(4) @binding(1) var albedo_sampler: sampler;
-
-@group(5) @binding(0) var normal_texture: texture_2d<f32>;
-@group(5) @binding(1) var normal_sampler: sampler;
-
-@fragment
-fn fs_main(
-    in: VertexOutput,
-) -> @location(0) vec4<f32> {
-    let N = normalize(in.world_normal);
-    let V = normalize(camera.position - in.world_position); // Assuming camera position is available
-
-    let albedo_map_color = textureSample(albedo_texture, albedo_sampler, in.uv).rgb;
-    let base_color = albedo_map_color * material.albedo;
-
-    // Basic PBR calculation (simplified for brevity)
-    let L = normalize(light.position - in.world_position);
+    let V = normalize(camera.camera_position - world_pos);
+    let L = normalize(light_position - world_pos);
     let H = normalize(V + L);
 
+    let base_color_tex = textureSample(base_color_texture, base_color_sampler, fragment_input.texture_coordinates).rgb;
+    let metallic_roughness_tex = textureSample(metallic_roughness_texture, metallic_roughness_sampler, fragment_input.texture_coordinates).rg;
+    let metallic = metallic_roughness_tex.r;
+    let roughness = metallic_roughness_tex.g;
+
+    let albedo = base_color_tex;
+    let F0 = mix(vec3<f32>(0.04), albedo, metallic);
+
+    // Basic BRDF approximation (Cook-Torrance)
     let NdotL = max(dot(N, L), 0.0);
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotH = max(dot(N, H), 0.0);
+    let HdotV = max(dot(H, V), 0.0);
 
-    // Diffuse component (Lambertian)
-    let diffuse = base_color / PI;
+    // D (Distribution) - Trowbridge-Reitz GGX
+    let alpha = roughness * roughness;
+    let alpha2 = alpha * alpha;
+    let denom_d = NdotH * NdotH * (alpha2 - 1.0) + 1.0;
+    let D = alpha2 / (PI * denom_d * denom_d);
 
-    // Specular component (simplified Cook-Torrance BRDF)
-    let F0 = mix(vec3<f32>(0.04), base_color, material.metallic); // Fresnel reflectance at normal incidence
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0); // Fresnel equation (Schlick's approximation)
+    // G (Geometry) - Schlick-GGX
+    let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+    let G_v = NdotV / (NdotV * (1.0 - k) + k);
+    let G_l = NdotL / (NdotL * (1.0 - k) + k);
+    let G = G_v * G_l;
 
-    let alpha = material.roughness * material.roughness;
-    let D = pow(alpha / (PI * pow(pow(dot(N, H), 2.0) * (alpha * alpha - 1.0) + 1.0, 2.0)), 2.0); // Normal Distribution Function (GGX)
+    // F (Fresnel) - Schlick approximation
+    let F = F0 + (vec3<f32>(1.0) - F0) * pow(clamp(1.0 - HdotV, 0.0, 1.0), 5.0);
 
-    let k = pow(material.roughness + 1.0, 2.0) / 8.0; // Geometric Shadowing (Schlick-GGX)
-    let G = (dot(N, L) / (dot(N, L) * (1.0 - k) + k)) * (dot(N, V) / (dot(N, V) * (1.0 - k) + k));
+    let specular = (D * G * F) / (4.0 * NdotL * NdotV + 0.001); // Add epsilon to avoid division by zero
 
-    let specular = (D * G * F) / (4.0 * dot(N, L) * dot(N, V) + 0.001); // Adding epsilon to prevent division by zero
+    let k_s = F;
+    let k_d = (vec3<f32>(1.0) - k_s) * (1.0 - metallic);
 
-    let radiance = light.color * light.intensity;
+    let radiance = light_color * light_intensity;
+    let color = (k_d * albedo / PI + specular) * radiance * NdotL;
 
-    let Lo = (diffuse * (1.0 - F) + specular) * radiance * NdotL;
-
-    let final_color = Lo * material.ao; // Apply ambient occlusion
-
-    return vec4<f32>(final_color, 1.0);
+    return vec4<f32>(color, 1.0);
 }
-*/
+
+const PI: f32 = 3.1415926535;

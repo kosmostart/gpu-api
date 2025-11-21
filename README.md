@@ -2,15 +2,17 @@
   gpu-api
 </h1>
 
-This is collection of [`wgpu`](https://github.com/gfx-rs/wgpu/) pipelines, wich can be used for single render pass.
+A collection of [`wgpu`](https://github.com/gfx-rs/wgpu/) pipelines, wich can be used for single render pass.
 
 It supports:
 
 - basic shapes
 - images
-- 3D models with animation, skinning, node attachment, normal mapping, PBR (not yet)
+- 3D models with animation, skinning, node attachment, normal mapping, PBR
 - GLTF loading
 - SVG (not yet)
 - ray casting for object picking: ray-AABB intersection, ray-plane intersection
 
-For working example navigate to `test-app` and do `cargo run`
+For working example navigate to `test-app` and do `cargo run`.
+
+Quad shader code is based on `iced` crate quad implementation with minor additions.

@@ -10,9 +10,7 @@ struct SolidVertexInput {
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
     @location(9) snap: u32,
-    @location(10) component_coordinates: vec4<f32>,
-    //@location(11) has_overlay: u32,
-    //@location(12) overlay_coordinates: vec4<f32>
+    @location(10) component_coordinates: vec4<f32>    
 }
 
 struct SolidVertexOutput {
@@ -26,9 +24,7 @@ struct SolidVertexOutput {
     @location(6) shadow_color: vec4<f32>,
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
-    @location(9) component_coordinates: vec4<f32>,
-    //@location(10) @interpolate(flat) has_overlay: u32,
-    //@location(11) overlay_coordinates: vec4<f32>
+    @location(9) component_coordinates: vec4<f32>    
 }
 
 @vertex
@@ -65,9 +61,7 @@ fn solid_vs_main(input: SolidVertexInput) -> SolidVertexOutput {
     out.shadow_color = premultiply(input.shadow_color);
     out.shadow_offset = input.shadow_offset * globals.scale;
     out.shadow_blur_radius = input.shadow_blur_radius * globals.scale;
-    out.component_coordinates = input.component_coordinates;    
-    //out.has_overlay = input.has_overlay;
-    //out.overlay_coordinates = input.overlay_coordinates;
+    out.component_coordinates = input.component_coordinates;
 
     return out;
 }
@@ -84,18 +78,7 @@ fn solid_fs_main(
     ) {
         discard;
     }
-/*
-    if (
-        input.has_overlay == 1u && (
-            input.position[0] >= input.overlay_coordinates[0] &&
-            input.position[0] <= input.overlay_coordinates[2] &&
-            input.position[1] >= input.overlay_coordinates[1] &&
-            input.position[1] <= input.overlay_coordinates[3]
-        )
-    ) {
-        discard;
-    }
-*/
+
     var mixed_color: vec4<f32> = input.color;
 
     var dist = rounded_box_sdf(

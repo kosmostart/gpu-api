@@ -37,13 +37,7 @@ pub struct ImageQuad {
     pub snap: u32,
 
     /// Quad parts will be discarded if they are outside of component coordinates.
-    pub component_coordinates: [f32; 4]
-
-    // Whether the [`Quad`] has overlay. If yes, quad parts will be discarded if they inside overlay coordinates.
-    //pub has_overlay: u32,
-
-    // The overlay coordinates.
-    //pub overlay_coordinates: [f32; 4]
+    pub component_coordinates: [f32; 4]    
 }
 
 unsafe impl bytemuck::Zeroable for ImageQuad {}
@@ -247,11 +241,7 @@ impl Pipeline {
                             // Snap
                             8 => Uint32,
                             // Component coordinates
-                            9 => Float32x4
-                            // Has overlay
-                            //10 => Uint32,
-                            // Overlay coordinates
-                            //11 => Float32x4
+                            9 => Float32x4                            
                         )
                     }],
                     compilation_options:
