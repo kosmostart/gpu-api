@@ -6,7 +6,7 @@ use wgpu::{DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOp
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{image, AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, quad_pipeline}};
+use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{image, AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, solid_quad_pipeline}};
 use gpu_api::gpu_api_dto::ViewSource;
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
@@ -149,10 +149,11 @@ async fn run() {
     let mut object_groups = vec![];
     object_groups.push(object_group);
     
-    let quad_pipeline = pipeline::quad_pipeline::Pipeline::new(&device, depth_stencil_state);
+    let solid_quad_pipeline = pipeline::solid_quad_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
+    let gradient_quad_pipeline = pipeline::gradient_quad_pipeline::Pipeline::new(&device, depth_stencil_state);
 
-    let transformation = quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
-    let mut quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
+    let transformation = solid_quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
+    let mut quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
     let component_coordinates = [0.0, 0.0, 950.0, 950.0];    
 
@@ -195,7 +196,7 @@ async fn run() {
     image_objects.push(hi_image);
 
     let quads = vec![        
-        quad_pipeline::Quad {
+        solid_quad_pipeline::SolidQuad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
             color: [1.0, 0.0, 0.0, 1.0],
@@ -208,7 +209,7 @@ async fn run() {
             shadow_blur_radius,
             snap: 0
         },
-        quad_pipeline::Quad {
+        solid_quad_pipeline::SolidQuad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [15.0, 15.0, 15.0, 15.0],
             color: [1.0, 0.0, 0.0, 1.0],
@@ -221,7 +222,7 @@ async fn run() {
             shadow_blur_radius,
             snap: 0
         },
-        quad_pipeline::Quad {
+        solid_quad_pipeline::SolidQuad {
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],
             color: [1.0, 1.0, 1.0, 1.0],
@@ -233,6 +234,33 @@ async fn run() {
             shadow_offset,
             shadow_blur_radius,
             snap: 0
+        }
+    ];
+
+    use pipeline::gradient_quad_pipeline::{GradientQuad, color::{core::Color, Point, LinearStartEnd}};
+
+    let start = Point::new(0.0, 0.0);
+    let end = Point::new(1000.0, 1000.0);
+
+    let g = LinearStartEnd::new(start, end)
+        .add_stop(0.0, Color::new(0.3, 0.3, 0.3, 1.0))
+        .add_stop(0.0, Color::new(0.5, 0.5, 0.5, 1.0))
+    ;
+
+    let packed = g.pack();
+
+    let gradient_quads = vec![        
+        GradientQuad {            
+            colors: packed.colors,            
+            offsets: packed.offsets,
+            direction: packed.direction,
+            position: [0.0, 200.0],
+            size: [100.0, 100.0],
+            border_color: [0.0, 0.5, 0.0, 1.0],
+            border_radius: [10.0, 10.0, 10.0, 10.0],            
+            border_width: 1.0,
+            snap: 0,
+            component_coordinates
         }
     ];
 
@@ -258,7 +286,7 @@ async fn run() {
 
                         layout.size = new_size;          
 
-                        quad_uniforms = quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
+                        quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
 
                         surface.configure(&device, &config);
                     }
@@ -324,7 +352,7 @@ async fn run() {
                                         &mut encoder,
                                         &image_pipeline.uniform_buffer,
                                         0,
-                                        wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64)
+                                        wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64)
                                             .expect("Failed to create quad uniform buffer size"),
                                         &device
                                     );
@@ -346,13 +374,39 @@ async fn run() {
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
                             }
+
+                            {
+                                let mut uniform_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &gradient_quad_pipeline.uniform_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create gradient quad uniform buffer size"),
+                                    &device
+                                );
+            
+                                uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
+                            }
+                            
+                            {
+                                let vertex_bytes = bytemuck::cast_slice(&gradient_quads);
+            
+                                let mut vertex_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &gradient_quad_pipeline.vertex_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create gradient quad buffer size"),
+                                    &device,
+                                );
+            
+                                vertex_buffer.copy_from_slice(vertex_bytes);
+                            }
             
                             {
                                 let mut uniform_buffer = staging_belt.write_buffer(
                                     &mut encoder,
-                                    &quad_pipeline.uniform_buffer,
+                                    &solid_quad_pipeline.uniform_buffer,
                                     0,
-                                    wgpu::BufferSize::new(std::mem::size_of::<quad_pipeline::Uniforms>() as u64).expect("Failed to create quad uniform buffer size"),
+                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create quad uniform buffer size"),
                                     &device
                                 );
             
@@ -364,7 +418,7 @@ async fn run() {
             
                                 let mut vertex_buffer = staging_belt.write_buffer(
                                     &mut encoder,
-                                    &quad_pipeline.vertex_buffer,
+                                    &solid_quad_pipeline.vertex_buffer,
                                     0,
                                     wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create quad buffer size"),
                                     &device,
@@ -642,7 +696,8 @@ async fn run() {
             
                                 model_pipeline.draw(&mut render_pass, &object_groups);
                                 image_pipeline.draw(&mut render_pass, &image_objects);
-                                quad_pipeline.draw(&mut render_pass, quads.len() as u32);
+                                gradient_quad_pipeline.draw(&mut render_pass, gradient_quads.len() as u32);
+                                solid_quad_pipeline.draw(&mut render_pass, quads.len() as u32);
                             }
             
                             staging_belt.finish();

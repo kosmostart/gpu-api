@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 
 log = "*"
+half = "*"
 bytemuck = "*"
 bytemuck_derive = "*"
 glam = "*"

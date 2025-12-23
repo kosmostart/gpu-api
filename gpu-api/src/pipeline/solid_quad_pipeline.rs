@@ -8,7 +8,7 @@ pub const MAX_QUADS_COUNT: u64 = 1000;
 /// The properties of a quad.
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
-pub struct Quad {
+pub struct SolidQuad {
     /// The background color data of the quad.
     pub color: [f32; 4],
 
@@ -40,11 +40,11 @@ pub struct Quad {
     pub snap: u32,
 
     /// Quad parts will be discarded if they are outside of component coordinates.
-    pub component_coordinates: [f32; 4]    
+    pub component_coordinates: [f32; 4]
 }
 
-unsafe impl bytemuck::Zeroable for Quad {}
-unsafe impl bytemuck::Pod for Quad {}
+unsafe impl bytemuck::Zeroable for SolidQuad {}
+unsafe impl bytemuck::Pod for SolidQuad {}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -168,7 +168,7 @@ impl Pipeline {
                     module: &shader,
                     entry_point: Some("solid_vs_main"),
                     buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: std::mem::size_of::<Quad>() as u64,
+                        array_stride: std::mem::size_of::<SolidQuad>() as u64,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array!(
                             // Color
@@ -237,7 +237,7 @@ impl Pipeline {
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Quad instance buffer"),
-            size: mem::size_of::<Quad>() as u64 * MAX_QUADS_COUNT,
+            size: mem::size_of::<SolidQuad>() as u64 * MAX_QUADS_COUNT,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false
         });

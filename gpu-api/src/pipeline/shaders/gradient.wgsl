@@ -11,6 +11,7 @@ struct GradientVertexInput {
     @location(8) border_radius: vec4<f32>,
     @location(9) border_width: f32,
     @location(10) snap: u32,
+    @location(11) component_coordinates: vec4<f32>
 }
 
 struct GradientVertexOutput {
@@ -25,6 +26,7 @@ struct GradientVertexOutput {
     @location(8) border_color: vec4<f32>,
     @location(9) border_radius: vec4<f32>,
     @location(10) border_width: f32,
+    @location(11) component_coordinates: vec4<f32>
 }
 
 @vertex
@@ -68,6 +70,7 @@ fn gradient_vs_main(input: GradientVertexInput) -> GradientVertexOutput {
     out.border_color = premultiply(input.border_color);
     out.border_radius = border_radius * globals.scale;
     out.border_width = input.border_width * globals.scale;
+    out.component_coordinates = input.component_coordinates;
 
     return out;
 }
@@ -127,6 +130,15 @@ fn gradient(
 
 @fragment
 fn gradient_fs_main(input: GradientVertexOutput) -> @location(0) vec4<f32> {
+    if (
+        input.position[0] < input.component_coordinates[0] ||
+        input.position[0] > input.component_coordinates[2] ||
+        input.position[1] < input.component_coordinates[1] ||
+        input.position[1] > input.component_coordinates[3]
+    ) {
+        discard;
+    }
+    
     let colors = array<vec4<f32>, 8>(
         unpack_color(input.colors_1.xy),
         unpack_color(input.colors_1.zw),

@@ -1083,6 +1083,7 @@ dependencies = [
  "bytemuck_derive",
  "glam",
  "gpu-api-dto",
+ "half",
  "ktx2",
  "log",
  "web-time",

@@ -10,7 +10,7 @@ struct SolidVertexInput {
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
     @location(9) snap: u32,
-    @location(10) component_coordinates: vec4<f32>    
+    @location(10) component_coordinates: vec4<f32>
 }
 
 struct SolidVertexOutput {
@@ -24,7 +24,7 @@ struct SolidVertexOutput {
     @location(6) shadow_color: vec4<f32>,
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
-    @location(9) component_coordinates: vec4<f32>    
+    @location(9) component_coordinates: vec4<f32>
 }
 
 @vertex

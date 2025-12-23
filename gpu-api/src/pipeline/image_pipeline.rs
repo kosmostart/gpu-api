@@ -1,7 +1,7 @@
 use std::mem;
 use wgpu::{DepthStencilState, RenderPass, TextureFormat};
 use gpu_api_dto::image::{self, DynamicImage};
-use crate::pipeline::{quad_pipeline::{Transformation, Uniforms}};
+use crate::pipeline::{solid_quad_pipeline::{Transformation, Uniforms}};
 
 pub const MAX_IMAGE_QUADS_COUNT: u64 = 1000;
 

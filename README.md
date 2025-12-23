@@ -2,7 +2,7 @@
   gpu-api
 </h1>
 
-A collection of [`wgpu`](https://github.com/gfx-rs/wgpu/) pipelines, wich can be used for single render pass.
+A collection of [`wgpu`](https://github.com/gfx-rs/wgpu/) pipelines, which can be used for single render pass.
 
 It supports:
 
@@ -15,4 +15,4 @@ It supports:
 
 For working example navigate to `test-app` and do `cargo run`.
 
-Quad shader code is based on `iced` crate quad implementation with minor additions.
+Quad shader code and gradient infrastructure is based on `iced` crate quad implementation with minor additions.
