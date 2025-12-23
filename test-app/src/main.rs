@@ -239,12 +239,12 @@ async fn run() {
 
     use pipeline::gradient_quad_pipeline::{GradientQuad, color::{core::Color, Point, LinearStartEnd}};
 
-    let start = Point::new(0.0, 0.0);
-    let end = Point::new(1000.0, 1000.0);
+    let start = Point::new(0.0, 200.0);
+    let end = Point::new(70.0, 270.0);
 
     let g = LinearStartEnd::new(start, end)
-        .add_stop(0.0, Color::new(0.3, 0.3, 0.3, 1.0))
-        .add_stop(0.0, Color::new(0.5, 0.5, 0.5, 1.0))
+        .add_stop(0.0, Color::new(1.0, 0.0, 0.0, 1.0))
+        .add_stop(1.0, Color::new(0.0, 0.0, 1.0, 1.0))
     ;
 
     let packed = g.pack();
@@ -258,7 +258,7 @@ async fn run() {
             size: [100.0, 100.0],
             border_color: [0.0, 0.5, 0.0, 1.0],
             border_radius: [10.0, 10.0, 10.0, 10.0],            
-            border_width: 1.0,
+            border_width: 0.0,
             snap: 0,
             component_coordinates
         }
