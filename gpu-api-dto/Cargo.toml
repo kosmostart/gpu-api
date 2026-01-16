@@ -7,7 +7,7 @@ edition = "2024"
 
 [dependencies]
 
-bitcode = "*"
+wincode = { version = "*", features = ["derive"] }
 serde = "*"
 serde_derive = "*"
 lz4_flex = "*"

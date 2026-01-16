@@ -12,6 +12,8 @@ half = "*"
 bytemuck = "*"
 bytemuck_derive = "*"
 glam = "*"
+lz4_flex = "*"
+image = { version = "*", default-features = false, features = ["png", "jpeg"] }
 wgpu = "*"
 ktx2 = "*"
 gpu-api-dto = { path = "../gpu-api-dto" }

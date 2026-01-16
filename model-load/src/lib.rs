@@ -4,8 +4,6 @@ use image::{DynamicImage, ImageReader, Rgb, Rgba};
 use log::*;
 use gltf::{image::Format, iter, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
 use gpu_api_dto::{AlphaMode, Animation, AnimationChannel, AnimationProperty, ImageFormat, Interpolation, Joint, MaterialData, MeshData, ModelData, Node, PrimitiveData, Skin, TextureCompressionFormat, TextureData, TextureType};
-pub use gpu_api_dto;
-
 use crate::material::create_material_data;
 
 pub mod material;

@@ -1,12 +1,9 @@
-use bitcode::{Encode, Decode};
+use wincode::{SchemaWrite, SchemaRead, WriteError, ReadError, serialize, deserialize};
+use serde_derive::{Serialize, Deserialize};
 use image::DynamicImage;
 use lz4_flex::compress_prepend_size;
 
-pub use bitcode;
-pub use lz4_flex;
-pub use image;
-
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct ModelData {
     pub name: String,
     pub nodes: Vec<Node>,
@@ -19,7 +16,7 @@ pub struct ModelData {
     pub animations: Vec<Animation>    
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct Node {
     pub index: usize,    
     pub children_nodes: Vec<usize>,
@@ -32,27 +29,27 @@ pub struct Node {
     pub local_transform_matrix: [[f32; 4]; 4]
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct Skin {
     pub name: Option<String>,
     pub inverse_bind_matrices: Vec<[[f32; 4]; 4]>,
     pub joints: Vec<Joint>
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct Joint {
     pub node_index: usize,
     pub node_name: Option<String>
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct MeshData {
     pub index: usize,
     pub node_transform: Option<[[f32; 4]; 4]>,
 	pub primitives: Vec<PrimitiveData>
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct PrimitiveData {
 	pub positions: Vec<[f32; 3]>,
 	pub indices: Vec<u32>,
@@ -81,20 +78,20 @@ impl PrimitiveData {
     }
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum AnimationComputationMode {
     NotAnimated,
     ComputeInRealTime,
     PreComputed
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct Animation {
     pub name: String,
     pub channels: Vec<AnimationChannel>
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct AnimationChannel {
     pub target_index: usize,
     pub property: AnimationProperty,
@@ -106,14 +103,14 @@ pub struct AnimationChannel {
     pub weight_morphs: Vec<f32>
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum Interpolation {
     Linear,
     Step,
     CubicSpline
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum AnimationProperty {    
     Translation,    
     Rotation,    
@@ -121,7 +118,7 @@ pub enum AnimationProperty {
     MorphTargetWeights
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum ImageFormat {
     R8G8B8,
     R8G8B8A8,
@@ -130,14 +127,14 @@ pub enum ImageFormat {
     Other
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum TextureCompressionFormat {
     NotCompressed,
     ASTC,
     BC7
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum TextureType {
     Diffuse,
     SpecularGlossinessDiffuse,
@@ -160,14 +157,14 @@ impl TextureType {
     }
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub enum AlphaMode {
     Opaque,
     Mask,
     Blend
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct MaterialData {
     pub index: usize,
     pub name: Option<String>,
@@ -259,7 +256,7 @@ impl MaterialData {
     }
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct TextureData {
     pub index: usize,
     pub name: Option<String>,
@@ -273,7 +270,7 @@ pub struct TextureData {
     pub payload: Option<Vec<u8>>
 }
 
-#[derive(Encode, Decode, Debug, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(Debug, Clone, SchemaWrite, SchemaRead, Serialize, Deserialize)]
 pub struct ViewSource {
     pub x: f32,
     pub y: f32,
@@ -284,6 +281,10 @@ pub struct ViewSource {
     pub rotation_y: f32
 }
 
-pub fn deserialize_model_data(buf: &[u8]) -> ModelData {    
-    bitcode::decode(&buf).expect("Failed to deserialize model data")
+pub fn serialize_model_data(model_data: &ModelData) -> Result<Vec<u8>, WriteError> {
+    serialize(model_data)
+}
+
+pub fn deserialize_model_data(buf: &[u8]) -> Result<ModelData, ReadError> {
+    deserialize(&buf)
 }

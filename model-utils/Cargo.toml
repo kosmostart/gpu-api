@@ -10,5 +10,7 @@ edition = "2024"
 log = "*"
 env_logger = "*"
 serde_json = "*"
+lz4_flex = "*"
 image = "*"
+gpu-api-dto = { path = "../gpu-api-dto" }
 model-load = { path = "../model-load" }

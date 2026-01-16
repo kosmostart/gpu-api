@@ -1,10 +1,8 @@
-use std::io::{Cursor, Read, Write};
-use glam::{Mat4, Vec2, Vec3};
-use image::{DynamicImage, ImageReader, Rgb, Rgba};
+use lz4_flex::compress_prepend_size;
+use image::{DynamicImage, ImageReader};
 use log::*;
-use gltf::{image::Format, iter, Material, mesh::util::{ReadIndices, ReadJoints, ReadTexCoords, ReadWeights}};
-use gpu_api_dto::{AlphaMode, Animation, AnimationChannel, AnimationProperty, ImageFormat, Interpolation, Joint, MaterialData, MeshData, ModelData, Node, PrimitiveData, Skin, TextureCompressionFormat, TextureData, TextureType};
-use gpu_api_dto::lz4_flex::compress_prepend_size;
+use gltf::{image::Format, Material};
+use gpu_api_dto::{AlphaMode, ImageFormat, MaterialData, TextureCompressionFormat, TextureData, TextureType};
 
 pub fn create_material_data(model_name: &str, material_index: usize, buffers: &Vec<gltf::buffer::Data>, images: &Vec<gltf::image::Data>, add_images: bool, add_pixes: bool, loaded_images: &mut Vec<DynamicImage>, material: &Material) -> MaterialData {
     info!("Found material {:?}, {:?}, {}", material.index(), material.name(), material.double_sided());

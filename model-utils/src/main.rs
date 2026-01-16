@@ -1,8 +1,9 @@
-use std::{io::Write, process::Command};
+use std::io::Write;
 use log::*;
-use image::{GenericImageView, ImageReader};
-use model_load::gpu_api_dto::lz4_flex::block::compress_prepend_size;
-use model_load::{load, gpu_api_dto};
+use image::ImageReader;
+use lz4_flex::block::compress_prepend_size;
+use model_load::load;
+use gpu_api_dto::serialize_model_data;
 
 fn main() {
     env_logger::init();
@@ -51,10 +52,22 @@ fn process_model(model_name: &str, folder_name: &str, file_name: &str, is_animat
     
     let mut file = std::fs::File::create(&format!("{}.model", model_name)).expect("Failed to create model file");
     
-    let bytes = gpu_api_dto::bitcode::encode(&model_data);
-
-    let res = file.write_all(&bytes).expect("Failed to write model data to file");
-    info!("{:?}", res);
+    match serialize_model_data(&model_data) {
+        Ok(bytes) => {
+            match file.write_all(&bytes) {
+                Ok(()) => {
+                    info!("Done");
+                }
+                Err(e) => {
+                    error!("{}", e);
+                }
+            }
+            
+        }
+        Err(e) => {
+            error!("{}", e);
+        }
+    }    
 }
 
 fn process_image(file_path: &str, output_name: &str) {    
