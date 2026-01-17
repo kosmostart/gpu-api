@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use glam::Mat4;
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
@@ -6,8 +7,8 @@ use wgpu::{DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOp
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{bytemuck, camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, glam::Mat4, gpu_api_dto::{AnimationComputationMode, AnimationProperty}, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, solid_quad_pipeline}};
-use gpu_api::gpu_api_dto::ViewSource;
+use gpu_api::{camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, solid_quad_pipeline}};
+use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
 pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
@@ -537,7 +538,7 @@ async fn run() {
                                                             let parent_transform = object.nodes[*parent_index].global_transform_matrix;
                                                             let node = &mut object.nodes[*node_index];
                                             
-                                                            let local_transform = gpu_api::glam::Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation);
+                                                            let local_transform = glam::Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation);
 
                                                             node.global_transform_matrix = parent_transform * local_transform;
                                                         }

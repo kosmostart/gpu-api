@@ -2775,11 +2775,14 @@ dependencies = [
 name = "test-app"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "console_error_panic_hook",
  "console_log",
  "env_logger",
+ "glam",
  "gltf",
  "gpu-api",
+ "gpu-api-dto",
  "image",
  "js-sys",
  "log",

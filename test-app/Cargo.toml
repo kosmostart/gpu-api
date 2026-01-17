@@ -10,9 +10,12 @@ edition = "2024"
 log = "*"
 serde_json = "*"
 winit = {version = "*" }
+bytemuck = "*"
+glam = "*"
 image = { version = "*", default-features = false, features = ["png", "jpeg"] }
 gltf = "*"
 gpu-api = { path = "../gpu-api" }
+gpu-api-dto = { path = "../gpu-api-dto" }
 model-load = { path = "../model-load" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
