@@ -179,7 +179,7 @@ impl Pipeline {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             ..Default::default()
         });
         
@@ -187,12 +187,12 @@ impl Pipeline {
 
         let layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Image pipeline"),
-                push_constant_ranges: &[],
+                label: Some("Image pipeline"),                
                 bind_group_layouts: &[
                     &constant_layout,
                     &image_bind_group_layout
                 ],
+                immediate_size: 0
             });
 
         let shader =
@@ -280,7 +280,7 @@ impl Pipeline {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });        
 

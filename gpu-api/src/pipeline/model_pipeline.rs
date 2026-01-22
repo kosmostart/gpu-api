@@ -203,7 +203,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
         address_mode_w: wgpu::AddressMode::Repeat,            
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::MipmapFilterMode::Linear,
         ..Default::default()
     });
 
@@ -213,7 +213,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
         address_mode_w: wgpu::AddressMode::Repeat,            
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::MipmapFilterMode::Linear,
         ..Default::default()
     });
 
@@ -225,7 +225,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
         address_mode_w: wgpu::AddressMode::Repeat,            
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::MipmapFilterMode::Linear,
         ..Default::default()
     });
 
@@ -235,7 +235,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
         address_mode_w: wgpu::AddressMode::Repeat,            
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::MipmapFilterMode::Linear,
         ..Default::default()
     });    
     
@@ -321,11 +321,11 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
             &joint_matrices_bind_group_layout,
             &node_transform_bind_group_layout
         ],
-        push_constant_ranges: &[]
+        immediate_size: 0
     });    
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        multiview: None,
+        multiview_mask: None,
         label: Some("Model pipeline"),
         layout: Some(&pipeline_layout),        
         vertex: wgpu::VertexState {

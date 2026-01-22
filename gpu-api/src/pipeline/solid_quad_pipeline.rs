@@ -139,9 +139,9 @@ impl Pipeline {
 
         let layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Quad pipeline"),
-                push_constant_ranges: &[],
+                label: Some("Quad pipeline"),                
                 bind_group_layouts: &[&constant_layout],
+                immediate_size: 0
             });
 
         let shader =
@@ -231,7 +231,7 @@ impl Pipeline {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 

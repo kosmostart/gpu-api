@@ -265,7 +265,7 @@ async fn run() {
         }
     ];
 
-    let mut staging_belt = wgpu::util::StagingBelt::new(5 * 1024);
+    let mut staging_belt = wgpu::util::StagingBelt::new(device.clone(), 5 * 1024);
 
     let mut frame_counter = FrameCounter::new(FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER);
 
@@ -287,7 +287,7 @@ async fn run() {
 
                         layout.size = new_size;          
 
-                        quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
+                        quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);                        
 
                         surface.configure(&device, &config);
                     }
@@ -354,8 +354,7 @@ async fn run() {
                                         &image_pipeline.uniform_buffer,
                                         0,
                                         wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64)
-                                            .expect("Failed to create quad uniform buffer size"),
-                                        &device
+                                            .expect("Failed to create quad uniform buffer size")                                        
                                     );
                 
                                     uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
@@ -369,8 +368,7 @@ async fn run() {
                                     &mut encoder,
                                     &image_object.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create image object buffer size"),
-                                    &device,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create image object buffer size")                                    
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
@@ -381,8 +379,7 @@ async fn run() {
                                     &mut encoder,
                                     &gradient_quad_pipeline.uniform_buffer,
                                     0,
-                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create gradient quad uniform buffer size"),
-                                    &device
+                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create gradient quad uniform buffer size")                                    
                                 );
             
                                 uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
@@ -395,8 +392,7 @@ async fn run() {
                                     &mut encoder,
                                     &gradient_quad_pipeline.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create gradient quad buffer size"),
-                                    &device,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create gradient quad buffer size")                                    
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
@@ -407,8 +403,7 @@ async fn run() {
                                     &mut encoder,
                                     &solid_quad_pipeline.uniform_buffer,
                                     0,
-                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create quad uniform buffer size"),
-                                    &device
+                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create quad uniform buffer size")                                    
                                 );
             
                                 uniform_buffer.copy_from_slice(bytemuck::bytes_of(&quad_uniforms));
@@ -421,8 +416,7 @@ async fn run() {
                                     &mut encoder,
                                     &solid_quad_pipeline.vertex_buffer,
                                     0,
-                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create quad buffer size"),
-                                    &device,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create quad buffer size")                                    
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
@@ -435,8 +429,7 @@ async fn run() {
                                     &mut encoder,
                                     &model_pipeline.camera_buffer,
                                     0,
-                                    wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice"),
-                                    &device
+                                    wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice")                                    
                                 );
 
                                 let camera_uniform = CameraUniform {
@@ -471,8 +464,7 @@ async fn run() {
                                                                 &mut encoder,
                                                                 &mesh.node_transform_buffer,
                                                                 0,
-                                                                wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice"),
-                                                                &device
+                                                                wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice")                                                                
                                                             );
                                         
                                                             node_transform_slice.copy_from_slice(bytemuck::bytes_of(node_transform));
@@ -581,8 +573,7 @@ async fn run() {
                                                         &mut encoder,
                                                         &object.joint_matrices_buffer,
                                                         0,
-                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
-                                                        &device
+                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")                                                        
                                                     );
                                 
                                                     joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
@@ -595,8 +586,7 @@ async fn run() {
                                                                 &mut encoder,
                                                                 &mesh.node_transform_buffer,
                                                                 0,
-                                                                wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice"),
-                                                                &device
+                                                                wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice")                                                                
                                                             );
                                         
                                                             node_transform_slice.copy_from_slice(bytemuck::bytes_of(node_transform));
@@ -617,8 +607,7 @@ async fn run() {
                                                         &mut encoder,
                                                         &object.joint_matrices_buffer,
                                                         0,
-                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice"),
-                                                        &device
+                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")                                                        
                                                     );
                                 
                                                     joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
@@ -630,8 +619,7 @@ async fn run() {
                                                             &mut encoder,
                                                             &mesh.node_transform_buffer,
                                                             0,
-                                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice"),
-                                                            &device
+                                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice")                                                            
                                                         );
 
                                                         let mesh_node_transform = &object.animations[animation_index].mesh_node_transforms[mesh.index];
@@ -650,8 +638,7 @@ async fn run() {
                                             &mut encoder,
                                             &object.instance_buffer,
                                             0,
-                                            wgpu::BufferSize::new(object.model_instance_size).expect("Failed to allocate view slice"),
-                                            &device
+                                            wgpu::BufferSize::new(object.model_instance_size).expect("Failed to allocate view slice")                                            
                                         );
                     
                                         view_slice.copy_from_slice(bytemuck::cast_slice(&object.model_instances));
@@ -691,7 +678,8 @@ async fn run() {
                                             stencil_ops: None,
                                         }),
                                         timestamp_writes: None,
-                                        occlusion_query_set: None
+                                        occlusion_query_set: None,
+                                        multiview_mask: None
                                     }
                                 );                                                        
             
