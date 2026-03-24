@@ -2874,7 +2874,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-app"
+name = "test-app-gpu-api"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
@@ -2900,7 +2900,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-server"
+name = "test-server-gpu-api"
 version = "0.1.0"
 dependencies = [
  "axum",
