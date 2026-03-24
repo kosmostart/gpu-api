@@ -316,10 +316,10 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Pipeline Layout"),
         bind_group_layouts: &[
-            &material_bind_group_layout,
-            &camera_bind_group_layout,
-            &joint_matrices_bind_group_layout,
-            &node_transform_bind_group_layout
+            Some(&material_bind_group_layout),
+            Some(&camera_bind_group_layout),
+            Some(&joint_matrices_bind_group_layout),
+            Some(&node_transform_bind_group_layout),
         ],
         immediate_size: 0
     });    

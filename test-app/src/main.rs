@@ -2,7 +2,7 @@ use std::sync::Arc;
 use glam::Mat4;
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
-use wgpu::{DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
+use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
 #[cfg(target_arch = "wasm32")]
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
@@ -102,16 +102,16 @@ async fn run() {
     
     let depth_stencil_state = Some(wgpu::DepthStencilState {
         format: wgpu::TextureFormat::Depth32Float,
-        depth_write_enabled: true,
-        depth_compare: wgpu::CompareFunction::Always,
+        depth_write_enabled: Some(true),
+        depth_compare: Some(wgpu::CompareFunction::Always),
         stencil: wgpu::StencilState::default(),
         bias: wgpu::DepthBiasState::default()
     });
 
     let model_depth_stencil_state = Some(wgpu::DepthStencilState {
         format: wgpu::TextureFormat::Depth32Float,
-        depth_write_enabled: true,
-        depth_compare: wgpu::CompareFunction::Less,
+        depth_write_enabled: Some(true),
+        depth_compare: Some(wgpu::CompareFunction::Less),
         stencil: wgpu::StencilState::default(),
         bias: wgpu::DepthBiasState::default()
     });
@@ -341,8 +341,11 @@ async fn run() {
                                 }
                             );
             
-                            // Get the next frame
-                            let frame = surface.get_current_texture().expect("Get next frame");                        
+                            // Get the next frame                            
+                            let frame = match surface.get_current_texture() {
+                                CurrentSurfaceTexture::Success(st) => st,
+                                _ => panic!("Failed to get current frame texture from surface")
+                            };
                             let mut texture_view_descriptor = wgpu::TextureViewDescriptor::default();
                             texture_view_descriptor.format = Some(wgpu::TextureFormat::Rgba8UnormSrgb);
                             let view = &frame.texture.create_view(&texture_view_descriptor);

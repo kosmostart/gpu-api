@@ -189,8 +189,8 @@ impl Pipeline {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Image pipeline"),                
                 bind_group_layouts: &[
-                    &constant_layout,
-                    &image_bind_group_layout
+                    Some(&constant_layout),
+                    Some(&image_bind_group_layout),
                 ],
                 immediate_size: 0
             });

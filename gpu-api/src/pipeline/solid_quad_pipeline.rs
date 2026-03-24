@@ -140,7 +140,7 @@ impl Pipeline {
         let layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Quad pipeline"),                
-                bind_group_layouts: &[&constant_layout],
+                bind_group_layouts: &[Some(&constant_layout)],
                 immediate_size: 0
             });
 
