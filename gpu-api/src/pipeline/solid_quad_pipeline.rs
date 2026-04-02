@@ -49,11 +49,11 @@ unsafe impl bytemuck::Pod for SolidQuad {}
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Uniforms {
-    transform: [f32; 16],
-    scale: f32,
+    pub transform: [f32; 16],
+    pub scale: f32,
     // Uniforms must be aligned to their largest member,
     // this uses a mat4x4<f32> which aligns to 16, so align to that
-    _padding: [f32; 3],
+    pub _padding: [f32; 3],
 }
 
 unsafe impl bytemuck::Pod for Uniforms {}

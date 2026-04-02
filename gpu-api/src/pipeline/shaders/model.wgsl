@@ -76,7 +76,8 @@ struct FragmentInput {
     @location(0) texture_coordinates: vec2<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) tangent: vec3<f32>,
-    @location(3) bitangent: vec3<f32>    
+    @location(3) bitangent: vec3<f32>,
+    @location(4) world_position: vec3<f32>, // Used for lightning
 };
 
 @vertex
@@ -107,39 +108,48 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     }
 
     let model_position = model_matrix * vec4<f32>(vertex_input.position, 1.0);
-
-    fragment_input.clip_position = camera.projection * model_position;
-    fragment_input.texture_coordinates = vertex_input.texture_coordinates;              
-    fragment_input.normal = vertex_input.normal;
-    fragment_input.tangent = vertex_input.tangent;
-    fragment_input.bitangent = vertex_input.bitangent;
     
-    return fragment_input;
+    var out: FragmentInput;
+    out.clip_position = camera.projection * model_position; // Here camera.projection already P*V
+    out.world_position = model_position.xyz;
+    out.texture_coordinates = vertex_input.texture_coordinates;
+    
+    // Normals to world
+    let normal_matrix = mat3x3<f32>(model_matrix[0].xyz, model_matrix[1].xyz, model_matrix[2].xyz);
+    out.normal = normalize(normal_matrix * vertex_input.normal);
+    out.tangent = normalize(normal_matrix * vertex_input.tangent);
+    out.bitangent = normalize(normal_matrix * vertex_input.bitangent);
+    
+    return out;
 }
 
+const PI: f32 = 3.1415926535;
+
 @fragment
-fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> { 
-    //return textureSample(base_color_texture, base_color_sampler, fragment_input.texture_coordinates);
+fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> { 
+    //return textureSample(base_color_texture, base_color_sampler, in.texture_coordinates);
 
-    let light_position = vec3<f32>(4.0, 2.0, 6.0);
+    let light_position = vec3<f32>(4.0, 5.0, 6.0); // Подняли свет чуть выше
     let light_color = vec3<f32>(1.0, 1.0, 1.0);
-    let light_intensity = 15.0;
-    let world_pos = fragment_input.clip_position.xyz;
+    let light_intensity = 15.0;    
+    let world_pos = in.world_position;
 
-    let N_tangent = textureSample(normal_texture, normal_sampler, fragment_input.texture_coordinates).rgb * 2.0 - 1.0;
-    let TBN = mat3x3<f32>(fragment_input.tangent, fragment_input.bitangent, fragment_input.normal);
+    // Normal mapping
+    let N_tangent = textureSample(normal_texture, normal_sampler, in.texture_coordinates).rgb * 2.0 - 1.0;
+    let TBN = mat3x3<f32>(normalize(in.tangent), normalize(in.bitangent), normalize(in.normal));
     let N = normalize(TBN * N_tangent);
+    //let N = normalize(in.normal); 
 
     let V = normalize(camera.camera_position - world_pos);
     let L = normalize(light_position - world_pos);
     let H = normalize(V + L);
 
-    let base_color_tex = textureSample(base_color_texture, base_color_sampler, fragment_input.texture_coordinates).rgb;
-    let metallic_roughness_tex = textureSample(metallic_roughness_texture, metallic_roughness_sampler, fragment_input.texture_coordinates).rg;
+    let base_color_tex = textureSample(base_color_texture, base_color_sampler, in.texture_coordinates);
+    let albedo = base_color_tex.rgb * material_factors.base_color_factor.rgb;
+    let metallic_roughness_tex = textureSample(metallic_roughness_texture, metallic_roughness_sampler, in.texture_coordinates).rg;
     let metallic = metallic_roughness_tex.r;
     let roughness = metallic_roughness_tex.g;
-
-    let albedo = base_color_tex;
+    
     let F0 = mix(vec3<f32>(0.04), albedo, metallic);
 
     // Basic BRDF approximation (Cook-Torrance)
@@ -169,9 +179,9 @@ fn fs_main(fragment_input: FragmentInput) -> @location(0) vec4<f32> {
     let k_d = (vec3<f32>(1.0) - k_s) * (1.0 - metallic);
 
     let radiance = light_color * light_intensity;
-    let color = (k_d * albedo / PI + specular) * radiance * NdotL;
+    // Ambient lightning
+    let ambient = vec3<f32>(0.3) * albedo;
+    let final_color = ambient + (k_d * albedo / PI + specular) * radiance * NdotL;
 
-    return vec4<f32>(color, 1.0);
+    return vec4<f32>(final_color, base_color_tex.a);
 }
-
-const PI: f32 = 3.1415926535;
