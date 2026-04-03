@@ -34,23 +34,6 @@ pub fn screen_to_distance(camera: &Camera, width: f32, height: f32, x: f32, y: f
     q1.length() / q2.length()
 }
 
-pub fn screen_to_ray_direction(camera: &Camera, width: f32, height: f32, x: f32, y: f32) -> glam::Vec3 {
-    let x_ndc = (2.0 * x / width) - 1.0;
-    let y_ndc = 1.0 - (2.0 * y / height);
-
-    let ray_near_ndc = glam::vec4(x_ndc, y_ndc, 0.0, 1.0);
-
-    let mut ray_near_eye = camera.projection_source.inverse() * ray_near_ndc;
-
-    // !!! This is not obvious, but very important. !!!
-    ray_near_eye.w = 0.0;
-
-    let ray_near_world = camera.view.inverse() * ray_near_eye;
-    let ray_near_world3 = glam::vec3(ray_near_world.x, ray_near_world.y, ray_near_world.z);    
-
-    ray_near_world3.normalize()
-}
-
 pub fn ray_plane_intersection(ray_origin: &glam::Vec3, ray_direction: &glam::Vec3, plane_origin: &glam::Vec3, plane_normal: &glam::Vec3) -> glam::Vec3 {    
     let d = plane_origin.dot(-plane_normal);
 

@@ -137,8 +137,8 @@ fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
     // Normal mapping
     let N_tangent = textureSample(normal_texture, normal_sampler, in.texture_coordinates).rgb * 2.0 - 1.0;
     let TBN = mat3x3<f32>(normalize(in.tangent), normalize(in.bitangent), normalize(in.normal));
-    let N = normalize(TBN * N_tangent);
-    //let N = normalize(in.normal); 
+    //let N = normalize(TBN * N_tangent);
+    let N = normalize(in.normal); 
 
     let V = normalize(camera.camera_position - world_pos);
     let L = normalize(light_position - world_pos);

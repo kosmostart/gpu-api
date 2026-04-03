@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -32,6 +32,25 @@ impl Camera {
         self.projection_source = projection_source;
         self.view = view;        
         self.projection = projection;
+    }
+
+    /// Screen (0..1) to ray (origin, direction)
+    pub fn screen_to_ray(&self, screen_pos: Vec2) -> (Vec3, Vec3) {
+        let ndc = Vec4::new(
+            screen_pos.x * 2.0 - 1.0,
+            (1.0 - screen_pos.y) * 2.0 - 1.0,
+            1.0,
+            1.0,
+        );
+
+        let inv_pv = self.projection.inverse(); // This is projection_source * view
+        let world_pos = inv_pv * ndc;
+        let world_pos = world_pos.xyz() / world_pos.w;
+
+        let ray_origin = self.camera_position;
+        let ray_dir = (world_pos - ray_origin).normalize();
+
+        (ray_origin, ray_dir)
     }
 }
 
