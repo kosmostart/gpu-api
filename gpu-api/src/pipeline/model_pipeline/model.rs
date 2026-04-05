@@ -517,7 +517,6 @@ impl Object {
         }    
 
         let mut views = vec![];
-        let mut model_matrices = vec![];
         let mut instances = vec![];
 
         for view_source in view_sources {
@@ -530,8 +529,6 @@ impl Object {
                     false => 0                
                 }
             });
-
-            model_matrices.push(model_matrix);
 
             instances.push(ObjectInstance {
                 view_source,            
@@ -856,10 +853,39 @@ impl Object {
         self.instances_count = self.instances.len() as u32;
     }
 
+    pub fn set_instance_data_size(&mut self) {
+        self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
+        self.instances_count = self.instances.len() as u32;
+    }
+
+    pub fn add_instance_view(&mut self, view_source: ViewSource) {        
+        let model_matrix = generate_model_matrix(&view_source);
+        self.instances.push(ObjectInstance {
+            view_source,            
+            is_moving: false,
+            move_target: glam::vec3(0.0, 0.0, 0.0),
+            move_direction_normalized: glam::vec3(0.0, 0.0, 0.0),
+            x_move_done: false,
+            y_move_done: false,
+            z_move_done: false,
+            bounding_box: BoundingBox { 
+                box0: glam::vec3(0.0, 0.0, 0.0),
+                box1: glam::vec3(0.0, 0.0, 0.0)
+            }
+        });
+        self.model_instances.push(ModelInstance {
+            model_matrix: model_matrix.to_cols_array(),
+            is_animated: match self.animation_computation_mode {
+                AnimationComputationMode::PreComputed |
+                AnimationComputationMode::ComputeInRealTime => 1,
+                AnimationComputationMode::NotAnimated => 0
+            }
+        });
+    }
+
     pub fn update_instance_view(&mut self, instance_index: usize) {        
         let instance = &self.instances[instance_index];
         let model_matrix = generate_model_matrix(&instance.view_source);
-
         self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();
     }
 
@@ -868,7 +894,6 @@ impl Object {
         let quat = Quat::from_rotation_y(instance.view_source.rotation_y);
         let rotation_matrix = glam::Mat4::from_quat(quat);
         let model_matrix = generate_model_matrix(&instance.view_source) * rotation_matrix;
-
         self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();        
     }    
 
@@ -938,7 +963,6 @@ impl Object {
 
 pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
     let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
-    let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));    
-
+    let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));        
     translation * scale
 }
