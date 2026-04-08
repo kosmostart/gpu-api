@@ -962,7 +962,9 @@ impl Object {
 }
 
 pub fn generate_model_matrix(source: &ViewSource) -> glam::Mat4 {
-    let translation = glam::Mat4::from_translation(glam::Vec3::new(source.x, source.y, source.z));
-    let scale = glam::Mat4::from_scale(glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z));        
-    translation * scale
+    glam::Mat4::from_scale_rotation_translation(
+        glam::Vec3::new(source.scale_x, source.scale_y, source.scale_z),
+        glam::Quat::IDENTITY, // Если вращение пока не нужно
+        glam::Vec3::new(source.x, source.y, source.z),
+    )
 }
