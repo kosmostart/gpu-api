@@ -425,7 +425,10 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
                 })
             ],
         }),
-        primitive: wgpu::PrimitiveState::default(),
+        primitive: wgpu::PrimitiveState {
+            cull_mode: None,
+            ..Default::default()
+        },
         depth_stencil,
         multisample: wgpu::MultisampleState::default(),
         cache: None
