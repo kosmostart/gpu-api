@@ -127,7 +127,7 @@ const PI: f32 = 3.1415926535;
 
 @fragment
 fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> { 
-    //return textureSample(base_color_texture, base_color_sampler, in.texture_coordinates);
+    //return vec4<f32>(1.0, 1.0, 1.0, 1.0);
 
     let light_position = vec3<f32>(4.0, 5.0, 6.0); // Подняли свет чуть выше
     let light_color = vec3<f32>(1.0, 1.0, 1.0);
