@@ -7,7 +7,7 @@ use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, Memory
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{camera::{create_camera, CameraUniform}, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, model_pipeline::{model::{Object, ObjectGroup}, CAMERA_UNIFORM_SIZE}, solid_quad_pipeline}};
+use gpu_api::{camera::{CameraUniform, create_camera}, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, line_pipeline::LineVertex, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{Object, ObjectGroup}}, solid_quad_pipeline::{self, Transformation}}};
 use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
@@ -151,7 +151,8 @@ async fn run() {
     object_groups.push(object_group);
     
     let solid_quad_pipeline = pipeline::solid_quad_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
-    let gradient_quad_pipeline = pipeline::gradient_quad_pipeline::Pipeline::new(&device, depth_stencil_state);
+    let gradient_quad_pipeline = pipeline::gradient_quad_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
+    let line_pipeline = pipeline::line_pipeline::Pipeline::new(&device, depth_stencil_state);
 
     let transformation = solid_quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
     let mut quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
@@ -265,8 +266,18 @@ async fn run() {
         }
     ];
 
-    let mut staging_belt = wgpu::util::StagingBelt::new(device.clone(), 5 * 1024);
+    let line_transform = Transformation::identity();
+    let line_uniforms = solid_quad_pipeline::Uniforms::new(line_transform, scale_factor as f32);
 
+    let line_data = vec![
+        LineVertex { color: [1.0, 0.0, 0.0, 1.0], pos: [0.0, 0.0, 0.0] },
+        LineVertex { color: [0.0, 1.0, 0.0, 1.0], pos: [0.5,  0.5, 0.5] },
+        LineVertex { color: [0.0, 1.0, 0.0, 1.0], pos: [0.5,  0.0, 0.5] },
+    ];
+
+    let line_indices: Vec<u32> = vec![0, 1, 1, 2];
+
+    let mut staging_belt = wgpu::util::StagingBelt::new(device.clone(), 5 * 1024);
     let mut frame_counter = FrameCounter::new(FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER);
 
     event_loop.run(move |event, target| {        
@@ -423,6 +434,36 @@ async fn run() {
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
+                            }
+
+                            {
+                                let mut uniform_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &line_pipeline.uniform_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create line uniform buffer size")
+                                );            
+                                uniform_buffer.copy_from_slice(bytemuck::bytes_of(&line_uniforms));
+                            }
+
+                            {
+                                let vertex_bytes = bytemuck::cast_slice(&line_data);
+                                let mut vertex_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &line_pipeline.vertex_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(vertex_bytes.len() as u64).expect("Failed to create line vertex buffer size")
+                                );
+                                vertex_buffer.copy_from_slice(vertex_bytes);
+
+                                let index_bytes = bytemuck::cast_slice(&line_indices);
+                                let mut index_buffer = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &line_pipeline.index_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(index_bytes.len() as u64).expect("Failed to create line index buffer size")
+                                );
+                                index_buffer.copy_from_slice(index_bytes);
                             }
 
                             camera.update(layout.size.width as f32, layout.size.height as f32);
@@ -610,7 +651,7 @@ async fn run() {
                                                         &mut encoder,
                                                         &object.joint_matrices_buffer,
                                                         0,
-                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")                                                        
+                                                        wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")
                                                     );
                                 
                                                     joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
@@ -687,6 +728,7 @@ async fn run() {
                                 );                                                        
             
                                 model_pipeline.draw(&mut render_pass, &object_groups);
+                                line_pipeline.draw(&mut render_pass, line_indices.len() as u32);
                                 image_pipeline.draw(&mut render_pass, &image_objects);
                                 gradient_quad_pipeline.draw(&mut render_pass, gradient_quads.len() as u32);
                                 solid_quad_pipeline.draw(&mut render_pass, quads.len() as u32);
