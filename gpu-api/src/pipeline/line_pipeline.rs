@@ -1,9 +1,8 @@
 use std::mem;
 use wgpu::{DepthStencilState, RenderPass, TextureFormat, util::DeviceExt};
+use crate::camera::CameraUniform;
 
-use crate::{camera::{Camera, CameraUniform}, pipeline::solid_quad_pipeline::Uniforms};
-
-pub const LINE_VERTICES_COUNT: u64 = 5000;
+pub const LINE_VERTICES_COUNT: u64 = 10000;
 
 /// The properties of a quad.
 #[derive(Clone, Copy, Debug)]
