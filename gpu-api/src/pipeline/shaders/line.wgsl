@@ -1,9 +1,12 @@
-struct Globals {
-    transform: mat4x4<f32>,
-    scale: f32
-}
+// Camera
+struct CameraUniform {
+    camera_position: vec3<f32>,
+    padding: u32,
+    view: mat4x4<f32>,
+    projection: mat4x4<f32>
+};
 
-@group(0) @binding(0) var<uniform> globals: Globals;
+@group(0) @binding(0) var<uniform> camera: CameraUniform;
 
 struct VertexInput {
     @location(0) color: vec4<f32>,
@@ -18,13 +21,12 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    
-    // 1. Scaling local cooridnates of vertex
-    let scaled_pos = in.pos * globals.scale;    
-    // 2. Aplying transform matrix, for WGSL order is matrix * vec    
-    out.clip_pos = globals.transform * vec4<f32>(scaled_pos, 1.0);
         
-    out.color = in.color; 
+    let local_pos = vec4<f32>(in.pos, 1.0);    
+    // WGSL matrix order
+    out.clip_pos = camera.projection * local_pos;
+
+    out.color = in.color;    
     return out;
 }
 

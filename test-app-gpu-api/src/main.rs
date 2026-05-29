@@ -123,8 +123,15 @@ async fn run() {
     let dist = 30.0;    
 
     let mut camera = create_camera(layout.size.width as f32, layout.size.height as f32, angle_xz, angle_y, dist, 0.0, 0.0, 0.0);
+
+    let camera_uniform = CameraUniform {
+        camera_position: camera.camera_position.to_array(),
+        padding: 0,
+        view: camera.view.to_cols_array(),
+        projection: camera.projection.to_cols_array()
+    };
     
-    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera, model_depth_stencil_state);
+    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state);
 
     let mut object_group = ObjectGroup {
         active: true,
@@ -152,7 +159,7 @@ async fn run() {
     
     let solid_quad_pipeline = pipeline::solid_quad_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
     let gradient_quad_pipeline = pipeline::gradient_quad_pipeline::Pipeline::new(&device, depth_stencil_state.clone());
-    let line_pipeline = pipeline::line_pipeline::Pipeline::new(&device, depth_stencil_state);
+    let line_pipeline = pipeline::line_pipeline::Pipeline::new(&device, &camera_uniform, depth_stencil_state);
 
     let transformation = solid_quad_pipeline::Transformation::orthographic(layout.size.width, layout.size.height);
     let mut quad_uniforms = solid_quad_pipeline::Uniforms::new(transformation, scale_factor as f32);
@@ -434,17 +441,7 @@ async fn run() {
                                 );
             
                                 vertex_buffer.copy_from_slice(vertex_bytes);
-                            }
-
-                            {
-                                let mut uniform_buffer = staging_belt.write_buffer(
-                                    &mut encoder,
-                                    &line_pipeline.uniform_buffer,
-                                    0,
-                                    wgpu::BufferSize::new(std::mem::size_of::<solid_quad_pipeline::Uniforms>() as u64).expect("Failed to create line uniform buffer size")
-                                );            
-                                uniform_buffer.copy_from_slice(bytemuck::bytes_of(&line_uniforms));
-                            }
+                            }           
 
                             {
                                 let vertex_bytes = bytemuck::cast_slice(&line_data);
@@ -468,22 +465,29 @@ async fn run() {
 
                             camera.update(layout.size.width as f32, layout.size.height as f32);
             
-                            {                                                            
-                                let mut camera_slice = staging_belt.write_buffer(
-                                    &mut encoder,
-                                    &model_pipeline.camera_buffer,
-                                    0,
-                                    wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate camera slice")                                    
-                                );
-
+                            {                                                                                            
                                 let camera_uniform = CameraUniform {
                                     camera_position: camera.camera_position.to_array(),
                                     padding: 0,
                                     view: camera.view.to_cols_array(),
                                     projection: camera.projection.to_cols_array()
                                 };
-            
-                                camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
+
+                                let mut model_camera_slice = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &model_pipeline.camera_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate model camera slice")                                    
+                                );            
+                                model_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
+
+                                let mut line_camera_slice = staging_belt.write_buffer(
+                                    &mut encoder,
+                                    &line_pipeline.camera_buffer,
+                                    0,
+                                    wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate line camera slice")                                    
+                                );            
+                                line_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
                             }
                             
                             {                            

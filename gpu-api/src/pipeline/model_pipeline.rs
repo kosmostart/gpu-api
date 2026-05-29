@@ -108,7 +108,7 @@ impl Pipeline {
     }
 }
 
-pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera, depth_stencil: Option<wgpu::DepthStencilState>) -> Pipeline {
+pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform: &CameraUniform, depth_stencil: Option<wgpu::DepthStencilState>) -> Pipeline {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("model.wgsl"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/model.wgsl")))
@@ -237,19 +237,12 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
         min_filter: wgpu::FilterMode::Linear,
         mipmap_filter: wgpu::MipmapFilterMode::Linear,
         ..Default::default()
-    });    
-    
-    let camera_uniform = CameraUniform {
-        camera_position: camera.camera_position.to_array(),
-        padding: 0,
-        view: camera.view.to_cols_array(),
-        projection: camera.projection.to_cols_array()
-    };
+    });        
 
     let camera_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(bytemuck::bytes_of(&camera_uniform)),
+            contents: bytemuck::cast_slice(bytemuck::bytes_of(camera_uniform)),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         }
     );
@@ -279,7 +272,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera: &Camera
             }
         ],
         label: Some("camera_bind_group")
-    });    
+    });
 
     let joint_matrices_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[

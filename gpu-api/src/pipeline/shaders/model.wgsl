@@ -23,7 +23,7 @@ struct CameraUniform {
     camera_position: vec3<f32>,
     padding: u32,
     view: mat4x4<f32>,
-    projection: mat4x4<f32>    
+    projection: mat4x4<f32>
 };
 
 // Joint matrices

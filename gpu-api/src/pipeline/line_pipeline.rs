@@ -1,7 +1,7 @@
 use std::mem;
-use wgpu::{DepthStencilState, RenderPass, TextureFormat};
+use wgpu::{DepthStencilState, RenderPass, TextureFormat, util::DeviceExt};
 
-use crate::pipeline::solid_quad_pipeline::Uniforms;
+use crate::{camera::{Camera, CameraUniform}, pipeline::solid_quad_pipeline::Uniforms};
 
 pub const LINE_VERTICES_COUNT: u64 = 5000;
 
@@ -22,8 +22,8 @@ unsafe impl bytemuck::Pod for LineVertex {}
 #[derive(Debug)]
 pub struct Pipeline {
     pub pipeline: wgpu::RenderPipeline,
-    pub uniform_bind_group: wgpu::BindGroup,
-    pub uniform_buffer: wgpu::Buffer,
+    pub camera_bind_group: wgpu::BindGroup,
+    pub camera_buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
 }
@@ -31,51 +31,53 @@ pub struct Pipeline {
 impl Pipeline {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, count: u32) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         render_pass.draw_indexed(0..count, 0, 0..1);        
     }    
 
-    pub fn new(device: &wgpu::Device, depth_stencil: Option<DepthStencilState>) -> Pipeline {        
-        let constant_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Line uniforms layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
+    pub fn new(device: &wgpu::Device, camera_uniform: &CameraUniform, depth_stencil: Option<DepthStencilState>) -> Pipeline {        
+        let camera_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Camera Buffer"),
+                contents: bytemuck::cast_slice(bytemuck::bytes_of(camera_uniform)),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            mem::size_of::<Uniforms>() as wgpu::BufferAddress,
-                        ),
+                        min_binding_size: None,
                     },
                     count: None,
-                }],
-            });
-
-        let constants_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Line uniforms buffer"),
-            size: mem::size_of::<Uniforms>() as wgpu::BufferAddress,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+                }
+            ],
+            label: Some("camera_bind_group_layout"),
         });
 
-        let constants_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Line uniforms bind group"),
-            layout: &constant_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: constants_buffer.as_entire_binding(),
-            }],
-        });        
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &camera_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                }
+            ],
+            label: Some("camera_bind_group")
+        });    
 
         let layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Line pipeline"),                
                 bind_group_layouts: &[
-                    Some(&constant_layout)
+                    Some(&camera_bind_group_layout)
                 ],
                 immediate_size: 0
             });
@@ -161,8 +163,8 @@ impl Pipeline {
 
         Pipeline {
             pipeline,
-            uniform_bind_group: constants_bind_group,
-            uniform_buffer: constants_buffer,
+            camera_bind_group,
+            camera_buffer,
             vertex_buffer,
             index_buffer,
         }
