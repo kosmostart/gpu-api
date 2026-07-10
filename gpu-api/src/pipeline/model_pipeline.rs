@@ -325,8 +325,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
             module: &shader,
             entry_point: Some("vs_main"),
             compilation_options: Default::default(),
-            buffers: &[
-                wgpu::VertexBufferLayout {
+            buffers: &[Some(wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &[                        
@@ -391,8 +390,8 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
                             format: wgpu::VertexFormat::Float32x4
                         }
                     ]
-                },
-                ModelInstance::vertex_buffer_layout()
+                }),
+                Some(ModelInstance::vertex_buffer_layout())
             ]
         },
         fragment: Some(wgpu::FragmentState {

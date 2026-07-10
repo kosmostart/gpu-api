@@ -8,4 +8,3 @@ pub mod pipeline {
     pub mod image_pipeline;
     pub mod model_pipeline;
 }
-pub mod object_picking;

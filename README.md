@@ -11,7 +11,7 @@ It supports:
 - 3D models with animation, skinning, node attachment, normal mapping, PBR
 - GLTF loading
 - SVG (not yet)
-- ray casting for object picking: ray-AABB intersection, ray-plane intersection
+- Camera screen_to_ray ray cast for object picking
 
 For working example navigate to `test-app` and do `cargo run`.
 

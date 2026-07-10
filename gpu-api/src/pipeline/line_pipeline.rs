@@ -2,7 +2,7 @@ use std::mem;
 use wgpu::{DepthStencilState, RenderPass, TextureFormat, util::DeviceExt};
 use crate::camera::CameraUniform;
 
-pub const LINE_VERTICES_COUNT: u64 = 10000;
+pub const LINE_VERTICES_COUNT: u64 = 20000;
 
 /// The properties of a quad.
 #[derive(Clone, Copy, Debug)]
@@ -96,7 +96,7 @@ impl Pipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<LineVertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &wgpu::vertex_attr_array!(
@@ -105,7 +105,7 @@ impl Pipeline {
                             // Position
                             1 => Float32x3,
                         )
-                    }],
+                    })],
                     compilation_options:
                         wgpu::PipelineCompilationOptions::default(),
                 },

@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 
 log = "*"
+fern = { version = "*", features = ["colored"] }
 serde_json = "*"
 winit = {version = "*" }
 bytemuck = "*"
@@ -19,7 +20,6 @@ gpu-api-dto = { path = "../gpu-api-dto" }
 model-load = { path = "../model-load" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "*"
 wgpu = "*"
 tokio = { version = "*", features = ["rt-multi-thread"] }
 

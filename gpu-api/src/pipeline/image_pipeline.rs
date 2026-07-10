@@ -218,7 +218,7 @@ impl Pipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("solid_vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<ImageQuad>() as u64,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array!(                            
@@ -243,7 +243,7 @@ impl Pipeline {
                             // Component coordinates
                             9 => Float32x4                            
                         )
-                    }],
+                    })],
                     compilation_options:
                         wgpu::PipelineCompilationOptions::default(),
                 },

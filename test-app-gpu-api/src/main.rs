@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use fern::colors::{Color, ColoredLevelConfig};
 use glam::Mat4;
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
@@ -50,13 +51,20 @@ async fn run() {
 
     let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");    
     let window = Arc::new(event_loop.create_window(window_attributes).expect("Failed to create window"));
-    let instance = wgpu::Instance::default();
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::PRIMARY,
+        flags: Default::default(),
+        memory_budget_thresholds: Default::default(),
+        backend_options: Default::default(),
+        display: None,
+    });
     let surface = instance.create_surface(window.clone()).expect("Failed to create surface");
     let adapter = instance    
         .request_adapter(&RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
-            force_fallback_adapter: false,            
+            force_fallback_adapter: false,
             compatible_surface: Some(&surface),
+            apply_limit_buckets: false,
         })
         .await
         .expect("Failed to find an appropriate adapter");
@@ -359,7 +367,7 @@ async fn run() {
                                 }
                             );
             
-                            // Get the next frame                            
+                            // Get the next frame
                             let frame = match surface.get_current_texture() {
                                 CurrentSurfaceTexture::Success(st) => st,
                                 _ => panic!("Failed to get current frame texture from surface")
@@ -490,7 +498,7 @@ async fn run() {
                                 line_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
                             }
                             
-                            {                            
+                            {
                                 for object_group in &mut object_groups {
                                     for object in &mut object_group.objects {
                                         if object_group.active == false {
@@ -740,8 +748,8 @@ async fn run() {
             
                             staging_belt.finish();
                             queue.submit(Some(encoder.finish()));
-                            frame.present();
-                            staging_belt.recall();                        
+                            queue.present(frame);
+                            staging_belt.recall();
                         }
 
                         window.request_redraw();
@@ -757,12 +765,42 @@ async fn run() {
 }
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
-    {        
-        env_logger::init();
+    #[cfg(target_arch = "wasm32")]
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));    
 
-        let rt = Runtime::new().expect("Failed to create runtime");
+    // 2. Настройка логгера через fern
+    let mut dispatch = fern::Dispatch::new()
+        .format(|out, message, record| {
+            let colors = ColoredLevelConfig::new()
+                .error(Color::Red)
+                .warn(Color::Yellow)
+                .info(Color::Green)
+                .debug(Color::White);
         
+            out.finish(format_args!(
+                "[{}] [{}] {}",
+                colors.color(record.level()),
+                record.target(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .level_for("wgpu", log::LevelFilter::Debug);
+
+    // Куда выводим результат?
+    #[cfg(target_arch = "wasm32")]
+    {
+        dispatch = dispatch.chain(fern::Output::call(console_log::log));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        dispatch = dispatch.chain(std::io::stdout());
+    }
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    {            
+        let rt = Runtime::new().expect("Failed to create runtime");        
         rt.block_on(run());
     }
     #[cfg(target_arch = "wasm32")]
