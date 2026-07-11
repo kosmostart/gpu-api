@@ -12,7 +12,7 @@ fern = { version = "*", features = ["colored"] }
 serde_json = "*"
 winit = {version = "*" }
 bytemuck = "*"
-glam = "0.30.10"
+glam = "0.33"
 image = { version = "*", default-features = false, features = ["png", "jpeg"] }
 gltf = "*"
 gpu-api = { path = "../gpu-api" }

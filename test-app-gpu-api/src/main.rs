@@ -52,7 +52,7 @@ async fn run() {
     let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");    
     let window = Arc::new(event_loop.create_window(window_attributes).expect("Failed to create window"));
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::DX12,
+        backends: wgpu::Backends::PRIMARY,
         flags: Default::default(),
         memory_budget_thresholds: Default::default(),
         backend_options: Default::default(),

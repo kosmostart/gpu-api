@@ -1015,12 +1015,6 @@ dependencies = [
 
 [[package]]
 name = "glam"
-version = "0.30.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19fc433e8437a212d1b6f1e68c7824af3aed907da60afa994e7f542d18d12aa9"
-
-[[package]]
-name = "glam"
 version = "0.33.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f22fb22f065b308be0d8724e3706c7fa3fc2a6c7d6899df4cad7860e7a75436"
@@ -1105,7 +1099,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "bytemuck_derive",
- "glam 0.30.10",
+ "glam",
  "gpu-api-dto",
  "half",
  "image",
@@ -1655,7 +1649,7 @@ name = "model-load"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "glam 0.33.2",
+ "glam",
  "gltf",
  "gpu-api-dto",
  "image",
@@ -2977,7 +2971,7 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "fern",
- "glam 0.30.10",
+ "glam",
  "gltf",
  "gpu-api",
  "gpu-api-dto",
