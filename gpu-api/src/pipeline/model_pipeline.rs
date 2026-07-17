@@ -10,7 +10,7 @@ pub mod model;
 pub mod model_instance;
 
 pub const CAMERA_UNIFORM_SIZE: u64 = 144;
-pub const INSTANCE_SIZE: u64 = 68;
+pub const INSTANCE_SIZE: u64 = 80;
 pub const MAX_MODEL_INSTANCES_COUNT: u64 = 100000;
 pub const JOINT_MATRICES_COUNT: usize = 100;
 pub const JOINT_MATRICES_UNIFORM_SIZE: u64 = 6400;
@@ -31,16 +31,6 @@ pub struct Vertex {
 
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug)]
-pub struct NodeUniform {    
-    pub info: [u32; 4],    
-    pub transform: [f32; 16]
-}
-
-unsafe impl bytemuck::Pod for NodeUniform {}
-unsafe impl bytemuck::Zeroable for NodeUniform {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

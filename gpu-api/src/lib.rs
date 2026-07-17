@@ -7,4 +7,5 @@ pub mod pipeline {
     pub mod line_pipeline;
     pub mod image_pipeline;
     pub mod model_pipeline;
+    pub mod model_bindless_piepeline;
 }

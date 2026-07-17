@@ -52,7 +52,7 @@ async fn run() {
     let event_loop: EventLoop<AppEvent> = EventLoop::with_user_event().build().expect("Failed to create event loop");    
     let window = Arc::new(event_loop.create_window(window_attributes).expect("Failed to create window"));
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::PRIMARY,
+        backends: wgpu::Backends::DX12,
         flags: Default::default(),
         memory_budget_thresholds: Default::default(),
         backend_options: Default::default(),
@@ -613,7 +613,7 @@ async fn run() {
                                                         Some(mesh_index) => {                                                            
                                                             match &mut object.meshes[mesh_index].node_transform {
                                                                 Some(node_transform) => {                                                                    
-                                                                    node_transform.transform = node.global_transform_matrix.to_cols_array();
+                                                                    node_transform.transform = node.global_transform_matrix;
                                                                 }
                                                                 None => {}
                                                             }

@@ -3,10 +3,11 @@ use glam::{Mat4, Quat};
 use image::DynamicImage;
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue};
+use gpu_api_relay::frame::NodeUniform;
 use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;
-use crate::{pipeline::model_pipeline::{self, MaterialFactorsUniform, NodeUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
+use crate::{pipeline::model_pipeline::{self, MaterialFactorsUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
 
 pub struct Object {
     pub name: String,
@@ -205,7 +206,7 @@ impl Object {
 
             let node_transform = NodeUniform {
                 info: [0; 4],
-                transform: Mat4::IDENTITY.to_cols_array() // [1.0; 16];
+                transform: Mat4::IDENTITY                
             };         
 
             let node_transform_buffer = device.create_buffer_init(
@@ -231,8 +232,8 @@ impl Object {
                 name: "".to_owned(),
                 index: mesh.index,
                 node_transform: mesh.node_transform.map(|r| NodeUniform { 
-                    info: [1, 0, 0, 0], 
-                    transform: Mat4::from_cols_array_2d(&r).to_cols_array()
+                    info: [1, 0, 0, 0],                     
+                    transform: Mat4::from_cols_array_2d(&r)
                 }),            
                 primitives,
                 node_transform_buffer,
@@ -523,11 +524,12 @@ impl Object {
             let model_matrix = generate_model_matrix(&view_source);        
 
             views.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array(),
+                model_matrix: model_matrix,
                 is_animated: match model_data.is_animated {
                     true => 1,
                     false => 0                
-                }
+                },
+                padding: [0, 0, 0]
             });
 
             instances.push(ObjectInstance {
@@ -764,8 +766,8 @@ impl Object {
                         match nodes.iter().find(|r| r.mesh_index == Some(mesh.index)) {
                             Some(node) => {                            
                                 mesh_node_transform.node_transforms.push(NodeUniform {
-                                    info: [1, 0, 0, 0], 
-                                    transform: node.global_transform_matrix.to_cols_array()
+                                    info: [1, 0, 0, 0],                                     
+                                    transform: node.global_transform_matrix
                                 });
                             }
                             None => {}
@@ -840,13 +842,14 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array(),
+                model_matrix,
                 is_animated: match self.animation_computation_mode {
                     AnimationComputationMode::PreComputed |
                     AnimationComputationMode::ComputeInRealTime => 1,
                     AnimationComputationMode::NotAnimated => 0
-                }
-            });            
+                },
+                padding: [0, 0, 0]
+            });
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
@@ -874,19 +877,20 @@ impl Object {
             }
         });
         self.model_instances.push(ModelInstance {
-            model_matrix: model_matrix.to_cols_array(),
+            model_matrix,
             is_animated: match self.animation_computation_mode {
                 AnimationComputationMode::PreComputed |
                 AnimationComputationMode::ComputeInRealTime => 1,
                 AnimationComputationMode::NotAnimated => 0
-            }
+            },
+            padding: [0, 0, 0]
         });
     }
 
     pub fn update_instance_view(&mut self, instance_index: usize) {        
         let instance = &self.instances[instance_index];
         let model_matrix = generate_model_matrix(&instance.view_source);
-        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();
+        self.model_instances[instance_index].model_matrix = model_matrix;
     }
 
     pub fn update_instance_view_with_rotation(&mut self, instance_index: usize) {
@@ -894,7 +898,7 @@ impl Object {
         let quat = Quat::from_rotation_y(instance.view_source.rotation_y);
         let rotation_matrix = glam::Mat4::from_quat(quat);
         let model_matrix = generate_model_matrix(&instance.view_source) * rotation_matrix;
-        self.model_instances[instance_index].model_matrix = model_matrix.to_cols_array();        
+        self.model_instances[instance_index].model_matrix = model_matrix;        
     }    
 
     pub fn update_view_with_translation(&mut self, translation: &[f32; 3]) {
@@ -905,13 +909,14 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = translation_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array(),
+                model_matrix: model_matrix,
                 is_animated: match self.animation_computation_mode {
                     AnimationComputationMode::PreComputed |
                     AnimationComputationMode::ComputeInRealTime => 1,
                     AnimationComputationMode::NotAnimated => 0
-                }
-            });            
+                },
+                padding: [0, 0, 0]
+            });
         }
 
         self.model_instance_size = self.model_instances.len() as u64 * INSTANCE_SIZE;
@@ -926,12 +931,13 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = rotation_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array(),
+                model_matrix: model_matrix,
                 is_animated: match self.animation_computation_mode {
                     AnimationComputationMode::PreComputed |
                     AnimationComputationMode::ComputeInRealTime => 1,
                     AnimationComputationMode::NotAnimated => 0
-                }
+                },
+                padding: [0, 0, 0]
             });            
         }
 
@@ -947,12 +953,13 @@ impl Object {
         for instance in &self.instances {
             let model_matrix = scale_matrix * generate_model_matrix(&instance.view_source);
             self.model_instances.push(ModelInstance {
-                model_matrix: model_matrix.to_cols_array(),                
+                model_matrix: model_matrix,                
                 is_animated: match self.animation_computation_mode {
                     AnimationComputationMode::PreComputed |
                     AnimationComputationMode::ComputeInRealTime => 1,
                     AnimationComputationMode::NotAnimated => 0
-                }
+                },
+                padding: [0, 0, 0]
             });            
         }
 

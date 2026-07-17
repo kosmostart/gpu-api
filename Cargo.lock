@@ -1101,6 +1101,7 @@ dependencies = [
  "bytemuck_derive",
  "glam",
  "gpu-api-dto",
+ "gpu-api-relay",
  "half",
  "image",
  "ktx2",
@@ -1119,6 +1120,15 @@ dependencies = [
  "serde",
  "serde_derive",
  "wincode",
+]
+
+[[package]]
+name = "gpu-api-relay"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "bytemuck_derive",
+ "glam",
 ]
 
 [[package]]

@@ -1,10 +1,12 @@
 use std::mem;
+use glam::Mat4;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ModelInstance {
-    pub model_matrix: [f32; 16],
-    pub is_animated: u32    
+    pub model_matrix: Mat4,
+    pub is_animated: u32,
+    pub padding: [u32; 3], 
 }
 
 unsafe impl bytemuck::Pod for ModelInstance {}
