@@ -65,7 +65,7 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, object_groups: &'a Vec<ObjectGroup>) {
+    pub fn draw(&self, render_pass: &mut RenderPass, object_groups: &[ObjectGroup]) {
         render_pass.set_pipeline(&self.render_pipeline);
 
         for object_group in object_groups {
@@ -308,7 +308,6 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
     });    
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        multiview_mask: None,
         label: Some("Model pipeline"),
         layout: Some(&pipeline_layout),        
         vertex: wgpu::VertexState {
@@ -413,6 +412,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
         },
         depth_stencil,
         multisample: wgpu::MultisampleState::default(),
+        multiview_mask: None,
         cache: None
     });
 

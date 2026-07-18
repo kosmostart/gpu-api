@@ -2,13 +2,13 @@ use glam::Mat4;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
-pub struct NodeUniform {    
+pub struct NodeData {    
     pub info: [u32; 4],    
     pub transform: Mat4,
 }
 
-unsafe impl bytemuck::Pod for NodeUniform {}
-unsafe impl bytemuck::Zeroable for NodeUniform {}
+unsafe impl bytemuck::Pod for NodeData {}
+unsafe impl bytemuck::Zeroable for NodeData {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -20,12 +20,45 @@ pub struct InstanceData {
     pub material_index: u32,
 }
 
-unsafe impl bytemuck::Pod for InstanceData {}
-unsafe impl bytemuck::Zeroable for InstanceData {}
+/// Структура задачи для Compute-шейдера (Выравнивание WebGPU по 16 байт)
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct CullingTask {
+    pub start_object_index: u32,
+    pub object_count: u32,
+    pub _padding: [u32; 2], 
+}
+
+unsafe impl bytemuck::Pod for CullingTask {}
+unsafe impl bytemuck::Zeroable for CullingTask {}
+
+/// Метаданные геометрии расширяются (Вы знаете смещение инстансов модели во VRAM изначально)
+pub struct ModelGeometryMeta {
+    pub id: u32,
+    pub index_count: u32,
+    pub first_index: u32,
+    pub base_vertex: i32,
+    /// С какого индекса в глобальном GPU-буфере начинаются инстансы этой модели в мире
+    pub global_instance_buffer_offset: u32, 
+}
+
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct DrawIndexedIndirectCommand {
+    pub index_count: u32,    // Количество индексов меша модели
+    pub instance_count: u32, // СКОЛЬКО таких объектов нашел куллинг октодерева
+    pub first_index: u32,    // Смещение геометрии в mega_index_buffer
+    pub base_vertex: i32,    // Смещение геометрии в mega_vertex_buffer
+    pub first_instance: u32, // Смещение в instances_buffer кадра
+}
+
+unsafe impl bytemuck::Pod for DrawIndexedIndirectCommand {}
+unsafe impl bytemuck::Zeroable for DrawIndexedIndirectCommand {}
 
 pub struct FrameData {
     pub instances: Vec<InstanceData>,
-    pub nodes: Vec<NodeUniform>,
+    pub nodes: Vec<NodeData>,
     pub joints: Vec<Mat4>,
 }
 

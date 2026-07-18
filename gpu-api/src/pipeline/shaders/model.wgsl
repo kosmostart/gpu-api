@@ -32,7 +32,7 @@ struct JointUniform {
 };
 
 // Node
-struct NodeUniform {
+struct NodeData {
     info: vec4<u32>,
     transform: mat4x4<f32>
 };
@@ -51,7 +51,7 @@ var<uniform> camera: CameraUniform;
 @group(2) @binding(0)
 var<uniform> joint_uniform: JointUniform;
 @group(3) @binding(0)
-var<uniform> node_uniform: NodeUniform;
+var<uniform> node_uniform: NodeData;
 
 struct VertexInput {    
     @location(0) position: vec3<f32>,    

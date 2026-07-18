@@ -3,7 +3,7 @@ use glam::{Mat4, Quat};
 use image::DynamicImage;
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue};
-use gpu_api_relay::frame::NodeUniform;
+use gpu_api_relay::frame::NodeData;
 use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;
@@ -54,7 +54,7 @@ pub struct ModelJoint {
 pub struct Mesh {    
     pub name: String,
     pub index: usize,
-    pub node_transform: Option<NodeUniform>,    
+    pub node_transform: Option<NodeData>,    
     pub primitives: Vec<Primitive>,
     pub node_transform_buffer: Buffer,
     pub node_transform_bind_group: BindGroup
@@ -153,7 +153,7 @@ pub struct ModelAnimation {
 
 pub struct MeshNodeTransform {
     pub mesh_index: usize,
-    pub node_transforms: Vec<NodeUniform>
+    pub node_transforms: Vec<NodeData>
 }
 
 pub struct ModelAnimationChannel {
@@ -204,7 +204,7 @@ impl Object {
                 });
             }
 
-            let node_transform = NodeUniform {
+            let node_transform = NodeData {
                 info: [0; 4],
                 transform: Mat4::IDENTITY                
             };         
@@ -231,7 +231,7 @@ impl Object {
             meshes.push(Mesh {
                 name: "".to_owned(),
                 index: mesh.index,
-                node_transform: mesh.node_transform.map(|r| NodeUniform { 
+                node_transform: mesh.node_transform.map(|r| NodeData { 
                     info: [1, 0, 0, 0],                     
                     transform: Mat4::from_cols_array_2d(&r)
                 }),            
@@ -765,7 +765,7 @@ impl Object {
 
                         match nodes.iter().find(|r| r.mesh_index == Some(mesh.index)) {
                             Some(node) => {                            
-                                mesh_node_transform.node_transforms.push(NodeUniform {
+                                mesh_node_transform.node_transforms.push(NodeData {
                                     info: [1, 0, 0, 0],                                     
                                     transform: node.global_transform_matrix
                                 });
