@@ -168,7 +168,7 @@ pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: boo
         info!("Found Mesh {:?}, index {}, has weights: {}", mesh.name(), mesh.index(), mesh.weights().is_some());
 
         let node_transform = match nodes.iter().find(|v| v.mesh_index == Some(mesh.index())) {
-            Some(node) if attached_nodes_indices.contains(&node.index) => Some(node_local_transforms[node.index].to_cols_array_2d()),
+            Some(node) if attached_nodes_indices.contains(&node.index) => Some(node_local_transforms[node.index]),
             _ => None
         };
 
@@ -464,7 +464,7 @@ pub fn load(model_name: &str, model_path: &str, add_pixes: bool, add_images: boo
 
         meshes.push(MeshData {
             index: mesh.index(),
-            node_transform,
+            node_transform: node_transform.map(|nt| nt.to_cols_array_2d()),
             primitives
         });        
     }

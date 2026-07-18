@@ -5,8 +5,8 @@ use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 pub struct CameraUniform {
     pub camera_position: [f32; 3],
     pub padding: u32,
-    pub view: [f32; 16],
-    pub projection: [f32; 16]    
+    pub view: Mat4,
+    pub projection: Mat4,
 }
 
 unsafe impl bytemuck::Pod for CameraUniform {}
@@ -20,7 +20,7 @@ pub struct Camera {
     pub focus_point: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,    
-    pub projection: Mat4    
+    pub projection: Mat4, 
 }
 
 impl Camera {

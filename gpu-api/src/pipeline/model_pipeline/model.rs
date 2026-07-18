@@ -147,7 +147,7 @@ pub struct ModelAnimation {
     pub channels: Vec<ModelAnimationChannel>,
     pub frame_index: usize,
     pub frame_cycle_count: usize,
-    pub joint_matrices: Vec<[[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT]>,
+    pub joint_matrices: Vec<[Mat4; model_pipeline::JOINT_MATRICES_COUNT]>,
     pub mesh_node_transforms: Vec<MeshNodeTransform>
 }
 
@@ -592,14 +592,14 @@ impl Object {
             });
         }
 
-        let joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_COUNT];
+        let joint_matrices: [Mat4; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY; model_pipeline::JOINT_MATRICES_COUNT];
 
-        let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
+        //let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
 
         let joint_matrices_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Joint matrices Buffer"),
-                contents: bytemuck::cast_slice(joint_matrices_ref),
+                contents: bytemuck::cast_slice(&joint_matrices),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
         );
@@ -746,7 +746,7 @@ impl Object {
                     }
                 }           
 
-                let mut joint_matrices: [[f32; 16]; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); model_pipeline::JOINT_MATRICES_COUNT];
+                let mut joint_matrices: [Mat4; model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY; model_pipeline::JOINT_MATRICES_COUNT];
                 
                 let mut joint_matrix_index = 0;
                 let skin_index = 0;            
@@ -754,7 +754,7 @@ impl Object {
                 for joint in &skins[skin_index].joints {
                     let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
 
-                    joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+                    joint_matrices[joint_matrix_index] = joint_matrix;
 
                     joint_matrix_index = joint_matrix_index + 1;
                 }            
@@ -789,7 +789,7 @@ impl Object {
                 
                                 //let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
                                 
-                                joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+                                joint_matrices[joint_matrix_index] = joint_matrix;
                 
                                 joint_matrix_index = joint_matrix_index + 1;
                             }

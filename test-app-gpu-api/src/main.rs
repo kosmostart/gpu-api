@@ -135,8 +135,8 @@ async fn run() {
     let camera_uniform = CameraUniform {
         camera_position: camera.camera_position.to_array(),
         padding: 0,
-        view: camera.view.to_cols_array(),
-        projection: camera.projection.to_cols_array()
+        view: camera.view,
+        projection: camera.projection
     };
     
     let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state);
@@ -477,8 +477,8 @@ async fn run() {
                                 let camera_uniform = CameraUniform {
                                     camera_position: camera.camera_position.to_array(),
                                     padding: 0,
-                                    view: camera.view.to_cols_array(),
-                                    projection: camera.projection.to_cols_array()
+                                    view: camera.view,
+                                    projection: camera.projection,
                                 };
 
                                 let mut model_camera_slice = staging_belt.write_buffer(
@@ -594,7 +594,7 @@ async fn run() {
                                                     }                                            
                                                 }                                    
 
-                                                let mut joint_matrices: [[f32; 16]; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY.to_cols_array(); gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT];
+                                                let mut joint_matrices: [Mat4; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT] = [Mat4::IDENTITY; gpu_api::pipeline::model_pipeline::JOINT_MATRICES_COUNT];
                                                 
                                                 let mut joint_matrix_index = 0;
                                                 let skin_index = 0;
@@ -603,7 +603,7 @@ async fn run() {
                                                     //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
                                                     let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
 
-                                                    joint_matrices[joint_matrix_index] = joint_matrix.to_cols_array();
+                                                    joint_matrices[joint_matrix_index] = joint_matrix;
 
                                                     joint_matrix_index = joint_matrix_index + 1;
                                                 }
@@ -622,8 +622,6 @@ async fn run() {
                                                     }
                                                 }
 
-                                                let joint_matrices_ref: &[[f32; 16]] = joint_matrices.as_ref();
-
                                                 {                                                                
                                                     let mut joint_matrices_slice = staging_belt.write_buffer(
                                                         &mut encoder,
@@ -632,7 +630,7 @@ async fn run() {
                                                         wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")                                                        
                                                     );
                                 
-                                                    joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
+                                                    joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(&joint_matrices));
                                                 }
 
                                                 for mesh in &object.meshes {
@@ -654,9 +652,7 @@ async fn run() {
                                             AnimationComputationMode::PreComputed => {                                                
                                                 if object.animations[animation_index].frame_index == object.animations[animation_index].frame_cycle_count {
                                                     object.animations[animation_index].frame_index = 7;
-                                                }
-                                                
-                                                let joint_matrices_ref: &[[f32; 16]] = object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index].as_ref();
+                                                }                                                                                                
                                                 
                                                 {
                                                     let mut joint_matrices_slice = staging_belt.write_buffer(
@@ -666,7 +662,7 @@ async fn run() {
                                                         wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::JOINT_MATRICES_UNIFORM_SIZE).expect("Failed to allocate joint matrices slice")
                                                     );
                                 
-                                                    joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(joint_matrices_ref));
+                                                    joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(&object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index]));
                                                 }
 
                                                 for mesh in &object.meshes {
