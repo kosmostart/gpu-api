@@ -1,4 +1,6 @@
 use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
+use glam::camera::rh::proj::directx::perspective;
+use glam::camera::rh::view::look_at_mat4;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -70,8 +72,8 @@ pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist:
 }
 
 pub fn generate_projection(width: f32, height: f32, focus_point_x: f32, focus_point_y: f32, focus_point_z: f32, angle_xz: f32, angle_y: f32, dist: f32) -> (Vec3, Vec3, Mat4, Mat4, Mat4) {
-    let aspect_ratio = width / height;        
-    let projection_source = glam::Mat4::perspective_rh(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);        
+    let aspect_ratio = width / height;
+    let projection_source = perspective(std::f32::consts::FRAC_PI_4, aspect_ratio, 0.1, 1000.0);
 
     let camera_position = glam::Vec3::new(
         angle_xz.cos() * angle_y.sin() * dist + focus_point_x,
@@ -81,7 +83,7 @@ pub fn generate_projection(width: f32, height: f32, focus_point_x: f32, focus_po
 
     let focus_point = glam::Vec3::new(focus_point_x, focus_point_y, focus_point_z);
 
-    let view = glam::Mat4::look_at_rh(
+    let view = look_at_mat4(
         camera_position,
         focus_point,
         glam::Vec3::new(0.0, 1.0, 0.0)
