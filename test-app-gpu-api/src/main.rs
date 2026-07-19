@@ -802,6 +802,8 @@ fn main() {
     {
         dispatch = dispatch.chain(std::io::stdout());
     }
+
+    dispatch.apply().expect("Could not initialize logger");
     
     #[cfg(not(target_arch = "wasm32"))]
     {            
