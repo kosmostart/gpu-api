@@ -1,4 +1,4 @@
-pub mod frame;
+pub mod model_bindless;
 
 #[cfg(test)]
 mod tests {

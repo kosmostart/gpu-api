@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use gpu_api_relay::frame::{CullingTask, DrawIndexedIndirectCommand, Vertex};
+use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, Vertex};
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::DeviceExt};
 use crate::camera::CameraUniform;
 
