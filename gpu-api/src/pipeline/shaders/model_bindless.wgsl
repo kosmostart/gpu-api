@@ -66,10 +66,7 @@ struct FragmentInput {
 fn vs_main(
     vertex_input: VertexInput, 
     @builtin(instance_index) draw_instance_idx: u32
-) -> FragmentInput {        
-    // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ:
-    // draw_instance_idx идет от 0 до N для текущей команды отрисовки.
-    // Мы используем его, чтобы достать сквозной глобальный ID объекта из массива видимых!
+) -> FragmentInput {            
     let global_object_id = visible_instance_indices[draw_instance_idx];
         
     let instance = global_instances[global_object_id];

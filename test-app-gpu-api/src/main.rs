@@ -697,6 +697,15 @@ async fn run() {
                                     }
                                 }
                             }
+
+                            /*
+                            {
+                                let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                                    label: Some("GPU-Driven Culling Pass"),
+                                    timestamp_writes: None,
+                                });
+                            }
+                            */
             
                             // Clear frame
                             {
