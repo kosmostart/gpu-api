@@ -7,6 +7,7 @@ pub const MAX_VERTICES: u64 = 1_000_000;
 pub const MAX_INDICES: u64 = 3_000_000;
 pub const MAX_INSTANCES: u64 = 100_000;
 pub const MAX_MATERIALS: u64 = 1_000;
+pub const MAX_TEXTURES: u32 = 256;
 
 pub struct Resources {    
     pub mega_vertex_buffer: wgpu::Buffer,
@@ -168,7 +169,7 @@ impl Resources {
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT | wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -265,9 +266,8 @@ impl Resources {
                 },
             ],
         });
-        
-        let max_textures = 256; 
-        let texture_count = std::num::NonZeroU32::new(max_textures);
+                
+        let texture_count = std::num::NonZeroU32::new(MAX_TEXTURES);
 
         let materials_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Materials Bind Group Layout"),
@@ -461,7 +461,7 @@ impl Resources {
             ..Default::default()
         });
 
-        let max_textures = max_textures as usize;
+        let max_textures = MAX_TEXTURES as usize;
 
         let base_color_views = vec![&dummy_view; max_textures];
         let metallic_roughness_views = vec![&dummy_view; max_textures];

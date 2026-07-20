@@ -1,3 +1,5 @@
+enable wgpu_binding_array;
+
 @group(0) @binding(0) var base_color_textures: binding_array<texture_2d<f32>>;
 @group(0) @binding(1) var base_color_samplers: binding_array<sampler>;
 @group(0) @binding(2) var metallic_roughness_textures: binding_array<texture_2d<f32>>;

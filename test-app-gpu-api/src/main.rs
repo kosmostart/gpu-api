@@ -68,19 +68,26 @@ async fn run() {
         })
         .await
         .expect("Failed to find an appropriate adapter");
-    
-    warn!("{:#?}", adapter.get_info());
+
+    //let adapter_limits = adapter.limits();    
+    //info!("{:#?}", adapter_limits);    
     
     let (device, queue) = adapter
         .request_device(        
             &DeviceDescriptor {
                 label: None,
                 //required_features: wgpu::Features::empty(),
-                required_features: wgpu::Features::TEXTURE_FORMAT_16BIT_NORM,
+                required_features: wgpu::Features::TEXTURE_FORMAT_16BIT_NORM |
+                    wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING |
+                    wgpu::Features::TEXTURE_BINDING_ARRAY,
                 required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
-                    wgpu::Limits::default()
+                    wgpu::Limits {
+                        max_binding_array_elements_per_shader_stage: gpu_api::pipeline::model_bindless_pipeline::MAX_TEXTURES * 8,
+                        max_binding_array_sampler_elements_per_shader_stage: gpu_api::pipeline::model_bindless_pipeline::MAX_TEXTURES * 4,
+                        ..Default::default()
+                    }
                 },
                 experimental_features: ExperimentalFeatures::disabled(),
                 memory_hints: MemoryHints::Performance,
@@ -139,7 +146,8 @@ async fn run() {
         projection: camera.projection
     };
     
-    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state);
+    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());
+    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state);
 
     let mut object_group = ObjectGroup {
         active: true,
