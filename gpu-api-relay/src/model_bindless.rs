@@ -35,6 +35,9 @@ pub struct InstanceData {
     pub material_index: u32,
 }
 
+unsafe impl bytemuck::Pod for InstanceData {}
+unsafe impl bytemuck::Zeroable for InstanceData {}
+
 /// Структура задачи для Compute-шейдера (Выравнивание WebGPU по 16 байт)
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -48,6 +51,8 @@ unsafe impl bytemuck::Pod for CullingTask {}
 unsafe impl bytemuck::Zeroable for CullingTask {}
 
 /// Метаданные геометрии расширяются (Вы знаете смещение инстансов модели во VRAM изначально)
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct ModelGeometryMeta {
     pub id: u32,
     pub index_count: u32,
@@ -57,6 +62,8 @@ pub struct ModelGeometryMeta {
     pub global_instance_buffer_offset: u32, 
 }
 
+unsafe impl bytemuck::Pod for ModelGeometryMeta {}
+unsafe impl bytemuck::Zeroable for ModelGeometryMeta {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
