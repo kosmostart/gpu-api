@@ -1,7 +1,8 @@
 use std::borrow::Cow;
-use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, Vertex};
-use wgpu::{ComputePass, RenderPass, TextureFormat, util::DeviceExt};
-use crate::camera::CameraUniform;
+use glam::Mat4;
+use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex};
+use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
+use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::CAMERA_UNIFORM_SIZE};
 
 pub const MAX_VERTICES: u64 = 1_000_000;
 pub const MAX_INDICES: u64 = 3_000_000;
@@ -13,6 +14,7 @@ pub struct Resources {
     pub mega_vertex_buffer: wgpu::Buffer,
     pub mega_index_buffer: wgpu::Buffer,
     
+    pub camera_buffer: wgpu::Buffer,
     pub instances_buffer: wgpu::Buffer,
     pub nodes_buffer: wgpu::Buffer,
     pub joints_buffer: wgpu::Buffer,
@@ -572,7 +574,8 @@ impl Resources {
 
         Self {    
             mega_vertex_buffer,
-            mega_index_buffer,            
+            mega_index_buffer,
+            camera_buffer,
             instances_buffer,
             nodes_buffer,
             joints_buffer,
@@ -588,54 +591,101 @@ impl Resources {
             gpu_driven_bind_group,
         }        
     }
-}
 
-pub fn load(
-    resources: &Resources,
-    queue: &wgpu::Queue,
-    culling_tasks: &[CullingTask],
-    initial_indirect_commands: &[DrawIndexedIndirectCommand]
-) {    
-    if !culling_tasks.is_empty() {
-        queue.write_buffer(&resources.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
-    }    
-    queue.write_buffer(&resources.indirect_commands_buffer, 0, bytemuck::cast_slice(initial_indirect_commands));
-}
+    pub fn init(
+        self: &Resources,
+        queue: &wgpu::Queue,
+        vertices: &[Vertex],
+        indices: &[u32],
+        material_factors: &[MaterialFactors]
+    ) {    
+        queue.write_buffer(&self.mega_vertex_buffer, 0, bytemuck::cast_slice(vertices));
+        queue.write_buffer(&self.mega_index_buffer, 0, bytemuck::cast_slice(indices));
+        queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));
+    }
 
-pub fn compute_gpu_driven_frame(
-    resources: &Resources,    
-    culling_tasks: &[CullingTask],
-    compute_pass: &mut ComputePass
-) {        
-    compute_pass.set_pipeline(&resources.culling_compute_pipeline);
-    compute_pass.set_bind_group(0, &resources.culling_compute_bind_group, &[]);    
-    compute_pass.dispatch_workgroups(culling_tasks.len() as u32, 1, 1);
-}
+    pub fn load_frame(
+        self: &Resources,
+        queue: &wgpu::Queue,
+        encoder: &mut wgpu::CommandEncoder,
+        camera: &Camera,
+        staging_belt: &mut StagingBelt,
+        instances: &[InstanceData],
+        nodes: &[NodeData],
+        joints: &[Mat4],
+        culling_tasks: &[CullingTask],
+        initial_indirect_commands: &[DrawIndexedIndirectCommand]
+    ) {
+        {                                                                                            
+            let camera_uniform = CameraUniform {
+                camera_position: camera.camera_position.to_array(),
+                padding: 0,
+                view: camera.view,
+                projection: camera.projection,
+            };
 
-pub fn draw_gpu_driven_frame(
-    resources: &Resources,    
-    initial_indirect_commands: &[DrawIndexedIndirectCommand],
-    render_pass: &mut RenderPass
-) {    
-    render_pass.set_pipeline(&resources.render_pipeline);
-    
-    render_pass.set_bind_group(0, &resources.materials_bind_group, &[]);
-    render_pass.set_bind_group(1, &resources.camera_bind_group, &[]);
-    render_pass.set_bind_group(2, &resources.gpu_driven_bind_group, &[]); 
-    
-    render_pass.set_vertex_buffer(0, resources.mega_vertex_buffer.slice(..));
-    render_pass.set_index_buffer(resources.mega_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            let mut model_camera_slice = staging_belt.write_buffer(
+                encoder,
+                &self.camera_buffer,
+                0,
+                wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate model camera slice")                                    
+            );            
+            model_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
 
-    /*
-    render_pass.multi_draw_indexed_indirect(
-        &resources.indirect_commands_buffer,
-        0,
-        max_draw_count,
-    );    
-    */
+            let mut line_camera_slice = staging_belt.write_buffer(
+                encoder,
+                &self.camera_buffer,
+                0,
+                wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate line camera slice")                                    
+            );            
+            line_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
+        }
+
+        queue.write_buffer(&self.instances_buffer, 0, bytemuck::cast_slice(instances));
+        queue.write_buffer(&self.nodes_buffer, 0, bytemuck::cast_slice(nodes));
+        queue.write_buffer(&self.joints_buffer, 0, bytemuck::cast_slice(joints));
+
+        if !culling_tasks.is_empty() {
+            queue.write_buffer(&self.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
+        }    
+        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(initial_indirect_commands));
+    }
+
+    pub fn compute_gpu_driven_frame(
+        self: &Resources,
+        culling_tasks: &[CullingTask],
+        compute_pass: &mut ComputePass
+    ) {        
+        compute_pass.set_pipeline(&self.culling_compute_pipeline);
+        compute_pass.set_bind_group(0, &self.culling_compute_bind_group, &[]);    
+        compute_pass.dispatch_workgroups(culling_tasks.len() as u32, 1, 1);
+    }
+
+    pub fn draw_gpu_driven_frame(
+        self: &Resources,
+        initial_indirect_commands: &[DrawIndexedIndirectCommand],
+        render_pass: &mut RenderPass
+    ) {
+        render_pass.set_pipeline(&self.render_pipeline);
         
-    for i in 0..initial_indirect_commands.len() {
-        let offset = (i * std::mem::size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress;        
-        render_pass.draw_indexed_indirect(&resources.indirect_commands_buffer, offset);
-    }    
+        render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+        render_pass.set_bind_group(2, &self.gpu_driven_bind_group, &[]); 
+        
+        render_pass.set_vertex_buffer(0, self.mega_vertex_buffer.slice(..));
+        render_pass.set_index_buffer(self.mega_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+
+        /*
+        render_pass.multi_draw_indexed_indirect(
+            &self.indirect_commands_buffer,
+            0,
+            max_draw_count,
+        );    
+        */
+            
+        for i in 0..initial_indirect_commands.len() {
+            let offset = (i * std::mem::size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress;        
+            render_pass.draw_indexed_indirect(&self.indirect_commands_buffer, offset);
+        }
+    }
 }

@@ -67,6 +67,19 @@ unsafe impl bytemuck::Zeroable for ModelGeometryMeta {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
+pub struct MaterialFactors {
+    pub base_color_factor: [f32; 4],
+    pub emissive_factor: [f32; 3],
+    pub metallic_factor: f32,    
+    pub roughness_factor: f32,
+    pub padding: [u32; 3],
+}
+
+unsafe impl bytemuck::Pod for MaterialFactors {}
+unsafe impl bytemuck::Zeroable for MaterialFactors {}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct DrawIndexedIndirectCommand {
     pub index_count: u32,    // Количество индексов меша модели
     pub instance_count: u32, // СКОЛЬКО таких объектов нашел куллинг октодерева

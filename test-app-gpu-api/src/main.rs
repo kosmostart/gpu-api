@@ -574,7 +574,7 @@ async fn run() {
                                                             let translation = channel.translations[previous_frame_index].lerp(channel.translations[frame_index], factor);
                                                             object.nodes[channel.target_index].translation = translation;
                                                         }
-                                                        AnimationProperty::Rotation => {                                                        
+                                                        AnimationProperty::Rotation => {
                                                             let rotation = channel.rotations[previous_frame_index].lerp(channel.rotations[frame_index], factor).normalize();
                                                             object.nodes[channel.target_index].rotation = rotation;
                                                         }
@@ -585,7 +585,7 @@ async fn run() {
                                                         AnimationProperty::MorphTargetWeights => {
                                                             let weight_morph = channel.weight_morphs[frame_index];
                                                         }
-                                                    }                                    
+                                                    }
                                                 }
                                                 
                                                 for node_index in object.node_topological_sorting.iter() {
