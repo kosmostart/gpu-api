@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use gpu_api_relay::model_bindless::Vertex;
 use wgpu::{Device, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler};
 use wgpu::util::DeviceExt;
 use crate::camera::{Camera, CameraUniform};
@@ -16,21 +17,6 @@ pub const JOINT_MATRICES_COUNT: usize = 100;
 pub const JOINT_MATRICES_UNIFORM_SIZE: u64 = 6400;
 pub const NODE_TRANSFORM_UNIFORM_SIZE: u64 = 80;
 pub const MATERIAL_FACTORS_UNIFORM_SIZE: u64 = 48;
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug)]
-pub struct Vertex {    
-    pub position: [f32; 3],    
-    pub texture_coordinates: [f32; 2],
-    pub normal: [f32; 3],
-    pub tangent: [f32; 3],
-    pub bitangent: [f32; 3],
-    pub joints: [u32; 4],
-    pub weights: [f32; 4]
-}
-
-unsafe impl bytemuck::Pod for Vertex {}
-unsafe impl bytemuck::Zeroable for Vertex {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

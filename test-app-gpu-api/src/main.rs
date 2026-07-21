@@ -165,8 +165,16 @@ async fn run() {
         scale_z: 10.0,
         rotation_y: 0.0
     };
+
+    let mut init_data = pipeline::model_pipeline::model::InitData {
+        vertices: Vec::new(),
+        indices: Vec::new(),
+        factors: Vec::new(),
+    };
     
-    let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION);
+    let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
+
+    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);
 
     object_group.objects.push(object);
 

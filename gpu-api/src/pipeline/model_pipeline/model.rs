@@ -3,7 +3,7 @@ use glam::{Mat4, Quat};
 use image::DynamicImage;
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue};
-use gpu_api_relay::model_bindless::NodeData;
+use gpu_api_relay::model_bindless::{MaterialFactors, NodeData};
 use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;
@@ -173,8 +173,14 @@ pub struct ModelAnimationChannel {
     pub start_instant: web_time::Instant
 }
 
+pub struct InitData {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u32>,
+    pub factors: Vec<MaterialFactors>,
+}
+
 impl Object {
-    pub fn new(device: &Device, queue: &Queue, pipeline: &model_pipeline::Pipeline, model_data: ModelData, view_sources: Vec<ViewSource>, loaded_images: Option<Vec<DynamicImage>>, frame_cycle_length: usize) -> Object {
+    pub fn new(device: &Device, queue: &Queue, pipeline: &model_pipeline::Pipeline, model_data: ModelData, view_sources: Vec<ViewSource>, loaded_images: Option<Vec<DynamicImage>>, frame_cycle_length: usize, init_data: &mut InitData) -> Object {
         let mut meshes = vec![];    
 
         for mesh in model_data.meshes {
@@ -194,6 +200,9 @@ impl Object {
                     contents: bytemuck::cast_slice(&primitive_data.indices),
                     usage: wgpu::BufferUsages::INDEX
                 });
+
+                init_data.vertices.extend_from_slice(&vertices);
+                init_data.indices.extend_from_slice(&primitive_data.indices);
         
                 primitives.push(Primitive {
                     name: "".to_owned(),
@@ -513,6 +522,14 @@ impl Object {
                         occlusion_texture: occlusion,
                         factors_buffer
                     });
+
+                    init_data.factors.push(MaterialFactors {
+                        base_color_factor: material.base_color_factor,
+                        emissive_factor: material.emissive_factor,
+                        metallic_factor: material.metallic_factor,
+                        roughness_factor: material.roughness_factor,                        
+                        padding: [0, 0, 0],
+                    })
                 }
             }
         }    

@@ -598,7 +598,7 @@ impl Resources {
         vertices: &[Vertex],
         indices: &[u32],
         material_factors: &[MaterialFactors]
-    ) {    
+    ) {
         queue.write_buffer(&self.mega_vertex_buffer, 0, bytemuck::cast_slice(vertices));
         queue.write_buffer(&self.mega_index_buffer, 0, bytemuck::cast_slice(indices));
         queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));

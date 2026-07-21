@@ -51,8 +51,6 @@ unsafe impl bytemuck::Pod for CullingTask {}
 unsafe impl bytemuck::Zeroable for CullingTask {}
 
 /// Метаданные геометрии расширяются (Вы знаете смещение инстансов модели во VRAM изначально)
-#[repr(C)]
-#[derive(Copy, Clone, Debug)]
 pub struct ModelGeometryMeta {
     pub id: u32,
     pub index_count: u32,
@@ -61,9 +59,6 @@ pub struct ModelGeometryMeta {
     /// С какого индекса в глобальном GPU-буфере начинаются инстансы этой модели в мире
     pub global_instance_buffer_offset: u32, 
 }
-
-unsafe impl bytemuck::Pod for ModelGeometryMeta {}
-unsafe impl bytemuck::Zeroable for ModelGeometryMeta {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
