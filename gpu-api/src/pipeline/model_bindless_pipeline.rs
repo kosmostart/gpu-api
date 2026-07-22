@@ -618,7 +618,7 @@ impl Resources {
     ) {
         {                                                                                            
             let camera_uniform = CameraUniform {
-                camera_position: camera.camera_position.to_array(),
+                camera_position: camera.position.to_array(),
                 padding: 0,
                 view: camera.view,
                 projection: camera.projection,

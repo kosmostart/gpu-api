@@ -18,6 +18,9 @@ gltf = "*"
 gpu-api = { path = "../gpu-api" }
 gpu-api-dto = { path = "../gpu-api-dto" }
 model-load = { path = "../model-load" }
+gpu-api-relay = { path = "../gpu-api-relay" }
+world = { path = "../../world/world" }
+bounds = { path = "../../bounds" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wgpu = "*"

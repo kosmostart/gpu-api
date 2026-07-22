@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
-use glam::Mat4;
+use glam::{Mat4, vec3};
+use gpu_api_relay::model_bindless::{InstanceData, ModelGeometryMeta, NodeData};
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
@@ -140,29 +141,24 @@ async fn run() {
     let mut camera = create_camera(layout.size.width as f32, layout.size.height as f32, angle_xz, angle_y, dist, 0.0, 0.0, 0.0);
 
     let camera_uniform = CameraUniform {
-        camera_position: camera.camera_position.to_array(),
+        camera_position: camera.position.to_array(),
         padding: 0,
         view: camera.view,
         projection: camera.projection
     };
     
     let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());
-    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state);
-
-    let mut object_group = ObjectGroup {
-        active: true,
-        objects: vec![]
-    };        
+    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state);    
     
     let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/knight/knight.gltf", false, true, vec![], true);
     
     let view_source = ViewSource {
         x: 0.0,
-        y: -5.0,
+        y: 0.0,
         z: 0.0,        
-        scale_x: 10.0,
-        scale_y: 10.0,
-        scale_z: 10.0,
+        scale_x: 3.0,
+        scale_y: 3.0,
+        scale_z: 3.0,
         rotation_y: 0.0
     };
 
@@ -174,7 +170,50 @@ async fn run() {
     
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
 
-    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);
+    let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));
+
+    let test_object = world::octree::DynamicObject {
+        id: world::octree::ObjectId(0),
+        position: vec3(0.0, 0.0, 0.0), 
+        radius: 5.0,
+        aabb: bounds::aabb::Aabb::new(vec3(-5.0, -5.0, -5.0), vec3(5.0, 5.0, 5.0)),
+        is_animated: 0,
+        material_id: 0,
+        node_transform: glam::Mat4::IDENTITY,
+        joint_start_idx: 0,
+        joint_count: 0,
+    };
+
+    test_world.add_object(test_object, vec![]);
+
+    let mut object_group = ObjectGroup {
+        active: true,
+        objects: vec![]
+    };
+
+    let mut culling_tasks = Vec::new();
+    let mut indirect_commands = Vec::new();
+
+    let frustum = world::frustum::Frustum::from_view_projection(camera.projection);
+    let mut frame_data = world::octree::RenderFrameData {
+        visible_object_ids: Vec::new(),
+        visible_chunks: Vec::new(),
+    };
+    test_world.cull(&frustum, camera.position, &mut frame_data);
+
+    let registered_models = vec![
+        ModelGeometryMeta {
+            id: 0,
+            index_count: init_data.indices.len() as u32,
+            first_index: 0,
+            base_vertex: 0,
+            global_instance_buffer_offset: 0, 
+        }
+    ];
+
+    test_world.prepare_gpu_indirect_frame(&frame_data, &registered_models, &mut culling_tasks, &mut indirect_commands);    
+
+    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);    
 
     object_group.objects.push(object);
 
@@ -491,7 +530,7 @@ async fn run() {
             
                             {                                                                                            
                                 let camera_uniform = CameraUniform {
-                                    camera_position: camera.camera_position.to_array(),
+                                    camera_position: camera.position.to_array(),
                                     padding: 0,
                                     view: camera.view,
                                     projection: camera.projection,
@@ -713,6 +752,26 @@ async fn run() {
                                     }
                                 }
                             }
+
+                            let object = &object_groups[0].objects[0];
+                            let instances = object.model_instances.iter().map(|mi| {
+                                InstanceData {
+                                    model_matrix: mi.model_matrix,
+                                    is_animated: mi.is_animated,
+                                    node_index: 0,
+                                    joints_offset: 0,
+                                    material_index: 0,                                
+                                }
+                            }).collect::<Vec<_>>();
+                            let nodes = vec![
+                                NodeData {
+                                    info: [0, 0, 0, 0],
+                                    transform: Mat4::IDENTITY,                                 
+                                }
+                            ];
+                            let animation_index = 0;
+                            let joints = &object.animations[animation_index].joint_matrices[0];
+                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &instances, &nodes, joints, &culling_tasks, &indirect_commands);
 
                             /*
                             {

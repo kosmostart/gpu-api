@@ -387,6 +387,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bounds"
+version = "0.1.0"
+dependencies = [
+ "glam",
+]
+
+[[package]]
 name = "built"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2980,6 +2987,7 @@ dependencies = [
 name = "test-app-gpu-api"
 version = "0.1.0"
 dependencies = [
+ "bounds",
  "bytemuck",
  "console_error_panic_hook",
  "console_log",
@@ -2988,6 +2996,7 @@ dependencies = [
  "gltf",
  "gpu-api",
  "gpu-api-dto",
+ "gpu-api-relay",
  "image",
  "js-sys",
  "log",
@@ -3000,6 +3009,7 @@ dependencies = [
  "web-time",
  "wgpu",
  "winit",
+ "world",
 ]
 
 [[package]]
@@ -3998,6 +4008,15 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "world"
+version = "0.1.0"
+dependencies = [
+ "bounds",
+ "glam",
+ "gpu-api-relay",
+]
 
 [[package]]
 name = "x11-dl"

@@ -18,7 +18,7 @@ pub struct Camera {
     pub angle_y: f32,
     pub angle_xz: f32,
     pub dist: f32,    
-    pub camera_position: Vec3,
+    pub position: Vec3,
     pub focus_point: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,    
@@ -29,7 +29,7 @@ impl Camera {
     pub fn update(&mut self, width: f32, height: f32) {
         let (camera_position, focus_point, projection_source, view, projection) = generate_projection(width, height, self.focus_point.x, self.focus_point.y, self.focus_point.z, self.angle_xz, self.angle_y, self.dist);
 
-        self.camera_position = camera_position;
+        self.position = camera_position;
         self.focus_point = focus_point;
         self.projection_source = projection_source;
         self.view = view;        
@@ -49,7 +49,7 @@ impl Camera {
         let world_pos = inv_pv * ndc;
         let world_pos = world_pos.xyz() / world_pos.w;
 
-        let ray_origin = self.camera_position;
+        let ray_origin = self.position;
         let ray_dir = (world_pos - ray_origin).normalize();
 
         (ray_origin, ray_dir)
@@ -63,7 +63,7 @@ pub fn create_camera(width: f32, height: f32, angle_xz: f32, angle_y: f32, dist:
         angle_xz,
         angle_y,
         dist,
-        camera_position,
+        position: camera_position,
         focus_point,
         projection_source,
         view,        
