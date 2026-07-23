@@ -23,18 +23,19 @@ struct CameraUniform {
     camera_position: vec3<f32>,
     padding: u32,
     view: mat4x4<f32>,
-    projection: mat4x4<f32>
+    projection: mat4x4<f32>,
+    frustum_planes: array<vec4<f32>, 6>,
 };
 
 // Joint matrices
 struct JointUniform {
-    joint_matrices: array<mat4x4<f32>, 100>
+    joint_matrices: array<mat4x4<f32>, 100>,
 };
 
 // Node
 struct NodeData {
     info: vec4<u32>,
-    transform: mat4x4<f32>
+    transform: mat4x4<f32>,
 };
 
 // Material factors
@@ -55,7 +56,7 @@ var<uniform> node_uniform: NodeData;
 
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
-    @location(1) texture_coordinates: vec2<f32>,
+    @location(1) uv: vec2<f32>,
     @location(2) normal: vec3<f32>,
     @location(3) tangent: vec3<f32>,
     @location(4) bitangent: vec3<f32>,
@@ -73,7 +74,7 @@ struct InstanceInput {
 
 struct FragmentInput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) texture_coordinates: vec2<f32>,
+    @location(0) uv: vec2<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) tangent: vec3<f32>,
     @location(3) bitangent: vec3<f32>,
@@ -112,7 +113,7 @@ fn vs_main(vertex_input: VertexInput, instance: InstanceInput) -> FragmentInput 
     var out: FragmentInput;
     out.clip_position = camera.projection * model_position; // Here camera.projection already P*V
     out.world_position = model_position.xyz;
-    out.texture_coordinates = vertex_input.texture_coordinates;
+    out.uv = vertex_input.uv;
     
     // Normals to world
     let normal_matrix = mat3x3<f32>(model_matrix[0].xyz, model_matrix[1].xyz, model_matrix[2].xyz);
@@ -135,7 +136,7 @@ fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
     let world_pos = in.world_position;
 
     // Normal mapping
-    let N_tangent = textureSample(normal_texture, normal_sampler, in.texture_coordinates).rgb * 2.0 - 1.0;
+    let N_tangent = textureSample(normal_texture, normal_sampler, in.uv).rgb * 2.0 - 1.0;
     let TBN = mat3x3<f32>(normalize(in.tangent), normalize(in.bitangent), normalize(in.normal));
     //let N = normalize(TBN * N_tangent);
     let N = normalize(in.normal); 
@@ -144,9 +145,9 @@ fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
     let L = normalize(light_position - world_pos);
     let H = normalize(V + L);
 
-    let base_color_tex = textureSample(base_color_texture, base_color_sampler, in.texture_coordinates);
+    let base_color_tex = textureSample(base_color_texture, base_color_sampler, in.uv);
     let albedo = base_color_tex.rgb * material_factors.base_color_factor.rgb;
-    let metallic_roughness_tex = textureSample(metallic_roughness_texture, metallic_roughness_sampler, in.texture_coordinates).rg;
+    let metallic_roughness_tex = textureSample(metallic_roughness_texture, metallic_roughness_sampler, in.uv).rg;
     let metallic = metallic_roughness_tex.r;
     let roughness = metallic_roughness_tex.g;
     

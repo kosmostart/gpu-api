@@ -22,13 +22,14 @@ struct CameraUniform {
     camera_position: vec3<f32>,
     padding: u32,
     view: mat4x4<f32>,
-    projection: mat4x4<f32>
+    projection: mat4x4<f32>,
+    frustum_planes: array<vec4<f32>, 6>,
 };
 @group(1) @binding(0) var<uniform> camera: CameraUniform;
 
 struct NodeData {
     info: vec4<u32>,
-    transform: mat4x4<f32>
+    transform: mat4x4<f32>,
 };
 @group(2) @binding(0) var<storage, read> global_nodes: array<NodeData>;
 @group(2) @binding(1) var<storage, read> global_joint_matrices: array<mat4x4<f32>>;
@@ -46,7 +47,7 @@ struct InstanceData {
 
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
-    @location(1) texture_coordinates: vec2<f32>,
+    @location(1) uv: vec2<f32>,
     @location(2) normal: vec3<f32>,
     @location(3) tangent: vec3<f32>,
     @location(4) bitangent: vec3<f32>,
@@ -56,7 +57,7 @@ struct VertexInput {
 
 struct FragmentInput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) texture_coordinates: vec2<f32>,
+    @location(0) uv: vec2<f32>,
     @location(1) normal: vec3<f32>,
     @location(2) tangent: vec3<f32>,
     @location(3) bitangent: vec3<f32>,
@@ -68,11 +69,11 @@ struct FragmentInput {
 fn vs_main(
     vertex_input: VertexInput, 
     @builtin(instance_index) draw_instance_idx: u32
-) -> FragmentInput {            
+) -> FragmentInput {    
     let global_object_id = visible_instance_indices[draw_instance_idx];
         
     let instance = global_instances[global_object_id];
-    var model_matrix = instance.model_matrix;    
+    var model_matrix = instance.model_matrix;
     let node = global_nodes[instance.node_index];
     
     if (instance.is_animated == 1u) {
@@ -101,7 +102,7 @@ fn vs_main(
     var out: FragmentInput;
     out.clip_position = camera.projection * model_position; 
     out.world_position = model_position.xyz;
-    out.texture_coordinates = vertex_input.texture_coordinates;
+    out.uv = vertex_input.uv;
     out.material_index = instance.material_index; 
         
     let normal_matrix = mat3x3<f32>(model_matrix[0].xyz, model_matrix[1].xyz, model_matrix[2].xyz);
@@ -109,31 +110,35 @@ fn vs_main(
     out.tangent = normalize(normal_matrix * vertex_input.tangent);
     out.bitangent = normalize(normal_matrix * vertex_input.bitangent);
     
-    return out;
+    return out;    
 }
 
 @fragment
-fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
+fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {    
+    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    
+    /*
     let mat_idx = in.material_index;
     let factors = global_materials[mat_idx];
     
     let base_color = textureSample(
         base_color_textures[mat_idx], 
         base_color_samplers[mat_idx], 
-        in.texture_coordinates
+        in.uv
     ) * factors.base_color_factor;
 
     let normal_map = textureSample(
         normal_textures[mat_idx], 
         normal_samplers[mat_idx], 
-        in.texture_coordinates
+        in.uv
     );
 
     let metallic_roughness = textureSample(
         metallic_roughness_textures[mat_idx], 
         metallic_roughness_samplers[mat_idx], 
-        in.texture_coordinates
+        in.uv
     );    
 
     return base_color;
+    */
 }

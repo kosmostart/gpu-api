@@ -144,13 +144,14 @@ async fn run() {
         camera_position: camera.position.to_array(),
         padding: 0,
         view: camera.view,
-        projection: camera.projection
+        projection: camera.projection,
+        frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
     };
     
     let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());
     let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state);    
     
-    let (model_data, loaded_images) = model_load::load("damaged-helmet", "../models/knight/knight.gltf", false, true, vec![], true);
+    let (model_data, loaded_images) = model_load::load("test", "../models/knight/knight.gltf", false, true, vec![], true);
     
     let view_source = ViewSource {
         x: 0.0,
@@ -194,7 +195,7 @@ async fn run() {
     let mut culling_tasks = Vec::new();
     let mut indirect_commands = Vec::new();
 
-    let frustum = world::frustum::Frustum::from_view_projection(camera.projection);
+    let frustum = gpu_api_relay::frustum::Frustum::from_view_projection(camera.projection);
     let mut frame_data = world::octree::RenderFrameData {
         visible_object_ids: Vec::new(),
         visible_chunks: Vec::new(),
@@ -534,6 +535,7 @@ async fn run() {
                                     padding: 0,
                                     view: camera.view,
                                     projection: camera.projection,
+                                    frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
                                 };
 
                                 let mut model_camera_slice = staging_belt.write_buffer(
@@ -770,17 +772,17 @@ async fn run() {
                                 }
                             ];
                             let animation_index = 0;
-                            let joints = &object.animations[animation_index].joint_matrices[0];
+                            let joints = &object.animations[animation_index].joint_matrices[0];                            
                             model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &instances, &nodes, joints, &culling_tasks, &indirect_commands);
-
-                            /*
+                            
                             {
-                                let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                                let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                                     label: Some("GPU-Driven Culling Pass"),
                                     timestamp_writes: None,
                                 });
+
+                                model_bindless_resources.compute_gpu_driven_frame(&mut compute_pass, &culling_tasks);
                             }
-                            */
             
                             // Clear frame
                             {
@@ -819,7 +821,8 @@ async fn run() {
                                     }
                                 );                                                        
             
-                                model_pipeline.draw(&mut render_pass, &object_groups);
+                                model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
+                                //model_pipeline.draw(&mut render_pass, &object_groups);
                                 line_pipeline.draw(&mut render_pass, line_indices.len() as u32);
                                 image_pipeline.draw(&mut render_pass, &image_objects);
                                 gradient_quad_pipeline.draw(&mut render_pass, gradient_quads.len() as u32);

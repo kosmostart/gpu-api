@@ -1,3 +1,4 @@
+pub mod frustum;
 pub mod model_bindless;
 
 #[cfg(test)]

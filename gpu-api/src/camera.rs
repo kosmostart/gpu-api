@@ -9,6 +9,7 @@ pub struct CameraUniform {
     pub padding: u32,
     pub view: Mat4,
     pub projection: Mat4,
+    pub frustum: [Vec4; 6],
 }
 
 unsafe impl bytemuck::Pod for CameraUniform {}
@@ -22,6 +23,8 @@ pub struct Camera {
     pub focus_point: Vec3,
     pub projection_source: Mat4,
     pub view: Mat4,    
+    /// Поле self.projection в структуре Camera на самом деле хранит комбинированную матрицу View-Projection - (произведение projection_source * view),
+    /// а не чистую матрицу проекции.
     pub projection: Mat4, 
 }
 

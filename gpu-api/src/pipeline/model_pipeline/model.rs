@@ -76,7 +76,7 @@ impl Primitive {
         for position in &primitive_data.positions {
             vertices.push(model_pipeline::Vertex {
                 position: *position,
-                texture_coordinates: if primitive_data.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive_data.texture_coordinates[index]},
+                uv: if primitive_data.texture_coordinates.is_empty() {[0.0, 1.0]} else {primitive_data.texture_coordinates[index]},
                 normal: if primitive_data.normals.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.normals[index]},
                 tangent: if primitive_data.tangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.tangents[index]},
                 bitangent: if primitive_data.bitangents.is_empty() {[1.0, 1.0, 1.0]} else {primitive_data.tangents[index]},
@@ -184,9 +184,9 @@ impl Object {
         let mut meshes = vec![];    
 
         for mesh in model_data.meshes {
-            let mut primitives = vec![];
+            let mut primitives = vec![];            
 
-            for primitive_data in mesh.primitives {            
+            for primitive_data in mesh.primitives {                
                 let vertices = Primitive::get_pipeline_vertices(&primitive_data);
 
                 let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -200,9 +200,17 @@ impl Object {
                     contents: bytemuck::cast_slice(&primitive_data.indices),
                     usage: wgpu::BufferUsages::INDEX
                 });
+                
+                let base_vertex = init_data.vertices.len() as u32;
 
-                init_data.vertices.extend_from_slice(&vertices);
-                init_data.indices.extend_from_slice(&primitive_data.indices);
+                let globalized_indices: Vec<u32> = primitive_data.indices
+                    .iter()
+                    .map(|&idx| idx as u32 + base_vertex)
+                    .collect();
+                
+                init_data.vertices.extend_from_slice(&vertices);                
+                init_data.indices.extend_from_slice(&globalized_indices);                
+                //init_data.indices.extend_from_slice(&primitive_data.indices);
         
                 primitives.push(Primitive {
                     name: "".to_owned(),
@@ -250,7 +258,7 @@ impl Object {
             });
         }        
 
-        let instance_buffer  = device.create_buffer(&wgpu::BufferDescriptor {
+        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Instance Buffer"),
             size: INSTANCE_SIZE * MAX_MODEL_INSTANCES_COUNT,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,

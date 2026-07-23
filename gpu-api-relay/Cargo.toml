@@ -8,3 +8,4 @@ edition = "2024"
 bytemuck = "*"
 bytemuck_derive = "*"
 glam = "0.33"
+bounds = { path = "../../bounds" }

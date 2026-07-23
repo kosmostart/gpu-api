@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use glam::Mat4;
 use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex};
+use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
 use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::CAMERA_UNIFORM_SIZE};
 
@@ -433,7 +434,7 @@ impl Resources {
             view_formats: &[],
         });
         
-        let dummy_pixel = [255u8, 255u8, 255u8, 255u8];
+        let dummy_pixel = [255, 255, 255, 255];
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 aspect: wgpu::TextureAspect::All,
@@ -622,6 +623,7 @@ impl Resources {
                 padding: 0,
                 view: camera.view,
                 projection: camera.projection,
+                frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
             };
 
             let mut model_camera_slice = staging_belt.write_buffer(
@@ -653,19 +655,20 @@ impl Resources {
 
     pub fn compute_gpu_driven_frame(
         self: &Resources,
-        culling_tasks: &[CullingTask],
-        compute_pass: &mut ComputePass
+        compute_pass: &mut ComputePass,
+        culling_tasks: &[CullingTask]       
     ) {        
         compute_pass.set_pipeline(&self.culling_compute_pipeline);
-        compute_pass.set_bind_group(0, &self.culling_compute_bind_group, &[]);    
+        compute_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+        compute_pass.set_bind_group(1, &self.culling_compute_bind_group, &[]);    
         compute_pass.dispatch_workgroups(culling_tasks.len() as u32, 1, 1);
     }
 
     pub fn draw_gpu_driven_frame(
         self: &Resources,
-        initial_indirect_commands: &[DrawIndexedIndirectCommand],
-        render_pass: &mut RenderPass
-    ) {
+        render_pass: &mut RenderPass,
+        initial_indirect_commands: &[DrawIndexedIndirectCommand]
+    ) {        
         render_pass.set_pipeline(&self.render_pipeline);
         
         render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
@@ -684,7 +687,7 @@ impl Resources {
         */
             
         for i in 0..initial_indirect_commands.len() {
-            let offset = (i * std::mem::size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress;        
+            let offset = (i * std::mem::size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress;            
             render_pass.draw_indexed_indirect(&self.indirect_commands_buffer, offset);
         }
     }

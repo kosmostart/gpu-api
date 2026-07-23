@@ -1136,6 +1136,7 @@ dependencies = [
 name = "gpu-api-relay"
 version = "0.1.0"
 dependencies = [
+ "bounds",
  "bytemuck",
  "bytemuck_derive",
  "glam",

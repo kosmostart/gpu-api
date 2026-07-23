@@ -4,12 +4,12 @@ use glam::Mat4;
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {    
     pub position: [f32; 3],    
-    pub texture_coordinates: [f32; 2],
+    pub uv: [f32; 2],
     pub normal: [f32; 3],
     pub tangent: [f32; 3],
     pub bitangent: [f32; 3],
     pub joints: [u32; 4],
-    pub weights: [f32; 4]
+    pub weights: [f32; 4],
 }
 
 unsafe impl bytemuck::Pod for Vertex {}
