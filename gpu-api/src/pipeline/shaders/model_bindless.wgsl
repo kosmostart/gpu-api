@@ -94,7 +94,7 @@ fn vs_main(
             model_matrix = model_matrix * skin_matrix * node.transform;            
         }        
     } else {
-        model_matrix = model_matrix * node.transform;        
+        model_matrix = model_matrix * node.transform;
     }
 
     let model_position = model_matrix * vec4<f32>(vertex_input.position, 1.0);

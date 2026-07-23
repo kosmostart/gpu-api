@@ -167,6 +167,9 @@ async fn run() {
         vertices: Vec::new(),
         indices: Vec::new(),
         factors: Vec::new(),
+        instances: Vec::new(),
+        joints: Vec::new(),
+        nodes: Vec::new(),
     };
     
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
@@ -722,20 +725,28 @@ async fn run() {
                                                     joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(&object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index]));
                                                 }
 
+                                                let q = &object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index];
+                                                
+                                                init_data.joints.clear();
+                                                init_data.joints.extend_from_slice(q);
+                                                init_data.nodes.clear();
+
                                                 for mesh in &object.meshes {
                                                     if mesh.node_transform.is_some() {
                                                         let mut node_transform_slice = staging_belt.write_buffer(
                                                             &mut encoder,
                                                             &mesh.node_transform_buffer,
                                                             0,
-                                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice")                                                            
+                                                            wgpu::BufferSize::new(gpu_api::pipeline::model_pipeline::NODE_TRANSFORM_UNIFORM_SIZE).expect("Failed to allocate node transform slice")
                                                         );
 
                                                         let mesh_node_transform = &object.animations[animation_index].mesh_node_transforms[mesh.index];
                                                         
                                                         let node_transform = &mesh_node_transform.node_transforms[object.animations[animation_index].frame_index];
                                     
+                                                        info!("{:?}", node_transform);
                                                         node_transform_slice.copy_from_slice(bytemuck::bytes_of(node_transform));
+                                                        init_data.nodes.push(*node_transform);
                                                     }                                                    
                                                 }
 
@@ -756,24 +767,22 @@ async fn run() {
                             }
 
                             let object = &object_groups[0].objects[0];
-                            let instances = object.model_instances.iter().map(|mi| {
+                            let q = object.model_instances.iter().map(|mi| {
                                 InstanceData {
                                     model_matrix: mi.model_matrix,
                                     is_animated: mi.is_animated,
                                     node_index: 0,
                                     joints_offset: 0,
-                                    material_index: 0,                                
+                                    material_index: 0,
                                 }
                             }).collect::<Vec<_>>();
-                            let nodes = vec![
-                                NodeData {
+                            if init_data.nodes.is_empty() {
+                                init_data.nodes.push(NodeData {
                                     info: [0, 0, 0, 0],
-                                    transform: Mat4::IDENTITY,                                 
-                                }
-                            ];
-                            let animation_index = 0;
-                            let joints = &object.animations[animation_index].joint_matrices[0];                            
-                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &instances, &nodes, joints, &culling_tasks, &indirect_commands);
+                                    transform: Mat4::IDENTITY,
+                                });
+                            }
+                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &q, &init_data.nodes, &init_data.joints, &culling_tasks, &indirect_commands);
                             
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
