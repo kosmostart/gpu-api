@@ -186,7 +186,7 @@ async fn run() {
         material_index: 0,
     };
 
-    test_world.add_object(&test_object);
+    test_world.add_object(test_object);
 
     let mut object_group = ObjectGroup {
         active: true,
