@@ -183,13 +183,10 @@ async fn run() {
         radius: 5.0,
         aabb: bounds::aabb::Aabb::new(vec3(-5.0, -5.0, -5.0), vec3(5.0, 5.0, 5.0)),
         is_animated: 0,
-        material_id: 0,
-        node_transform: glam::Mat4::IDENTITY,
-        joint_start_idx: 0,
-        joint_count: 0,
+        material_index: 0,
     };
 
-    test_world.add_object(test_object, vec![]);
+    test_world.add_object(&test_object);
 
     let mut object_group = ObjectGroup {
         active: true,
