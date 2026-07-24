@@ -69,7 +69,7 @@ struct FragmentInput {
 fn vs_main(
     vertex_input: VertexInput, 
     @builtin(instance_index) draw_instance_idx: u32
-) -> FragmentInput {    
+) -> FragmentInput {
     let global_object_id = visible_instance_indices[draw_instance_idx];
         
     let instance = global_instances[global_object_id];
@@ -115,9 +115,8 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {    
-    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    //return vec4<f32>(1.0, 0.0, 0.0, 1.0);
     
-    /*
     let mat_idx = in.material_index;
     let factors = global_materials[mat_idx];
     
@@ -140,5 +139,4 @@ fn fs_main(in: FragmentInput) -> @location(0) vec4<f32> {
     );    
 
     return base_color;
-    */
 }

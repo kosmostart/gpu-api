@@ -148,8 +148,7 @@ async fn run() {
         frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
     };
     
-    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());
-    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state);    
+    let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());    
     
     let (model_data, loaded_images) = model_load::load("test", "../models/knight/knight.gltf", false, true, vec![], true);
     
@@ -167,6 +166,7 @@ async fn run() {
         vertices: Vec::new(),
         indices: Vec::new(),
         factors: Vec::new(),
+        materials: Vec::new(),
         instances: Vec::new(),
         joints: Vec::new(),
         nodes: Vec::new(),
@@ -174,6 +174,7 @@ async fn run() {
     
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
 
+    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state, &init_data);
     let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));
 
     let test_object = world::octree::DynamicObject {
@@ -217,7 +218,7 @@ async fn run() {
 
     test_world.prepare_gpu_indirect_frame(&frame_data, &registered_models, &mut culling_tasks, &mut indirect_commands);    
 
-    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);    
+    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);
 
     object_group.objects.push(object);
 

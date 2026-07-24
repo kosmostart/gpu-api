@@ -7,6 +7,7 @@ use gpu_api_relay::model_bindless::{InstanceData, MaterialFactors, NodeData};
 use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;
+use crate::texture::Texture;
 use crate::{pipeline::model_pipeline::{self, MaterialFactorsUniform, INSTANCE_SIZE, MAX_MODEL_INSTANCES_COUNT}};
 
 pub struct Object {
@@ -177,9 +178,14 @@ pub struct InitData {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
     pub factors: Vec<MaterialFactors>,
+    pub materials: Vec<MaterialData>,
     pub instances: Vec<InstanceData>,
     pub joints: Vec<Mat4>,
     pub nodes: Vec<NodeData>,
+}
+
+pub struct MaterialData {    
+    pub textures: Vec<(TextureType, Texture)>,
 }
 
 impl Object {
@@ -279,6 +285,8 @@ impl Object {
                     let mut emissive = None;
                     let mut occlusion = None;
 
+                    let mut textures = Vec::new();
+
                     for texture_item in material.textures {                    
                         let index_str = texture_item.index.to_string();
         
@@ -286,6 +294,10 @@ impl Object {
                 
                         let texture = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.loaded_image_index], &texture_item.image_format, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
                         //let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &loaded_images[texture_item.loaded_image_index], texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+
+                        let texture2 = crate::texture::Texture::from_image(&device, &queue, &loaded_images[texture_item.loaded_image_index], &texture_item.image_format, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+
+                        textures.push((texture_item.texture_type.clone(), texture2));
                 
                         match texture_item.texture_type {
                             TextureType::BaseColor => {
@@ -379,6 +391,17 @@ impl Object {
                         }
                     );
 
+                    init_data.factors.push(MaterialFactors {
+                        base_color_factor: material.base_color_factor,
+                        emissive_factor: material.emissive_factor,
+                        metallic_factor: material.metallic_factor,
+                        roughness_factor: material.roughness_factor,
+                        padding: [0, 0, 0],
+                    });
+                    init_data.materials.push(MaterialData {
+                        textures,
+                    });
+
                     materials.push(ObjectMaterial {
                         name: material.name.unwrap_or("default".to_owned()),
                         alpha_mode: material.alpa_mode,
@@ -399,6 +422,8 @@ impl Object {
                     let mut normal = None;
                     let mut emissive = None;
                     let mut occlusion = None;
+
+                    let mut textures = Vec::new();
 
                     for texture_item in material.textures {
                         let index_str = texture_item.index.to_string();
@@ -434,6 +459,10 @@ impl Object {
 
                         //let texture = crate::texture::Texture::from_image(&device, &queue, &texture_image, &texture_item.image_format, texture_item.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
                         let texture = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+                        let texture2 = crate::texture::Texture::from_image_to_rgba8(&device, &queue, &texture_image, texture_item.texture_type.is_srgb(), Some(&("texture_".to_owned() + &index_str))).expect("Failed to create texture");
+
+                        textures.push((texture_item.texture_type.clone(), texture2));
+
                                         
                         /*
                         let texture_image = image::load_from_memory_with_format(texture_item.payload.as_ref().expect("Image encoded is empty"), image::ImageFormat::Jpeg).expect("Failed to load texture");
@@ -522,25 +551,28 @@ impl Object {
                         }
                     );
 
-                    materials.push(ObjectMaterial {
-                        name: material.name.unwrap_or("default".to_owned()),
-                        alpha_mode: material.alpa_mode,
-                        material_bind_group,
-                        base_color_texture,                    
-                        normal_texture,                    
-                        metallic_roughness_texture,
-                        emissive_texture: emissive,
-                        occlusion_texture: occlusion,
-                        factors_buffer
-                    });
-
                     init_data.factors.push(MaterialFactors {
                         base_color_factor: material.base_color_factor,
                         emissive_factor: material.emissive_factor,
                         metallic_factor: material.metallic_factor,
-                        roughness_factor: material.roughness_factor,                        
+                        roughness_factor: material.roughness_factor,
                         padding: [0, 0, 0],
-                    })
+                    });
+                    init_data.materials.push(MaterialData {
+                        textures,
+                    });
+
+                    materials.push(ObjectMaterial {
+                        name: material.name.unwrap_or("default".to_owned()),
+                        alpha_mode: material.alpa_mode,
+                        material_bind_group,
+                        base_color_texture,
+                        normal_texture,
+                        metallic_roughness_texture,
+                        emissive_texture: emissive,
+                        occlusion_texture: occlusion,
+                        factors_buffer
+                    });                    
                 }
             }
         }    

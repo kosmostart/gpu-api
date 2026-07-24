@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 use glam::Mat4;
+use gpu_api_dto::TextureType;
 use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
-use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::CAMERA_UNIFORM_SIZE};
+use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}};
 
 pub const MAX_VERTICES: u64 = 1_000_000;
 pub const MAX_INDICES: u64 = 3_000_000;
@@ -40,7 +41,8 @@ impl Resources {
         device: &wgpu::Device,
         queue: &wgpu::Queue,        
         camera_uniform: &CameraUniform,
-        depth_stencil: Option<wgpu::DepthStencilState>
+        depth_stencil: Option<wgpu::DepthStencilState>,
+        init_data: &InitData,
     ) -> Self {                        
         let mega_vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Mega Vertex Buffer"),
@@ -465,24 +467,42 @@ impl Resources {
         });
 
         let max_textures = MAX_TEXTURES as usize;
-
-        let base_color_views = vec![&dummy_view; max_textures];
-        let metallic_roughness_views = vec![&dummy_view; max_textures];
-        let normal_views = vec![&dummy_view; max_textures];
-        let emissive_views = vec![&dummy_view; max_textures];
+        
+        let mut base_color_views = vec![&dummy_view; max_textures];
+        let mut metallic_roughness_views = vec![&dummy_view; max_textures];
+        let mut normal_views = vec![&dummy_view; max_textures];
+        let mut emissive_views = vec![&dummy_view; max_textures];
+        
+        info!("Materials total: {}", init_data.materials.len());
+        
+        for (material_idx, md) in init_data.materials.iter().enumerate() {
+            info!("Got material {}, textures: {}", material_idx, md.textures.len());
+            if material_idx >= max_textures {
+                panic!("Max textures limit reached!");
+            }
+            for (t_type, texture_item) in &md.textures {
+                let view_ref = &texture_item.view;
+                match t_type {
+                    TextureType::BaseColor => {
+                        base_color_views[material_idx] = view_ref;
+                    }
+                    TextureType::Normal => {
+                        normal_views[material_idx] = view_ref;
+                    }
+                    TextureType::MetallicRoughness => {
+                        metallic_roughness_views[material_idx] = view_ref;
+                    }
+                    TextureType::Emissive => {
+                        emissive_views[material_idx] = view_ref;
+                    }
+                    _ => {
+                        info!("Unknown texture type found for bindless");
+                    }
+                }
+            }
+        }
         
         let samplers = vec![&default_sampler; max_textures];
-    
-        /*
-        for (i, loaded_material) in loaded_materials_from_cpu.iter().enumerate() {
-            if i >= max_textures { break; }
-                        
-            base_color_views[i] = &loaded_material.base_color_view;
-            metallic_roughness_views[i] = &loaded_material.mr_view;
-            normal_views[i] = &loaded_material.normal_view;
-            emissive_views[i] = &loaded_material.emissive_view;
-        }
-        */
         
         let materials_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Materials Bind Group"),
