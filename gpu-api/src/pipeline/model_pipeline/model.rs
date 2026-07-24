@@ -203,7 +203,7 @@ impl Object {
                     contents: bytemuck::cast_slice(&vertices),
                     usage: wgpu::BufferUsages::VERTEX
                 });
-        
+                        
                 let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some(&format!("{} Index Buffer", "dog")),
                     contents: bytemuck::cast_slice(&primitive_data.indices),
@@ -217,8 +217,8 @@ impl Object {
                     .map(|&idx| idx as u32 + base_vertex)
                     .collect();
                 
-                init_data.vertices.extend_from_slice(&vertices);                
-                init_data.indices.extend_from_slice(&globalized_indices);                
+                init_data.vertices.extend_from_slice(&vertices);
+                init_data.indices.extend_from_slice(&globalized_indices);
                 //init_data.indices.extend_from_slice(&primitive_data.indices);
         
                 primitives.push(Primitive {
