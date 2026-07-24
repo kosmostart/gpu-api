@@ -89,13 +89,18 @@ fn culling_main(
         let world_min = world_center - world_extents;
         let world_max = world_center + world_extents;
         
-        if (is_aabb_visible(world_min, world_max)) {
-            let cmd_id = task_index;
+       if (is_aabb_visible(world_min, world_max)) {            
+            let base_cmd_id = task.material_index; 
+                        
+            let obj_material_id = instance.material_index; 
+            let cmd_id = base_cmd_id + obj_material_id;
+                        
             let local_slot = atomicAdd(&indirect_commands[cmd_id].instance_count, 1u);
+                        
             let write_index = indirect_commands[cmd_id].first_instance + local_slot;
             
             visible_instances[write_index].instance_id = global_instance_id;
-            visible_instances[write_index].material_index = task.material_index;
+            visible_instances[write_index].material_index = obj_material_id;
         }
     }
 }

@@ -201,7 +201,6 @@ async fn run() {
 
     let frustum = gpu_api_relay::frustum::Frustum::from_view_projection(camera.projection);
     let mut frame_data = world::octree::RenderFrameData {
-        visible_object_ids: Vec::new(),
         visible_chunks: Vec::new(),
     };
     test_world.cull(&frustum, camera.position, &mut frame_data);
