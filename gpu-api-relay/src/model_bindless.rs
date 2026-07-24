@@ -61,14 +61,13 @@ pub struct VisibleInstanceData {
 unsafe impl bytemuck::Pod for VisibleInstanceData {}
 unsafe impl bytemuck::Zeroable for VisibleInstanceData {}
 
-/// Метаданные геометрии расширяются (Вы знаете смещение инстансов модели во VRAM изначально)
 pub struct ModelGeometryMeta {
     pub id: u32,
     pub index_count: u32,
     pub first_index: u32,
     pub base_vertex: i32,
-    /// С какого индекса в глобальном GPU-буфере начинаются инстансы этой модели в мире
-    pub global_instance_buffer_offset: u32, 
+    pub global_instance_buffer_offset: u32,
+    pub material_index: u32, 
 }
 
 #[repr(C)]
@@ -87,11 +86,16 @@ unsafe impl bytemuck::Zeroable for MaterialFactors {}
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct DrawIndexedIndirectCommand {
-    pub index_count: u32,    // Количество индексов меша модели
-    pub instance_count: u32, // СКОЛЬКО таких объектов нашел куллинг октодерева
-    pub first_index: u32,    // Смещение геометрии в mega_index_buffer
-    pub base_vertex: i32,    // Смещение геометрии в mega_vertex_buffer
-    pub first_instance: u32, // Смещение в instances_buffer кадра
+    /// Number of indices per mesh
+    pub index_count: u32,
+    // How many off these objects will be drawn
+    pub instance_count: u32,
+    /// Geometry offset in mega_index_buffer
+    pub first_index: u32,
+    /// Geometry offset in mega_vertex_buffer
+    pub base_vertex: i32,
+    /// Offset in instances_buffer per frame
+    pub first_instance: u32,
 }
 
 unsafe impl bytemuck::Pod for DrawIndexedIndirectCommand {}

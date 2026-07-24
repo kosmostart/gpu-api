@@ -212,7 +212,8 @@ async fn run() {
             index_count: init_data.indices.len() as u32,
             first_index: 0,
             base_vertex: 0,
-            global_instance_buffer_offset: 0, 
+            global_instance_buffer_offset: 0,
+            material_index: 0,
         }
     ];
 
