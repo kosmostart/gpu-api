@@ -19,7 +19,8 @@ struct InstanceData {
 struct CullingTask {
     start_object_index: u32,
     object_count: u32,
-    padding: vec2<u32>, 
+    material_index: u32,
+    _padding: u32,
 };
 
 struct DrawIndexedIndirectCmd {
@@ -30,11 +31,16 @@ struct DrawIndexedIndirectCmd {
     first_instance: u32,
 };
 
+struct VisibleInstanceData {
+    instance_id: u32,
+    material_index: u32,
+};
+
 @group(0) @binding(0) var<uniform> camera: CameraUniform;
 
 @group(1) @binding(0) var<storage, read> culling_tasks: array<CullingTask>;
 @group(1) @binding(1) var<storage, read> global_instances: array<InstanceData>;
-@group(1) @binding(2) var<storage, read_write> visible_instance_indices: array<u32>;
+@group(1) @binding(2) var<storage, read_write> visible_instances: array<VisibleInstanceData>;
 @group(1) @binding(3) var<storage, read_write> indirect_commands: array<DrawIndexedIndirectCmd>;
 
 fn is_aabb_visible(aabb_min: vec3<f32>, aabb_max: vec3<f32>) -> bool {
@@ -87,8 +93,9 @@ fn culling_main(
         if (is_aabb_visible(world_min, world_max)) {            
             let cmd_id = task_index; 
             let local_slot = atomicAdd(&indirect_commands[cmd_id].instance_count, 1u);
-            let write_index = indirect_commands[cmd_id].first_instance + local_slot;
-            visible_instance_indices[write_index] = global_instance_id;
+            let write_index = indirect_commands[cmd_id].first_instance + local_slot;                        
+            visible_instances[write_index].instance_id = global_instance_id;                        
+            visible_instances[write_index].material_index = task.material_index; 
         }
     }
 }

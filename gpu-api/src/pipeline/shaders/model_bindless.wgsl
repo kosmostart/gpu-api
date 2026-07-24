@@ -43,7 +43,11 @@ struct InstanceData {
 };
 @group(2) @binding(2) var<storage, read> global_instances: array<InstanceData>;
 
-@group(2) @binding(3) var<storage, read> visible_instance_indices: array<u32>;
+struct VisibleInstanceData {
+    instance_id: u32,
+    material_index: u32,
+};
+@group(2) @binding(3) var<storage, read> visible_instances: array<VisibleInstanceData>;
 
 struct VertexInput {    
     @location(0) position: vec3<f32>,    
@@ -69,10 +73,9 @@ struct FragmentInput {
 fn vs_main(
     vertex_input: VertexInput, 
     @builtin(instance_index) draw_instance_idx: u32
-) -> FragmentInput {
-    let global_object_id = visible_instance_indices[draw_instance_idx];
-        
-    let instance = global_instances[global_object_id];
+) -> FragmentInput {    
+    let render_data = visible_instances[draw_instance_idx];        
+    let instance = global_instances[render_data.instance_id];
     var model_matrix = instance.model_matrix;
     let node = global_nodes[instance.node_index];
     
@@ -103,7 +106,7 @@ fn vs_main(
     out.clip_position = camera.projection * model_position; 
     out.world_position = model_position.xyz;
     out.uv = vertex_input.uv;
-    out.material_index = instance.material_index; 
+    out.material_index = render_data.material_index; 
         
     let normal_matrix = mat3x3<f32>(model_matrix[0].xyz, model_matrix[1].xyz, model_matrix[2].xyz);
     out.normal = normalize(normal_matrix * vertex_input.normal);

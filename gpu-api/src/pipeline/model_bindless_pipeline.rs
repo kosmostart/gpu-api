@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use glam::Mat4;
 use gpu_api_dto::TextureType;
-use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex};
+use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
 use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}};
@@ -23,7 +23,7 @@ pub struct Resources {
     pub materials_buffer: wgpu::Buffer,
     
     pub culling_tasks_buffer: wgpu::Buffer,    
-    pub visible_indices_buffer: wgpu::Buffer,
+    pub visible_instances_buffer: wgpu::Buffer,
     
     pub indirect_commands_buffer: wgpu::Buffer,
     
@@ -93,9 +93,9 @@ impl Resources {
             mapped_at_creation: false,
         });
 
-        let visible_indices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Visible Indices Buffer"),
-            size: MAX_INSTANCES * 4,
+        let visible_instances_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Visible Instances Buffer"),            
+            size: MAX_INSTANCES * (std::mem::size_of::<VisibleInstanceData>() as u64),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -561,7 +561,7 @@ impl Resources {
                 },                
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: visible_indices_buffer.as_entire_binding(),
+                    resource: visible_instances_buffer.as_entire_binding(),
                 },                
                 wgpu::BindGroupEntry {
                     binding: 3,
@@ -588,7 +588,7 @@ impl Resources {
                 },                
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: visible_indices_buffer.as_entire_binding(),
+                    resource: visible_instances_buffer.as_entire_binding(),
                 },
             ],
         });
@@ -602,7 +602,7 @@ impl Resources {
             joints_buffer,
             materials_buffer,
             culling_tasks_buffer,
-            visible_indices_buffer,
+            visible_instances_buffer,
             indirect_commands_buffer,
             culling_compute_pipeline,
             render_pipeline,

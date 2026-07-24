@@ -44,11 +44,22 @@ unsafe impl bytemuck::Zeroable for InstanceData {}
 pub struct CullingTask {
     pub start_object_index: u32,
     pub object_count: u32,
-    pub _padding: [u32; 2], 
+    pub material_index: u32,
+    pub _padding: u32,
 }
 
 unsafe impl bytemuck::Pod for CullingTask {}
 unsafe impl bytemuck::Zeroable for CullingTask {}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct VisibleInstanceData {
+    pub instance_id: u32,
+    pub material_index: u32,
+}
+
+unsafe impl bytemuck::Pod for VisibleInstanceData {}
+unsafe impl bytemuck::Zeroable for VisibleInstanceData {}
 
 /// Метаданные геометрии расширяются (Вы знаете смещение инстансов модели во VRAM изначально)
 pub struct ModelGeometryMeta {
