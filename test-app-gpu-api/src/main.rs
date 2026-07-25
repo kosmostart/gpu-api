@@ -172,50 +172,57 @@ async fn run() {
         nodes: Vec::new(),
     };
     
+    let position = vec3(view_source.x, view_source.y, view_source.z);
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
+    
+    let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));    
 
-    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state, &init_data);
-    let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));
-
-    let test_object = world::octree::DynamicObject {
-        id: world::octree::ObjectId(0),
-        position: vec3(0.0, 0.0, 0.0), 
-        radius: 5.0,
-        aabb: bounds::aabb::Aabb::new(vec3(-5.0, -5.0, -5.0), vec3(5.0, 5.0, 5.0)),
-        is_animated: 0,
+    test_world.add_object(position, InstanceData {
+        model_matrix: object.model_instances[0].model_matrix,
+        is_animated: 1,
+        node_index: 0,
+        joints_offset: 0,
         material_index: 0,
-    };
+        primitive_index: 0,
+        aabb_min: vec3(-5.0, -5.0, -5.0),
+        aabb_max: vec3(5.0, 5.0, 5.0),
+    });
 
-    test_world.add_object(test_object);
+    let registered_primitives = vec![
+        PrimitiveMeta {
+            id: 0,
+            base_vertex: 0,
+            lod_index_counts: [0, 0, 0],
+            lod_first_indices: [0, 0, 0],
+            max_global_instances: 10,
+        }
+    ];
+
+    let indirect_commands = test_world.generate_initial_indirect_commands(&registered_primitives);
+
+    let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state,
+        registered_primitives.len(), 
+        indirect_commands.len(),
+        &init_data
+    );
 
     let mut object_group = ObjectGroup {
         active: true,
         objects: vec![]
-    };
-
-    let mut culling_tasks = Vec::new();
-    let mut indirect_commands = Vec::new();
+    };        
 
     let frustum = gpu_api_relay::frustum::Frustum::from_view_projection(camera.projection);
     let mut frame_data = world::octree::RenderFrameData {
         visible_chunks: Vec::new(),
     };
     test_world.cull(&frustum, camera.position, &mut frame_data);
+    
+    let mut culling_tasks = Vec::new();
+    let mut global_instances = Vec::new();
 
-    let registered_primitives = vec![
-        PrimitiveMeta {
-            id: 0,
-            index_count: init_data.indices.len() as u32,
-            first_index: 0,
-            base_vertex: 0,
-            global_instance_buffer_offset: 0,
-            material_index: 0,
-        }
-    ];
-
-    test_world.prepare_gpu_indirect_frame(&frame_data, &registered_primitives, &mut culling_tasks, &mut indirect_commands);    
-
-    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);
+    test_world.prepare_gpu_indirect_frame(&frame_data, &mut culling_tasks, &mut global_instances);
+   
+    model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors, &indirect_commands);
 
     object_group.objects.push(object);
 
@@ -763,24 +770,14 @@ async fn run() {
                                     }
                                 }
                             }
-
-                            let object = &object_groups[0].objects[0];
-                            let q = object.model_instances.iter().map(|mi| {
-                                InstanceData {
-                                    model_matrix: mi.model_matrix,
-                                    is_animated: mi.is_animated,
-                                    node_index: 0,
-                                    joints_offset: 0,
-                                    material_index: 0,
-                                }
-                            }).collect::<Vec<_>>();
+                            
                             if init_data.nodes.is_empty() {
                                 init_data.nodes.push(NodeData {
                                     info: [0, 0, 0, 0],
                                     transform: Mat4::IDENTITY,
                                 });
                             }
-                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &q, &init_data.nodes, &init_data.joints, &culling_tasks, &indirect_commands);
+                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes, &init_data.joints, &culling_tasks);
                             
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {

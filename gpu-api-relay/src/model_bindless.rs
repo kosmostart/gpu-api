@@ -1,4 +1,4 @@
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -32,19 +32,21 @@ pub struct InstanceData {
     pub is_animated: u32,
     pub node_index: u32,
     pub joints_offset: u32,
-    pub material_index: u32,
+    pub material_index: u32,    
+    pub primitive_index: u32,
+    pub aabb_min: Vec3,
+    pub aabb_max: Vec3,
 }
 
 unsafe impl bytemuck::Pod for InstanceData {}
 unsafe impl bytemuck::Zeroable for InstanceData {}
 
-/// Структура задачи для Compute-шейдера (Выравнивание WebGPU по 16 байт)
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct CullingTask {
     pub start_object_index: u32,
     pub object_count: u32,
-    pub material_index: u32,
+    pub lod_level: u32,
     pub _padding: u32,
 }
 
@@ -61,14 +63,16 @@ pub struct VisibleInstanceData {
 unsafe impl bytemuck::Pod for VisibleInstanceData {}
 unsafe impl bytemuck::Zeroable for VisibleInstanceData {}
 
-pub struct PrimitiveMeta {
-    pub id: u32,
-    pub index_count: u32,
-    pub first_index: u32,
-    pub base_vertex: i32,
-    pub global_instance_buffer_offset: u32,
-    pub material_index: u32, 
+pub struct PrimitiveMeta {    
+    pub id: u32,    
+    /// Vertex Buffer base index    
+    pub base_vertex: i32,    
+    pub lod_index_counts: [u32; 3],    
+    pub lod_first_indices: [u32; 3],    
+    /// Fixed VRAM budget for primitive
+    pub max_global_instances: u32,
 }
+
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

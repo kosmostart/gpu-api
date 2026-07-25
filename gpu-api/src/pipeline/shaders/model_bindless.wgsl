@@ -40,6 +40,9 @@ struct InstanceData {
     node_index: u32,
     joints_offset: u32,
     material_index: u32,
+    primitive_index: u32,
+    aabb_min: vec3<f32>,
+    aabb_max: vec3<f32>,
 };
 @group(2) @binding(2) var<storage, read> global_instances: array<InstanceData>;
 

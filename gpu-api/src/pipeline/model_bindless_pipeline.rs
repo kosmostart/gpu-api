@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 use glam::Mat4;
 use gpu_api_dto::TextureType;
-use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, Vertex, VisibleInstanceData};
+use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, Vertex, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
-use crate::{camera::{Camera, CameraUniform}, pipeline::model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}};
+use crate::{camera::{Camera, CameraUniform}, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}}};
 
 pub const MAX_VERTICES: u64 = 1_000_000;
 pub const MAX_INDICES: u64 = 3_000_000;
@@ -28,6 +28,7 @@ pub struct Resources {
     pub indirect_commands_buffer: wgpu::Buffer,
     
     pub culling_compute_pipeline: wgpu::ComputePipeline,
+    pub clear_commands_pipeline: ClearCommandsPipeline,
     pub render_pipeline: wgpu::RenderPipeline,
     
     pub materials_bind_group: wgpu::BindGroup,
@@ -42,6 +43,8 @@ impl Resources {
         queue: &wgpu::Queue,        
         camera_uniform: &CameraUniform,
         depth_stencil: Option<wgpu::DepthStencilState>,
+        primitives_count: usize,
+        commands_count: usize,
         init_data: &InitData,
     ) -> Self {                        
         let mega_vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -102,7 +105,7 @@ impl Resources {
 
         let indirect_commands_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Indirect Commands Buffer"),
-            size: MAX_INSTANCES * 20,
+            size: (primitives_count * 3 * std::mem::size_of::<DrawIndexedIndirectCommand>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::INDIRECT | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         }); 
@@ -593,6 +596,8 @@ impl Resources {
             ],
         });
 
+        let clear_commands_pipeline = ClearCommandsPipeline::new(device, &indirect_commands_buffer, commands_count as u32);
+
         Self {    
             mega_vertex_buffer,
             mega_index_buffer,
@@ -605,6 +610,7 @@ impl Resources {
             visible_instances_buffer,
             indirect_commands_buffer,
             culling_compute_pipeline,
+            clear_commands_pipeline,
             render_pipeline,
             materials_bind_group,
             camera_bind_group,
@@ -618,11 +624,13 @@ impl Resources {
         queue: &wgpu::Queue,
         vertices: &[Vertex],
         indices: &[u32],
-        material_factors: &[MaterialFactors]
+        material_factors: &[MaterialFactors],
+        indirect_commands: &[DrawIndexedIndirectCommand]
     ) {
         queue.write_buffer(&self.mega_vertex_buffer, 0, bytemuck::cast_slice(vertices));
         queue.write_buffer(&self.mega_index_buffer, 0, bytemuck::cast_slice(indices));
         queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));
+        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));
     }
 
     pub fn load_frame(
@@ -635,7 +643,6 @@ impl Resources {
         nodes: &[NodeData],
         joints: &[Mat4],
         culling_tasks: &[CullingTask],
-        initial_indirect_commands: &[DrawIndexedIndirectCommand]
     ) {
         {                                                                                            
             let camera_uniform = CameraUniform {
@@ -667,20 +674,20 @@ impl Resources {
         queue.write_buffer(&self.nodes_buffer, 0, bytemuck::cast_slice(nodes));
         queue.write_buffer(&self.joints_buffer, 0, bytemuck::cast_slice(joints));
 
-        if !culling_tasks.is_empty() {
+        if culling_tasks.is_empty() == false {
             queue.write_buffer(&self.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
-        }    
-        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(initial_indirect_commands));
+        }
     }
 
     pub fn compute_gpu_driven_frame(
         self: &Resources,
         compute_pass: &mut ComputePass,
-        culling_tasks: &[CullingTask]       
-    ) {        
+        culling_tasks: &[CullingTask]
+    ) {
+        self.clear_commands_pipeline.compute(compute_pass);
         compute_pass.set_pipeline(&self.culling_compute_pipeline);
         compute_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        compute_pass.set_bind_group(1, &self.culling_compute_bind_group, &[]);    
+        compute_pass.set_bind_group(1, &self.culling_compute_bind_group, &[]);
         compute_pass.dispatch_workgroups(culling_tasks.len() as u32, 1, 1);
     }
 

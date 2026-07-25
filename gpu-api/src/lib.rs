@@ -8,4 +8,5 @@ pub mod pipeline {
     pub mod image_pipeline;
     pub mod model_pipeline;
     pub mod model_bindless_pipeline;
+    pub mod clear_commands_pipeline;
 }
