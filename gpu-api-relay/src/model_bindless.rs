@@ -61,7 +61,7 @@ pub struct VisibleInstanceData {
 unsafe impl bytemuck::Pod for VisibleInstanceData {}
 unsafe impl bytemuck::Zeroable for VisibleInstanceData {}
 
-pub struct ModelGeometryMeta {
+pub struct PrimitiveMeta {
     pub id: u32,
     pub index_count: u32,
     pub first_index: u32,

@@ -687,7 +687,7 @@ impl Resources {
     pub fn draw_gpu_driven_frame(
         self: &Resources,
         render_pass: &mut RenderPass,
-        initial_indirect_commands: &[DrawIndexedIndirectCommand]
+        commands: &[DrawIndexedIndirectCommand]
     ) {        
         render_pass.set_pipeline(&self.render_pipeline);
         
@@ -697,18 +697,7 @@ impl Resources {
         
         render_pass.set_vertex_buffer(0, self.mega_vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.mega_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-
-        /*
-        render_pass.multi_draw_indexed_indirect(
-            &self.indirect_commands_buffer,
-            0,
-            max_draw_count,
-        );    
-        */
-            
-        for i in 0..initial_indirect_commands.len() {
-            let offset = (i * std::mem::size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress;            
-            render_pass.draw_indexed_indirect(&self.indirect_commands_buffer, offset);
-        }
+        
+        render_pass.multi_draw_indexed_indirect(&self.indirect_commands_buffer, 0, commands.len() as u32);
     }
 }

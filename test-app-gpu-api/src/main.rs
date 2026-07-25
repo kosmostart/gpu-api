@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
 use glam::{Mat4, vec3};
-use gpu_api_relay::model_bindless::{InstanceData, ModelGeometryMeta, NodeData};
+use gpu_api_relay::model_bindless::{InstanceData, PrimitiveMeta, NodeData};
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
@@ -202,8 +202,8 @@ async fn run() {
     };
     test_world.cull(&frustum, camera.position, &mut frame_data);
 
-    let registered_models = vec![
-        ModelGeometryMeta {
+    let registered_primitives = vec![
+        PrimitiveMeta {
             id: 0,
             index_count: init_data.indices.len() as u32,
             first_index: 0,
@@ -213,7 +213,7 @@ async fn run() {
         }
     ];
 
-    test_world.prepare_gpu_indirect_frame(&frame_data, &registered_models, &mut culling_tasks, &mut indirect_commands);    
+    test_world.prepare_gpu_indirect_frame(&frame_data, &registered_primitives, &mut culling_tasks, &mut indirect_commands);    
 
     model_bindless_resources.init(&queue, &init_data.vertices, &init_data.indices, &init_data.factors);
 
