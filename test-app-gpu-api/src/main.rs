@@ -108,11 +108,14 @@ async fn run() {
     };        
 
     let mut config = surface
-    .get_default_config(&adapter, layout.size.width, layout.size.height)
-    .expect("Surface isn't supported by the adapter.");
+        .get_default_config(&adapter, layout.size.width, layout.size.height)
+        .expect("Surface isn't supported by the adapter.");
 
+    config.present_mode = wgpu::PresentMode::Mailbox;
     config.format = wgpu::TextureFormat::Rgba8Unorm;
-    config.view_formats.push(wgpu::TextureFormat::Rgba8UnormSrgb);
+    config.view_formats.push(wgpu::TextureFormat::Rgba8UnormSrgb);    
+
+    info!("{:#?}", config);
 
     surface.configure(&device, &config);
     
@@ -426,11 +429,8 @@ async fn run() {
                     WindowEvent::KeyboardInput { device_id: _, event, is_synthetic } => {
                         warn!("{:?}", event);                    
                     }
-                    WindowEvent::RedrawRequested => {                        
-                        //info!("Redraw requested");
-
-                        if frame_counter.update() {
-                            // Get a command encoder for the current frame
+                    WindowEvent::RedrawRequested => {
+                        if frame_counter.update() {                            
                                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                     label: Some("Redraw")
                                 }
@@ -567,7 +567,7 @@ async fn run() {
                                 );            
                                 line_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
                             }
-                            
+
                             {
                                 for object_group in &mut object_groups {
                                     for object in &mut object_group.objects {
@@ -670,11 +670,8 @@ async fn run() {
                                                 let skin_index = 0;
                                                 
                                                 for joint in &object.skins[skin_index].joints {
-                                                    //let joint_matrix = inverse_node_global_transform * object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
                                                     let joint_matrix = object.nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-
                                                     joint_matrices[joint_matrix_index] = joint_matrix;
-
                                                     joint_matrix_index = joint_matrix_index + 1;
                                                 }
                                                 
@@ -801,8 +798,7 @@ async fn run() {
 
                                 model_bindless_resources.compute_gpu_driven_frame(&mut compute_pass, &culling_tasks);
                             }
-            
-                            // Clear frame
+
                             {
                                 let mut render_pass = encoder.begin_render_pass(
                                     &wgpu::RenderPassDescriptor {
@@ -854,7 +850,7 @@ async fn run() {
                         }
 
                         window.request_redraw();
-                    }              
+                    }
                     _ => {}
                 }
             }
