@@ -86,27 +86,33 @@ fn culling_main(
         let instance = global_instances[global_instance_id];
                 
         let m = instance.model_matrix;
-        let center = (instance.aabb_min + instance.aabb_max) * 0.5;
-        let extents = (instance.aabb_max - instance.aabb_min) * 0.5;
+        
+        let aabb_min_vec = instance.aabb_min.xyz;
+        let aabb_max_vec = instance.aabb_max.xyz;
+        
+        let center = (aabb_min_vec + aabb_max_vec) * 0.5;
+        let extents = (aabb_max_vec - aabb_min_vec) * 0.5;
                 
         let world_center = (m * vec4<f32>(center, 1.0)).xyz;
-                        
-        let world_extents = vec3<f32>(
-            abs(m[0][0]) * extents.x + abs(m[1][0]) * extents.y + abs(m[2][0]) * extents.z,
-            abs(m[0][1]) * extents.x + abs(m[1][1]) * extents.y + abs(m[2][1]) * extents.z,
-            abs(m[0][2]) * extents.x + abs(m[1][2]) * extents.y + abs(m[2][2]) * extents.z
+                                
+        let abs_rotation_scale_matrix = mat3x3<f32>(
+            abs(m[0].xyz),
+            abs(m[1].xyz),
+            abs(m[2].xyz)
         );
+                
+        let world_extents = abs_rotation_scale_matrix * extents;
         
         let world_min = world_center - world_extents;
         let world_max = world_center + world_extents;
         
         if (is_aabb_visible(world_min, world_max)) {                        
-            let cmd_id = (instance.primitive_index * 3u) + chunk_lod;                                    
-            let local_slot = atomicAdd(&indirect_commands[cmd_id].instance_count, 1u);                                
+            let cmd_id = (instance.primitive_index * 3u) + chunk_lod;                                                        
+            let local_slot = atomicAdd(&indirect_commands[cmd_id].instance_count, 1u);                                                                    
             let write_index = indirect_commands[cmd_id].first_instance + local_slot;
                         
             visible_instances[write_index].instance_id = global_instance_id;
-            visible_instances[write_index].material_index = instance.material_index;
+            visible_instances[write_index].material_index = instance.material_index;            
         }
     }
 }
