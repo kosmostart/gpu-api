@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use glam::Mat4;
 use gpu_api_dto::TextureType;
-use gpu_api_relay::model_bindless::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, Vertex, VisibleInstanceData};
+use gpu_api_relay::model_bindless_data::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, Vertex, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
 use crate::{camera::{Camera, CameraUniform}, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}}};
@@ -677,6 +677,13 @@ impl Resources {
         if culling_tasks.is_empty() == false {
             queue.write_buffer(&self.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
         }
+    }
+
+    pub fn clear_gpu_driven_frame(
+        self: &Resources,
+        compute_pass: &mut ComputePass,        
+    ) {
+        self.clear_commands_pipeline.compute(compute_pass);     
     }
 
     pub fn compute_gpu_driven_frame(

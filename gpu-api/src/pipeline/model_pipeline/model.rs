@@ -3,7 +3,7 @@ use glam::{Mat4, Quat};
 use image::DynamicImage;
 use lz4_flex::decompress_size_prepended;
 use wgpu::{Device, Buffer, util::DeviceExt, BindGroup, Queue};
-use gpu_api_relay::model_bindless::{InstanceData, MaterialFactors, NodeData};
+use gpu_api_relay::model_bindless_data::{InstanceData, MaterialFactors, NodeData};
 use gpu_api_dto::{AlphaMode, AnimationComputationMode, AnimationProperty, Interpolation, ModelData, PrimitiveData, TextureType, ViewSource};
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::pipeline::model_pipeline::Vertex;

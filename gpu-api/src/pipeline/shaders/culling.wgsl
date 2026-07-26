@@ -8,13 +8,22 @@ struct CameraUniform {
 
 struct InstanceData {
     model_matrix: mat4x4<f32>,
+    
     is_animated: u32,
     node_index: u32,
     joints_offset: u32,
     material_index: u32,
     primitive_index: u32,
+    
+    pad0: u32,
+    pad1: u32,
+    pad2: u32,
+    
     aabb_min: vec3<f32>,
+    pad_aabb1: u32,
+    
     aabb_max: vec3<f32>,
+    pad_aabb2: u32,
 };
 
 struct CullingTask {

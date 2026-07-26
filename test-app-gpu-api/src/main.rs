@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
 use glam::{Mat4, vec3};
-use gpu_api_relay::model_bindless::{InstanceData, PrimitiveMeta, NodeData};
+use gpu_api_relay::model_bindless_data::{InstanceData, PrimitiveMeta, NodeData};
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
@@ -184,15 +184,20 @@ async fn run() {
         joints_offset: 0,
         material_index: 0,
         primitive_index: 0,
-        aabb_min: vec3(-5.0, -5.0, -5.0),
-        aabb_max: vec3(5.0, 5.0, 5.0),
+        _pad0: 0,
+        _pad1: 0,
+        _pad2: 0,
+        aabb_min: [-5.0, -5.0, -5.0],
+        _pad_aabb1: 0,
+        aabb_max: [5.0, 5.0, 5.0],
+        _pad_aabb2: 0,
     });
 
     let registered_primitives = vec![
         PrimitiveMeta {
             id: 0,
             base_vertex: 0,
-            lod_index_counts: [0, 0, 0],
+            lod_index_counts: [init_data.indices.len() as u32, init_data.indices.len() as u32, init_data.indices.len() as u32],
             lod_first_indices: [0, 0, 0],
             max_global_instances: 10,
         }
@@ -778,6 +783,15 @@ async fn run() {
                                 });
                             }
                             model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes, &init_data.joints, &culling_tasks);
+
+                            {
+                                let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                                    label: Some("GPU-Driven clear Pass"),
+                                    timestamp_writes: None,
+                                });
+
+                                model_bindless_resources.clear_gpu_driven_frame(&mut compute_pass);
+                            }
                             
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {

@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::Mat4;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -28,14 +28,26 @@ unsafe impl bytemuck::Zeroable for NodeData {}
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct InstanceData {
-    pub model_matrix: Mat4,
-    pub is_animated: u32,
-    pub node_index: u32,
-    pub joints_offset: u32,
-    pub material_index: u32,    
-    pub primitive_index: u32,
-    pub aabb_min: Vec3,
-    pub aabb_max: Vec3,
+    pub model_matrix: glam::Mat4, // 64 байта
+    
+    // Блок метаданных
+    pub is_animated: u32,         // 4 байта
+    pub node_index: u32,          // 4 байта
+    pub joints_offset: u32,       // 4 байта
+    pub material_index: u32,      // 4 байта
+    pub primitive_index: u32,     // 4 байта
+    
+    // Добиваем блок метаданных до 16-байтовой границы (20 + 12 = 32 байта)
+    pub _pad0: u32,               // 4 байта
+    pub _pad1: u32,               // 4 байта
+    pub _pad2: u32,               // 4 байта
+    
+    // Безопасные AABB без скрытых SIMD-компонентов glam
+    pub aabb_min: [f32; 3],       // 12 байт
+    pub _pad_aabb1: u32,          // 4 байта (округляем до 16 байт)
+    
+    pub aabb_max: [f32; 3],       // 12 байт
+    pub _pad_aabb2: u32,          // 4 байта (округляем до 16 байт)
 }
 
 unsafe impl bytemuck::Pod for InstanceData {}

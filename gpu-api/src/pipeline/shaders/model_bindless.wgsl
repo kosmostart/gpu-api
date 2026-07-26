@@ -36,13 +36,22 @@ struct NodeData {
 
 struct InstanceData {
     model_matrix: mat4x4<f32>,
+    
     is_animated: u32,
     node_index: u32,
     joints_offset: u32,
     material_index: u32,
     primitive_index: u32,
+    
+    pad0: u32,
+    pad1: u32,
+    pad2: u32,
+    
     aabb_min: vec3<f32>,
+    pad_aabb1: u32,
+    
     aabb_max: vec3<f32>,
+    pad_aabb2: u32,
 };
 @group(2) @binding(2) var<storage, read> global_instances: array<InstanceData>;
 
@@ -77,7 +86,7 @@ fn vs_main(
     vertex_input: VertexInput, 
     @builtin(instance_index) draw_instance_idx: u32
 ) -> FragmentInput {    
-    let render_data = visible_instances[draw_instance_idx];        
+    let render_data = visible_instances[draw_instance_idx];
     let instance = global_instances[render_data.instance_id];
     var model_matrix = instance.model_matrix;
     let node = global_nodes[instance.node_index];
