@@ -800,12 +800,11 @@ impl Object {
                 
                 for joint in &skins[skin_index].joints {
                     let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-
-                    init_data.joints.push(joint_matrix);
-                    joint_matrices[joint_matrix_index] = joint_matrix;                
-
+                    joint_matrices[joint_matrix_index] = joint_matrix;
                     joint_matrix_index = joint_matrix_index + 1;
-                }            
+                }
+
+                init_data.joints.extend_from_slice(&joint_matrices);
 
                 for mesh in &mut meshes {
                     if mesh.node_transform.is_some() {                    
@@ -821,31 +820,7 @@ impl Object {
                             None => {}
                         }                    
                     }                
-                }            
-                
-                /*
-                // Inverse node global transform            
-
-                for node in &nodes {                
-                    match node.skin_index {
-                        Some(skin_index) => {
-                            let inverse_node_global_transform = node.global_transform_matrix;
-                            let mut joint_matrix_index = 0;
-
-                            for joint in &skins[skin_index].joints {                
-                                let joint_matrix = inverse_node_global_transform * nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;            
-                
-                                //let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
-                                
-                                joint_matrices[joint_matrix_index] = joint_matrix;
-                
-                                joint_matrix_index = joint_matrix_index + 1;
-                            }
-                        }
-                        None => {}
-                    }                
-                }
-                */
+                }                                   
 
                 animation.joint_matrices.push(joint_matrices);                                    
 
