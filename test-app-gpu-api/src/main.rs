@@ -779,7 +779,9 @@ async fn run() {
                                     transform: Mat4::IDENTITY,
                                 });
                             }
-                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes, &init_data.joints, &culling_tasks);
+                            model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes,
+                                //&init_data.joints,
+                                &culling_tasks);
 
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {

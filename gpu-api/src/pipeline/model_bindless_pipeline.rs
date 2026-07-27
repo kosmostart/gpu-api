@@ -19,7 +19,7 @@ pub struct Resources {
     pub camera_buffer: wgpu::Buffer,
     pub instances_buffer: wgpu::Buffer,
     pub nodes_buffer: wgpu::Buffer,
-    pub joints_buffer: wgpu::Buffer,
+    //pub joints_buffer: wgpu::Buffer,
     pub materials_buffer: wgpu::Buffer,
     
     pub culling_tasks_buffer: wgpu::Buffer,    
@@ -75,12 +75,14 @@ impl Resources {
             mapped_at_creation: false,
         });
 
+        /*
         let joints_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Joints Buffer"),
             size: MAX_INSTANCES * 64 * 4, 
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        */
 
         let materials_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Materials Buffer"),
@@ -614,7 +616,7 @@ impl Resources {
             camera_buffer,
             instances_buffer,
             nodes_buffer,
-            joints_buffer,
+            //joints_buffer,
             materials_buffer,
             culling_tasks_buffer,
             visible_instances_buffer,
@@ -709,7 +711,7 @@ impl Resources {
         staging_belt: &mut StagingBelt,
         instances: &[InstanceData],
         nodes: &[NodeData],
-        joints: &[Mat4],
+        //joints: &[Mat4],
         culling_tasks: &[CullingTask],
     ) {
         {                                                                                            
@@ -740,7 +742,7 @@ impl Resources {
 
         queue.write_buffer(&self.instances_buffer, 0, bytemuck::cast_slice(instances));
         queue.write_buffer(&self.nodes_buffer, 0, bytemuck::cast_slice(nodes));
-        queue.write_buffer(&self.joints_buffer, 0, bytemuck::cast_slice(joints));
+        //queue.write_buffer(&self.joints_buffer, 0, bytemuck::cast_slice(joints));
 
         if culling_tasks.is_empty() == false {
             queue.write_buffer(&self.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
