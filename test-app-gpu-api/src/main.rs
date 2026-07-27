@@ -184,7 +184,7 @@ async fn run() {
         model_matrix: object.model_instances[0].model_matrix,
         is_animated: 1,
         node_index: 0,
-        joints_offset: 0,
+        joints_offset: 10 * 128,
         material_index: 0,
         primitive_index: 0,
         _pad0: 0,
