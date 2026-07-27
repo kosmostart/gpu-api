@@ -84,13 +84,11 @@ struct FragmentInput {
 
 fn read_baked_matrix(matrix_index: u32) -> mat4x4<f32> {
     let texture_width: u32 = 2048u;
-    let matrices_per_row: u32 = texture_width / 4u; // 512 матриц в строке
+    let matrices_per_row: u32 = 512u;   // 512 (2048 / 4)
 
-    // Находим строку и колонку, где начинается наша матрица
     let row = matrix_index / matrices_per_row;
-    let col_matrix_offset = (matrix_index % matrices_per_row) * 4u; // Умножаем на 4, так как 1 матрица = 4 пикселя
+    let col_matrix_offset = (matrix_index % matrices_per_row) * 4u;
 
-    // Считываем 4 последовательных пикселя (строки матрицы)
     let y = i32(row);
     let x = i32(col_matrix_offset);
     
@@ -99,7 +97,6 @@ fn read_baked_matrix(matrix_index: u32) -> mat4x4<f32> {
     let row2 = textureLoad(global_joint_texture, vec2<i32>(x + 2, y), 0);
     let row3 = textureLoad(global_joint_texture, vec2<i32>(x + 3, y), 0);
 
-    // Собираем матрицу 4x4
     return mat4x4<f32>(row0, row1, row2, row3);
 }
 
