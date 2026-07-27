@@ -45,7 +45,7 @@ impl Resources {
         depth_stencil: Option<wgpu::DepthStencilState>,
         primitives_count: usize,
         commands_count: usize,
-        init_data: &InitData,
+        init_data: &mut InitData,
     ) -> Self {                        
         let mega_vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Mega Vertex Buffer"),
@@ -243,10 +243,17 @@ impl Resources {
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::VERTEX,
+                    /*
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
                         min_binding_size: None,
+                    },
+                    */
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
                     },
                     count: None,
                 },
@@ -573,6 +580,8 @@ impl Resources {
             ],
         });
 
+        let matrix_texture_view = Self::load_matrices_into_texture(device, queue, &mut init_data.joints);
+
         let gpu_driven_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("GPU Driven Render Bind Group"),
             layout: &gpu_driven_bind_group_layout, // @group(2)
@@ -583,7 +592,8 @@ impl Resources {
                 },                
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: joints_buffer.as_entire_binding(),
+                    //resource: joints_buffer.as_entire_binding(),
+                    resource: wgpu::BindingResource::TextureView(&matrix_texture_view),
                 },                
                 wgpu::BindGroupEntry {
                     binding: 2,
@@ -620,7 +630,7 @@ impl Resources {
     }
 
     pub fn init(
-        self: &Resources,
+        &self,
         queue: &wgpu::Queue,
         vertices: &[Vertex],
         indices: &[u32],
@@ -632,9 +642,78 @@ impl Resources {
         queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));
         queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));
     }
+  
+    pub fn load_matrices_into_texture(device: &wgpu::Device, queue: &wgpu::Queue, joint_matrices: &mut Vec<Mat4>) -> wgpu::TextureView {
+        let mut total_matrices = joint_matrices.len() as u32;
+
+        // 2. Расчет геометрии текстуры
+        let texture_width = 2048u32; 
+        let pixels_per_matrix = 4u32;
+        let matrices_per_row = texture_width / pixels_per_matrix; // 512 матриц в строке
+
+        // Вычисляем высоту текстуры с округлением вверх, чтобы влезли все матрицы
+        let texture_height = ((total_matrices as f32) / (matrices_per_row as f32)).ceil() as u32;
+        let texture_height = texture_height.max(1); // Высота не должна быть нулевой
+
+        // ФИКС: Вычисляем, сколько всего матриц должно быть, чтобы полностью заполнить текстуру
+        let required_total_matrices = (matrices_per_row * texture_height) as usize;
+
+        // ФИКС: Если матриц меньше, добиваем исходный вектор дефолтными (нулевыми или identity) матрицами
+        if joint_matrices.len() < required_total_matrices {
+            // Используем Mat4::default() или вашу identity-матрицу. Для текстуры подойдут и нули.
+            joint_matrices.resize(required_total_matrices, Mat4::IDENTITY);
+        }
+
+        let matrix_texture_size = wgpu::Extent3d {
+            width: texture_width,
+            height: texture_height,
+            depth_or_array_layers: 1,
+        };
+
+        // 3. Создание HDR текстуры под матрицы
+        let matrix_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Global Joint Matrix Texture"),
+            size: matrix_texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba32Float, // ВАЖНО: 32-битные флоаты для сохранения точности
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        // 4. Подготовка данных для отправки на GPU
+        // Теперь срез гарантированно имеет правильный размер, кратный ширине строки текстуры
+        let matrix_bytes: &[u8] = bytemuck::cast_slice(joint_matrices);
+
+        // Считаем шаг строки в байтах: 2048 пикселей * 16 байт на пиксель (4 канала * 4 байта f32)
+        let bytes_per_pixel = 16u32;
+        let bytes_per_row = texture_width * bytes_per_pixel; // 32768 байт
+
+        // 5. Загрузка матриц в текстуру
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &matrix_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            matrix_bytes, 
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(bytes_per_row),     
+                rows_per_image: Some(texture_height),   
+            },
+            matrix_texture_size,
+        );
+
+        // 6. Создание View для передачи в Bind Group
+        matrix_texture.create_view(&wgpu::TextureViewDescriptor::default())        
+    }
+
 
     pub fn load_frame(
-        self: &Resources,
+        &self,
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
         camera: &Camera,
@@ -680,14 +759,14 @@ impl Resources {
     }
 
     pub fn clear_gpu_driven_frame(
-        self: &Resources,
+        &self,
         compute_pass: &mut ComputePass,        
     ) {
         self.clear_commands_pipeline.compute(compute_pass);     
     }
 
     pub fn compute_gpu_driven_frame(
-        self: &Resources,
+        &self,
         compute_pass: &mut ComputePass,
         culling_tasks: &[CullingTask]
     ) {
@@ -699,7 +778,7 @@ impl Resources {
     }
 
     pub fn draw_gpu_driven_frame(
-        self: &Resources,
+        &self,
         render_pass: &mut RenderPass,
         commands: &[DrawIndexedIndirectCommand]
     ) {        

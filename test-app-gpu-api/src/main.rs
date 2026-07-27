@@ -211,7 +211,7 @@ async fn run() {
     let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state,
         registered_primitives.len(), 
         indirect_commands.len(),
-        &init_data
+        &mut init_data
     );
 
     let mut object_group = ObjectGroup {
@@ -732,10 +732,10 @@ async fn run() {
                                                     joint_matrices_slice.copy_from_slice(bytemuck::cast_slice(&object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index]));
                                                 }
 
-                                                let q = &object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index];
+                                                //let q = &object.animations[animation_index].joint_matrices[object.animations[animation_index].frame_index];
                                                 
-                                                init_data.joints.clear();
-                                                init_data.joints.extend_from_slice(q);
+                                                //init_data.joints.clear();
+                                                //init_data.joints.extend_from_slice(q);
                                                 init_data.nodes.clear();
 
                                                 for mesh in &object.meshes {

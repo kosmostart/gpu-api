@@ -749,20 +749,7 @@ impl Object {
                         frame_index = 0;
                         channel.frame_index = 0;
                         channel.channel_time = 0.0;
-                    }                
-        
-                    /*
-                    if frame_index == channel.timestamps.len() {
-                        frame_index = 0;
-                        channel.frame_index = 0;
-                        #[cfg(not(target_arch = "wasm32"))] {
-                            channel.start_instant = std::time::Instant::now();
-                        }                                                    
-                        #[cfg(target_arch = "wasm32")] {
-                            channel.start_instant = web_time::Instant::now();
-                        }
-                    }
-                    */
+                    }                        
         
                     let previous_frame_index = match frame_index {
                         0 => 0,
@@ -814,7 +801,8 @@ impl Object {
                 for joint in &skins[skin_index].joints {
                     let joint_matrix = nodes[joint.node_index].global_transform_matrix * joint.inverse_bind_matrix;
 
-                    joint_matrices[joint_matrix_index] = joint_matrix;
+                    init_data.joints.push(joint_matrix);
+                    joint_matrices[joint_matrix_index] = joint_matrix;                
 
                     joint_matrix_index = joint_matrix_index + 1;
                 }            

@@ -32,7 +32,8 @@ struct NodeData {
     transform: mat4x4<f32>,
 };
 @group(2) @binding(0) var<storage, read> global_nodes: array<NodeData>;
-@group(2) @binding(1) var<storage, read> global_joint_matrices: array<mat4x4<f32>>;
+//@group(2) @binding(1) var<storage, read> global_joint_matrices: array<mat4x4<f32>>;
+@group(2) @binding(1) var global_joint_texture: texture_2d<f32>;
 
 struct InstanceData {
     model_matrix: mat4x4<f32>,
@@ -81,6 +82,27 @@ struct FragmentInput {
     @location(5) @interpolate(flat) material_index: u32, 
 };
 
+fn read_baked_matrix(matrix_index: u32) -> mat4x4<f32> {
+    let texture_width: u32 = 2048u;
+    let matrices_per_row: u32 = texture_width / 4u; // 512 матриц в строке
+
+    // Находим строку и колонку, где начинается наша матрица
+    let row = matrix_index / matrices_per_row;
+    let col_matrix_offset = (matrix_index % matrices_per_row) * 4u; // Умножаем на 4, так как 1 матрица = 4 пикселя
+
+    // Считываем 4 последовательных пикселя (строки матрицы)
+    let y = i32(row);
+    let x = i32(col_matrix_offset);
+    
+    let row0 = textureLoad(global_joint_texture, vec2<i32>(x + 0, y), 0);
+    let row1 = textureLoad(global_joint_texture, vec2<i32>(x + 1, y), 0);
+    let row2 = textureLoad(global_joint_texture, vec2<i32>(x + 2, y), 0);
+    let row3 = textureLoad(global_joint_texture, vec2<i32>(x + 3, y), 0);
+
+    // Собираем матрицу 4x4
+    return mat4x4<f32>(row0, row1, row2, row3);
+}
+
 @vertex
 fn vs_main(
     vertex_input: VertexInput, 
@@ -100,11 +122,24 @@ fn vs_main(
             let j2 = instance.joints_offset + vertex_input.joints[2];
             let j3 = instance.joints_offset + vertex_input.joints[3];
 
+            let m0 = read_baked_matrix(j0);
+            let m1 = read_baked_matrix(j1);
+            let m2 = read_baked_matrix(j2);
+            let m3 = read_baked_matrix(j3);
+
+            var skin_matrix: mat4x4<f32> = 
+                vertex_input.weights[0] * m0 + 
+                vertex_input.weights[1] * m1 + 
+                vertex_input.weights[2] * m2 + 
+                vertex_input.weights[3] * m3;
+
+            /*
             var skin_matrix: mat4x4<f32> = 
                 vertex_input.weights[0] * global_joint_matrices[j0] +
                 vertex_input.weights[1] * global_joint_matrices[j1] +
                 vertex_input.weights[2] * global_joint_matrices[j2] +
                 vertex_input.weights[3] * global_joint_matrices[j3];
+            */
 
             model_matrix = model_matrix * skin_matrix * node.transform;            
         }        
