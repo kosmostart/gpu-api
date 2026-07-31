@@ -184,6 +184,20 @@ pub struct InitData {
     pub nodes: Vec<NodeData>,
 }
 
+impl InitData {
+    pub fn new() -> Self {
+        Self {
+            vertices: Vec::new(),
+            indices: Vec::new(),
+            factors: Vec::new(),
+            materials: Vec::new(),
+            instances: Vec::new(),
+            joints: Vec::new(),
+            nodes: Vec::new(),
+        }
+    }
+}
+
 pub struct MaterialData {    
     pub textures: Vec<(TextureType, Texture)>,
 }

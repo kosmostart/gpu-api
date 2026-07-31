@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use gpu_api_relay::model_bindless_data::Vertex;
 use wgpu::{Device, RenderPipeline, Buffer, BindGroup, ShaderModule, BindGroupLayout, PipelineLayout, TextureFormat, RenderPass, Sampler};
 use wgpu::util::DeviceExt;
-use crate::camera::{Camera, CameraUniform};
+use gpu_api_relay::model_bindless_data::CameraUniform;
 use crate::pipeline::model_pipeline::model_instance::ModelInstance;
 use crate::texture::Texture;
 use model::ObjectGroup;

@@ -1,4 +1,17 @@
-use glam::Mat4;
+use glam::{Mat4, Vec4};
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CameraUniform {
+    pub camera_position: [f32; 3],
+    pub padding: u32,
+    pub view: Mat4,
+    pub projection: Mat4,
+    pub frustum: [Vec4; 6],
+}
+
+unsafe impl bytemuck::Pod for CameraUniform {}
+unsafe impl bytemuck::Zeroable for CameraUniform {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

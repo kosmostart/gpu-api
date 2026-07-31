@@ -1,6 +1,6 @@
 use std::mem;
 use wgpu::{DepthStencilState, RenderPass, TextureFormat, util::DeviceExt};
-use crate::camera::CameraUniform;
+use gpu_api_relay::model_bindless_data::CameraUniform;
 
 pub const LINE_VERTICES_COUNT: u64 = 20000;
 

@@ -1,19 +1,7 @@
 use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 use glam::camera::rh::proj::directx::perspective;
 use glam::camera::rh::view::look_at_mat4;
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct CameraUniform {
-    pub camera_position: [f32; 3],
-    pub padding: u32,
-    pub view: Mat4,
-    pub projection: Mat4,
-    pub frustum: [Vec4; 6],
-}
-
-unsafe impl bytemuck::Pod for CameraUniform {}
-unsafe impl bytemuck::Zeroable for CameraUniform {}
+use gpu_api_relay::model_bindless_data::CameraUniform;
 
 pub struct Camera {    
     pub angle_y: f32,
@@ -29,6 +17,16 @@ pub struct Camera {
 }
 
 impl Camera {
+    pub fn get_uniform(&self) -> CameraUniform {
+        CameraUniform {
+            camera_position: self.position.to_array(),
+            padding: 0,
+            view: self.view,
+            projection: self.projection,
+            frustum: gpu_api_relay::frustum::Frustum::to_uniform(self.projection),
+        }
+    }
+
     pub fn update(&mut self, width: f32, height: f32) {
         let (camera_position, focus_point, projection_source, view, projection) = generate_projection(width, height, self.focus_point.x, self.focus_point.y, self.focus_point.z, self.angle_xz, self.angle_y, self.dist);
 

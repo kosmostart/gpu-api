@@ -4,7 +4,8 @@ use gpu_api_dto::TextureType;
 use gpu_api_relay::model_bindless_data::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, Vertex, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}};
-use crate::{camera::{Camera, CameraUniform}, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}}};
+use crate::{camera::Camera, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}}};
+use gpu_api_relay::model_bindless_data::CameraUniform;
 
 pub const MAX_VERTICES: u64 = 1_000_000;
 pub const MAX_INDICES: u64 = 3_000_000;
@@ -715,13 +716,7 @@ impl Resources {
         culling_tasks: &[CullingTask],
     ) {
         {                                                                                            
-            let camera_uniform = CameraUniform {
-                camera_position: camera.position.to_array(),
-                padding: 0,
-                view: camera.view,
-                projection: camera.projection,
-                frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
-            };
+            let camera_uniform = camera.get_uniform();
 
             let mut model_camera_slice = staging_belt.write_buffer(
                 encoder,

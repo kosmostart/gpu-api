@@ -9,7 +9,7 @@ use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, Memory
 use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLoopExtWebSys}};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
-use gpu_api::{camera::{CameraUniform, create_camera}, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, line_pipeline::LineVertex, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{Object, ObjectGroup}}, solid_quad_pipeline::{self, Transformation}}};
+use gpu_api::{camera::create_camera, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, line_pipeline::LineVertex, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{Object, ObjectGroup}}, solid_quad_pipeline::{self, Transformation}}};
 use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
@@ -143,13 +143,7 @@ async fn run() {
 
     let mut camera = create_camera(layout.size.width as f32, layout.size.height as f32, angle_xz, angle_y, dist, 0.0, 0.0, 0.0);
 
-    let camera_uniform = CameraUniform {
-        camera_position: camera.position.to_array(),
-        padding: 0,
-        view: camera.view,
-        projection: camera.projection,
-        frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
-    };
+    let camera_uniform = camera.get_uniform();
     
     let model_pipeline = pipeline::model_pipeline::new(&device, &config, &camera_uniform, model_depth_stencil_state.clone());    
     
@@ -543,13 +537,7 @@ async fn run() {
                             camera.update(layout.size.width as f32, layout.size.height as f32);
             
                             {                                                                                            
-                                let camera_uniform = CameraUniform {
-                                    camera_position: camera.position.to_array(),
-                                    padding: 0,
-                                    view: camera.view,
-                                    projection: camera.projection,
-                                    frustum: gpu_api_relay::frustum::Frustum::to_uniform(camera.projection),
-                                };
+                                let camera_uniform = camera.get_uniform();
 
                                 let mut model_camera_slice = staging_belt.write_buffer(
                                     &mut encoder,
