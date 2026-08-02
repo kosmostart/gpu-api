@@ -78,7 +78,8 @@ async fn run() {
             &DeviceDescriptor {
                 label: None,
                 //required_features: wgpu::Features::empty(),
-                required_features: wgpu::Features::TEXTURE_FORMAT_16BIT_NORM |
+                required_features:
+                    wgpu::Features::TEXTURE_FORMAT_16BIT_NORM |
                     wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING |
                     wgpu::Features::TEXTURE_BINDING_ARRAY,
                 required_limits: if cfg!(target_arch = "wasm32") {
@@ -92,7 +93,7 @@ async fn run() {
                 },
                 experimental_features: ExperimentalFeatures::disabled(),
                 memory_hints: MemoryHints::Performance,
-                trace: wgpu::Trace::Off
+                trace: wgpu::Trace::Off,
             })
         .await
         .expect("Failed to create device");    
@@ -172,7 +173,7 @@ async fn run() {
     let position = vec3(view_source.x, view_source.y, view_source.z);
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
     
-    let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));    
+    let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));
 
     test_world.add_object(position, InstanceData {
         model_matrix: object.model_instances[0].model_matrix,
@@ -823,7 +824,7 @@ async fn run() {
                                         occlusion_query_set: None,
                                         multiview_mask: None
                                     }
-                                );                                                        
+                                );
             
                                 model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
                                 //model_pipeline.draw(&mut render_pass, &object_groups);
