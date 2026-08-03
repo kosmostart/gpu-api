@@ -38,8 +38,7 @@ pub struct Pipeline {
     pub normal_sampler: Sampler,
     pub metallic_roughness_sampler: Sampler,
     pub emissive_sampler: Sampler,
-    pub depth_texture: Texture,
-    pub depth_sampler: Sampler,
+    pub depth_texture: Texture,    
     pub camera_buffer: Buffer,
     pub camera_bind_group_layout: BindGroupLayout,
     pub camera_bind_group: BindGroup,
@@ -402,8 +401,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
         cache: None
     });
 
-    let depth_texture = Texture::create_depth_texture(device, config, "Depth texture");
-    let depth_sampler = Texture::create_depth_samper(device);
+    let depth_texture = Texture::create_depth_texture(device, config, "Depth texture");    
 
     Pipeline {
         shader,
@@ -412,8 +410,7 @@ pub fn new(device: &Device, config: &wgpu::SurfaceConfiguration, camera_uniform:
         normal_sampler,        
         metallic_roughness_sampler,
         emissive_sampler,
-        depth_texture,
-        depth_sampler,
+        depth_texture,        
         camera_buffer,
         camera_bind_group_layout,
         camera_bind_group,
