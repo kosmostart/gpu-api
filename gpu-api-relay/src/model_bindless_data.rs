@@ -14,7 +14,7 @@ unsafe impl bytemuck::Pod for CameraUniform {}
 unsafe impl bytemuck::Zeroable for CameraUniform {}
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Vertex {    
     pub position: [f32; 3],    
     pub uv: [f32; 2],

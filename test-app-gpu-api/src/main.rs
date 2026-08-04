@@ -11,6 +11,7 @@ use winit::{event_loop::EventLoopProxy, platform::web::{WindowExtWebSys, EventLo
 use tokio::runtime::Runtime;
 use gpu_api::{camera::create_camera, frame_counter::FrameCounter, pipeline::{self, image_pipeline::{self, ImageObject, ImageQuad}, line_pipeline::LineVertex, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{Object, ObjectGroup}}, solid_quad_pipeline::{self, Transformation}}};
 use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
+use world::world::World;
 
 pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
 pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
@@ -201,7 +202,7 @@ async fn run() {
         }
     ];
 
-    let indirect_commands = test_world.generate_initial_indirect_commands(&registered_primitives);
+    let indirect_commands = World::generate_initial_indirect_commands(&registered_primitives);
 
     let model_bindless_resources = pipeline::model_bindless_pipeline::Resources::new(&device, &queue, &camera_uniform, model_depth_stencil_state,
         registered_primitives.len(), 

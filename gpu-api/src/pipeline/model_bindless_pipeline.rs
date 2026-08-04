@@ -717,22 +717,13 @@ impl Resources {
     ) {
         {                                                                                            
             let camera_uniform = camera.get_uniform();
-
-            let mut model_camera_slice = staging_belt.write_buffer(
+            let mut camera_slice = staging_belt.write_buffer(
                 encoder,
                 &self.camera_buffer,
                 0,
-                wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate model camera slice")                                    
+                wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate bindless camera slice")
             );            
-            model_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
-
-            let mut line_camera_slice = staging_belt.write_buffer(
-                encoder,
-                &self.camera_buffer,
-                0,
-                wgpu::BufferSize::new(CAMERA_UNIFORM_SIZE).expect("Failed to allocate line camera slice")                                    
-            );            
-            line_camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
+            camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
         }
 
         queue.write_buffer(&self.instances_buffer, 0, bytemuck::cast_slice(instances));
