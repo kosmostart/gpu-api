@@ -1,3 +1,4 @@
+use wincode::{SchemaRead, SchemaWrite};
 use glam::{Mat4, Vec4};
 
 #[repr(C)]
@@ -113,7 +114,7 @@ unsafe impl bytemuck::Pod for MaterialFactors {}
 unsafe impl bytemuck::Zeroable for MaterialFactors {}
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, SchemaWrite, SchemaRead)]
 pub struct DrawIndexedIndirectCommand {
     /// Number of indices per mesh
     pub index_count: u32,
@@ -145,19 +146,19 @@ impl FrameData {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, SchemaWrite, SchemaRead)]
 pub struct SurfaceVertex {
     pub position: [f32; 3],
-    pub _pad0: f32, // Явный паддинг до 16 байт
+    pub _pad0: f32,
     pub normal: [f32; 3],
-    pub _pad1: f32, // Явный паддинг до 16 байт
+    pub _pad1: f32,
 }
 
 unsafe impl bytemuck::Pod for SurfaceVertex {}
 unsafe impl bytemuck::Zeroable for SurfaceVertex {}
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, SchemaWrite, SchemaRead)]
 pub struct TerrainMeshletDescription {
     pub aabb_min: [f32; 3],
     pub vertex_offset: u32, // Смещение начала вершин этого мешлета в буфере чанка
@@ -173,6 +174,14 @@ pub struct TerrainMeshletDescription {
 
 unsafe impl bytemuck::Pod for TerrainMeshletDescription {}
 unsafe impl bytemuck::Zeroable for TerrainMeshletDescription {}
+
+#[derive(Clone, Debug, Default, SchemaWrite, SchemaRead)]
+pub struct SurfaceData {
+    pub vertices: Vec<SurfaceVertex>,
+    pub indices: Vec<u32>,
+    pub meshlets: Vec<TerrainMeshletDescription>,
+    pub indirect_commands: Vec<DrawIndexedIndirectCommand>,
+}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default)]

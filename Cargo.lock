@@ -1223,6 +1223,7 @@ dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "glam",
+ "wincode",
 ]
 
 [[package]]
@@ -1751,6 +1752,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mesh"
+version = "0.1.0"
+dependencies = [
+ "bounds",
+ "data-arena",
+ "glam",
+ "hexasphere",
+ "log",
+ "parry3d",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "wincode",
+]
+
+[[package]]
 name = "mesh-animation"
 version = "0.1.0"
 dependencies = [
@@ -1771,6 +1788,7 @@ dependencies = [
  "glam",
  "hexasphere",
  "log",
+ "mesh",
  "parry3d",
  "serde",
  "serde_derive",
@@ -1793,6 +1811,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "wincode",
 ]
 
 [[package]]

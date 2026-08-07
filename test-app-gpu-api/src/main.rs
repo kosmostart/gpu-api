@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
 use glam::{Mat4, Vec3, vec3};
-use gpu_api_relay::model_bindless_data::{InstanceData, NodeData, PrimitiveMeta, TerrainCullingTask};
+use gpu_api_relay::model_bindless_data::{InstanceData, NodeData, PrimitiveMeta, SurfaceData, TerrainCullingTask};
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};
@@ -231,14 +231,10 @@ async fn run() {
     };
     test_world.cull(&frustum, camera.position, &mut frame_data);
 
-    let mut vertices = Vec::new();
-    let mut indices = Vec::new();
-    let mut meshlets = Vec::new();
-    let mut surface_indirect_commands = Vec::new();
+    let mut surface_data = SurfaceData::default();
+    mesh_gen::terrain::generate_terrain_lod_meshlets(Vec3::ZERO, 0, 0, &mut surface_data);
 
-    mesh_gen::terrain::generate_terrain_lod_meshlets(Vec3::ZERO, 0, 0, &mut vertices, &mut indices, &mut meshlets, &mut surface_indirect_commands);
-
-    surface_resources.init(&queue, &vertices, &indices, &meshlets, &init_data.factors, &surface_indirect_commands);
+    surface_resources.init(&queue, &surface_data.vertices, &surface_data.indices, &surface_data.meshlets, &init_data.factors, &surface_data.indirect_commands);
     
     let mut surface_culling_tasks = Vec::new();    
     let mut culling_tasks = Vec::new();
@@ -246,7 +242,7 @@ async fn run() {
 
     surface_culling_tasks.push(TerrainCullingTask {
         start_meshlet_index: 0,
-        meshlet_count: meshlets.len() as u32,
+        meshlet_count: surface_data.meshlets.len() as u32,
         indirect_cmd_index: 0,
         _padding: 0,
     });
@@ -871,7 +867,7 @@ async fn run() {
                                     }
                                 );
             
-                                surface_resources.draw_gpu_driven_frame(&mut render_pass, &surface_indirect_commands);
+                                surface_resources.draw_gpu_driven_frame(&mut render_pass, &surface_data.indirect_commands);
                                 model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
                                 //model_pipeline.draw(&mut render_pass, &object_groups);
                                 line_pipeline.draw(&mut render_pass, line_indices.len() as u32);
