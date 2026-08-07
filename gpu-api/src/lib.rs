@@ -9,4 +9,5 @@ pub mod pipeline {
     pub mod model_pipeline;
     pub mod model_bindless_pipeline;
     pub mod clear_commands_pipeline;
+    pub mod surface_bindless_pipeline;
 }

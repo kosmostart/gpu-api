@@ -21,6 +21,7 @@ model-load = { path = "../model-load" }
 gpu-api-relay = { path = "../gpu-api-relay" }
 world = { path = "../../world/world" }
 bounds = { path = "../../bounds" }
+mesh-gen = { path = "../../cgi/mesh-gen" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wgpu = "*"

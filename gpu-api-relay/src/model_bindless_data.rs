@@ -143,3 +143,49 @@ impl FrameData {
         self.joints.clear();
     }
 }
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct SurfaceVertex {
+    pub position: [f32; 3],
+    pub _pad0: f32, // Явный паддинг до 16 байт
+    pub normal: [f32; 3],
+    pub _pad1: f32, // Явный паддинг до 16 байт
+}
+
+unsafe impl bytemuck::Pod for SurfaceVertex {}
+unsafe impl bytemuck::Zeroable for SurfaceVertex {}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TerrainMeshletDescription {
+    pub aabb_min: [f32; 3],
+    pub vertex_offset: u32, // Смещение начала вершин этого мешлета в буфере чанка
+    
+    pub aabb_max: [f32; 3],
+    pub index_offset: u32,  // Смещение в глобальном буфере индексов
+    
+    pub index_count: u32,   // Всегда 294 для сетки 8x8
+    pub material_index: u32,
+    pub pad0: u32,          // Выравнивание до 16 байт (std430)
+    pub pad1: u32,
+}
+
+unsafe impl bytemuck::Pod for TerrainMeshletDescription {}
+unsafe impl bytemuck::Zeroable for TerrainMeshletDescription {}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default)]
+pub struct TerrainCullingTask {
+    /// Индекс в глобальном `meshlets_buffer`, с которого этот таск начинает проверку
+    pub start_meshlet_index: u32,
+    /// Сколько мешлетов нужно проверить в рамках этой задачи
+    pub meshlet_count: u32,
+    /// Индекс в массиве счетчиков/команд (в нашей схеме с draw_counts[0] здесь обычно 0)
+    pub indirect_cmd_index: u32,
+    /// Явное выравнивание (padding) до 16 байт, чтобы размер структуры был предсказуем
+    pub _padding: u32,
+}
+
+unsafe impl bytemuck::Pod for TerrainCullingTask {}
+unsafe impl bytemuck::Zeroable for TerrainCullingTask {}
