@@ -662,12 +662,7 @@ impl SurfaceBindlessResources {
         render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
         render_pass.set_bind_group(2, &self.render_bind_group, &[]);                 
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        
-        render_pass.multi_draw_indexed_indirect(
-            &self.indirect_commands_buffer,
-            0,
-            commands.len() as u32,
-        );
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);        
+        render_pass.multi_draw_indexed_indirect(&self.indirect_commands_buffer, 0, commands.len() as u32);
     }
 }
