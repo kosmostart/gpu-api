@@ -216,8 +216,7 @@ async fn run() {
     let indirect_commands = World::generate_initial_indirect_commands(&registered_primitives);
 
     let model_bindless_resources = pipeline::model_bindless_pipeline::ModelBindlessResources::new(&device, &queue, &camera_uniform, model_depth_stencil_state,
-        registered_primitives.len(), 
-        indirect_commands.len(),
+        registered_primitives.len(),
         &mut init_data
     );
 
@@ -789,14 +788,10 @@ async fn run() {
                                     }
                                 }
                             }
+                                                        
+                            surface_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &surface_culling_tasks);
+                            surface_resources.clear_gpu_driven_frame(&mut encoder);
                             
-                            // 1. Подготовка кадра (Запись камеры)
-                            surface_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &surface_culling_tasks);                            
-
-                            // 2. Аппаратный сброс счетчиков во VRAM
-                            surface_resources.clear_gpu_driven_frame(&queue);
-
-                            // 3. Пасс Куллинга
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                                     label: Some("Model Bindless clear Pass"),
@@ -817,7 +812,6 @@ async fn run() {
                             model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes,
                                 //&init_data.joints,
                                 &culling_tasks);
-
                             model_bindless_resources.clear_gpu_driven_frame(&mut encoder);
 
                             /*                                

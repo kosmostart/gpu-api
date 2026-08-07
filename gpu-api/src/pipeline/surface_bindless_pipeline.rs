@@ -27,6 +27,7 @@ pub struct SurfaceBindlessResources {
     pub culling_tasks_buffer: wgpu::Buffer,
     pub active_meshlets_buffer: wgpu::Buffer,
     
+    pub indirect_commands_template_buffer: wgpu::Buffer,
     pub indirect_commands_buffer: wgpu::Buffer,
     
     pub culling_compute_pipeline: wgpu::ComputePipeline,
@@ -93,7 +94,14 @@ impl SurfaceBindlessResources {
             size: active_meshlets_buffer_size,            
             usage: wgpu::BufferUsages::STORAGE, 
             mapped_at_creation: false,
-        });   
+        });
+
+        let indirect_commands_template_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Indirect Commands Buffer"),
+            size: (MAX_MESHLETS_IN_SCENE * size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
         let indirect_commands_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Terrain Single Indirect Command Buffer"),
@@ -571,12 +579,13 @@ impl SurfaceBindlessResources {
             meshlets_buffer,
             camera_buffer,
             materials_buffer,
-            culling_tasks_buffer,            
+            culling_tasks_buffer,
+            indirect_commands_template_buffer,
             indirect_commands_buffer,
-            culling_compute_pipeline,            
+            culling_compute_pipeline,
             render_pipeline,
             materials_bind_group,
-            active_meshlets_buffer,            
+            active_meshlets_buffer,
             camera_bind_group,
             culling_compute_bind_group,
             render_bind_group,
@@ -593,10 +602,11 @@ impl SurfaceBindlessResources {
         indirect_commands: &[DrawIndexedIndirectCommand]
     ) {        
         queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(vertices));
-        queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(indices));                
-        queue.write_buffer(&self.meshlets_buffer, 0, bytemuck::cast_slice(meshlets));                
-        queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));        
-        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));        
+        queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(indices));
+        queue.write_buffer(&self.meshlets_buffer, 0, bytemuck::cast_slice(meshlets));
+        queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));
+        queue.write_buffer(&self.indirect_commands_template_buffer, 0, bytemuck::cast_slice(indirect_commands));
+        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));
     }
 
     pub fn load_frame(
@@ -623,7 +633,14 @@ impl SurfaceBindlessResources {
         }        
     }
 
-    pub fn clear_gpu_driven_frame(&self, queue: &wgpu::Queue) {        
+    pub fn clear_gpu_driven_frame(&self, encoder: &mut wgpu::CommandEncoder) {
+        encoder.copy_buffer_to_buffer(
+            &self.indirect_commands_template_buffer,
+            0,
+            &self.indirect_commands_buffer,
+            0,
+            self.indirect_commands_buffer.size(), 
+        );
     }
 
     pub fn compute_gpu_driven_frame(

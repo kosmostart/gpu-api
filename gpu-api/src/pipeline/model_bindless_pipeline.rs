@@ -53,8 +53,7 @@ impl ModelBindlessResources {
         queue: &wgpu::Queue,        
         camera_uniform: &CameraUniform,
         depth_stencil: Option<wgpu::DepthStencilState>,
-        primitives_count: usize,
-        commands_count: usize,
+        primitives_count: usize,        
         init_data: &mut InitData,
     ) -> Self {                        
         let mega_vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -625,7 +624,7 @@ impl ModelBindlessResources {
             ],
         });
 
-        let clear_commands_pipeline = ClearCommandsPipeline::new(device, &indirect_commands_buffer, commands_count as u32);
+        //let clear_commands_pipeline = ClearCommandsPipeline::new(device, &indirect_commands_buffer, commands_count as u32);
 
         Self {    
             mega_vertex_buffer,
