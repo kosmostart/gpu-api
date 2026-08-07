@@ -60,20 +60,15 @@ struct FragmentInput {
 
 @vertex
 fn vs_main(
-    @builtin(vertex_index) vertex_idx: u32,
-    @builtin(instance_index) instance_idx: u32
+    @builtin(vertex_index) vertex_id: u32,
+    @builtin(instance_index) meshlet_id: u32
 ) -> FragmentInput {            
-    let meshlet_id = active_meshlets[instance_idx];
     let meshlet = terrain_meshlets[meshlet_id];
-        
-    let global_index_pos = meshlet.index_offset + vertex_idx;
-    let local_vertex_id = terrain_indices[global_index_pos];
-    
-    let global_vertex_id = meshlet.vertex_offset + local_vertex_id;
-    let vertex = terrain_vertices[global_vertex_id];
+    let vertex = terrain_vertices[vertex_id];
 
     var out: FragmentInput;
     let world_pos = vec4<f32>(vertex.position, 1.0);
+        
     out.clip_position = camera.projection * world_pos;
     out.world_position = world_pos.xyz;
     out.normal = vertex.normal;

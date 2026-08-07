@@ -86,27 +86,20 @@ impl SurfaceBindlessResources {
             mapped_at_creation: false,
         });
         
-        let active_meshlets_buffer_size = (MAX_MESHLETS_IN_SCENE * std::mem::size_of::<u32>()) as wgpu::BufferAddress;
+        let active_meshlets_buffer_size = (MAX_MESHLETS_IN_SCENE * size_of::<u32>()) as wgpu::BufferAddress;
         
         let active_meshlets_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Terrain Active Meshlets Buffer"),
             size: active_meshlets_buffer_size,            
             usage: wgpu::BufferUsages::STORAGE, 
             mapped_at_creation: false,
-        });
+        });   
 
-        let terrain_draw_cmd = wgpu::util::DrawIndexedIndirectArgs {
-            index_count: 294,
-            instance_count: 0,
-            first_index: 0,
-            base_vertex: 0,
-            first_instance: 0,
-        };
-
-        let indirect_commands_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let indirect_commands_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Terrain Single Indirect Command Buffer"),
-            contents: bytemuck::bytes_of(&terrain_draw_cmd),
+            size: (MAX_MESHLETS_IN_SCENE * size_of::<DrawIndexedIndirectCommand>()) as wgpu::BufferAddress,            
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::INDIRECT | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
         
         let culling_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -597,11 +590,13 @@ impl SurfaceBindlessResources {
         indices: &[u32],
         meshlets: &[TerrainMeshletDescription],
         material_factors: &[MaterialFactors],
+        indirect_commands: &[DrawIndexedIndirectCommand]
     ) {        
         queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(vertices));
         queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(indices));                
         queue.write_buffer(&self.meshlets_buffer, 0, bytemuck::cast_slice(meshlets));                
         queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));        
+        queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));        
     }
 
     pub fn load_frame(
@@ -623,13 +618,12 @@ impl SurfaceBindlessResources {
             camera_slice.copy_from_slice(bytemuck::bytes_of(&camera_uniform));
         }
 
-        if culling_tasks.is_empty() == false {
+        if !culling_tasks.is_empty() {
             queue.write_buffer(&self.culling_tasks_buffer, 0, bytemuck::cast_slice(culling_tasks));
         }        
     }
 
     pub fn clear_gpu_driven_frame(&self, queue: &wgpu::Queue) {        
-        queue.write_buffer(&self.indirect_commands_buffer, 4, bytemuck::bytes_of(&0u32));
     }
 
     pub fn compute_gpu_driven_frame(
@@ -643,12 +637,17 @@ impl SurfaceBindlessResources {
         compute_pass.dispatch_workgroups(total_tasks_count, 1, 1);
     }
 
-    pub fn draw_gpu_driven_frame(&self, render_pass: &mut wgpu::RenderPass) {        
+    pub fn draw_gpu_driven_frame(&self, render_pass: &mut wgpu::RenderPass, total_meshlets_count: u32) {        
         render_pass.set_pipeline(&self.render_pipeline);        
         render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
         render_pass.set_bind_group(2, &self.render_bind_group, &[]);                 
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);                
-        render_pass.draw_indexed_indirect(&self.indirect_commands_buffer, 0);
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        
+        render_pass.multi_draw_indexed_indirect(
+            &self.indirect_commands_buffer,
+            0,
+            total_meshlets_count,
+        );
     }
 }

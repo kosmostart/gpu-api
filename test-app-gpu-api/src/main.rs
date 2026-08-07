@@ -235,10 +235,11 @@ async fn run() {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut meshlets = Vec::new();
+    let mut surface_indirect_commands = Vec::new();
 
-    mesh_gen::terrain::generate_terrain_lod_meshlets(Vec3::ZERO, 0, 0, &mut vertices, &mut indices, &mut meshlets);
+    mesh_gen::terrain::generate_terrain_lod_meshlets(Vec3::ZERO, 0, 0, &mut vertices, &mut indices, &mut meshlets, &mut surface_indirect_commands);
 
-    surface_resources.init(&queue, &vertices, &indices, &meshlets, &init_data.factors);
+    surface_resources.init(&queue, &vertices, &indices, &meshlets, &init_data.factors, &surface_indirect_commands);
     
     let mut surface_culling_tasks = Vec::new();    
     let mut culling_tasks = Vec::new();
@@ -876,7 +877,7 @@ async fn run() {
                                     }
                                 );
             
-                                surface_resources.draw_gpu_driven_frame(&mut render_pass);
+                                surface_resources.draw_gpu_driven_frame(&mut render_pass, meshlets.len() as u32);
                                 model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
                                 //model_pipeline.draw(&mut render_pass, &object_groups);
                                 line_pipeline.draw(&mut render_pass, line_indices.len() as u32);

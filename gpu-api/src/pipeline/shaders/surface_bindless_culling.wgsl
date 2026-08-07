@@ -24,9 +24,9 @@ struct TerrainCullingTask {
     _padding: u32,
 };
 
-struct DrawIndexedIndirectCmd {
+struct DrawIndexedIndirectCommand {
     index_count: u32,
-    instance_count: atomic<u32>,
+    instance_count: u32,
     first_index: u32,
     base_vertex: u32,
     first_instance: u32,
@@ -36,10 +36,7 @@ struct DrawIndexedIndirectCmd {
 @group(1) @binding(0) var<storage, read> terrain_tasks: array<TerrainCullingTask>;
 @group(1) @binding(1) var<storage, read> terrain_meshlets: array<TerrainMeshletDescription>;
 
-@group(1) @binding(2) var<storage, read_write> active_meshlets: array<u32>; 
-@group(1) @binding(3) var<storage, read_write> draw_command: DrawIndexedIndirectCmd;
-
-const MAX_MESHLETS_PER_COMMAND: u32 = 4096u; 
+@group(1) @binding(3) var<storage, read_write> draw_commands: array<DrawIndexedIndirectCommand>;
 
 fn is_aabb_visible(aabb_min: vec3<f32>, aabb_max: vec3<f32>) -> bool {
     for (var i = 0u; i < 6u; i = i + 1u) {
@@ -65,11 +62,13 @@ fn culling_main(
 
     for (var i = local_id.x; i < task.meshlet_count; i = i + 64u) {
         let global_meshlet_id = task.start_meshlet_index + i;
-        let meshlet = terrain_meshlets[global_meshlet_id];
-        
+        let meshlet = terrain_meshlets[global_meshlet_id];            
+        let cmd_index = global_meshlet_id;
+
         if (is_aabb_visible(meshlet.aabb_min, meshlet.aabb_max)) {            
-            let global_slot = atomicAdd(&draw_command.instance_count, 1u);                        
-            active_meshlets[global_slot] = global_meshlet_id;
+            draw_commands[cmd_index].instance_count = 1u;
+        } else {            
+            draw_commands[cmd_index].instance_count = 0u;
         }
     }
 }
