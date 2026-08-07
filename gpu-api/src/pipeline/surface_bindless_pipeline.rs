@@ -637,7 +637,10 @@ impl SurfaceBindlessResources {
         compute_pass.dispatch_workgroups(total_tasks_count, 1, 1);
     }
 
-    pub fn draw_gpu_driven_frame(&self, render_pass: &mut wgpu::RenderPass, total_meshlets_count: u32) {        
+    pub fn draw_gpu_driven_frame(&self,
+        render_pass: &mut wgpu::RenderPass,
+        commands: &[DrawIndexedIndirectCommand],
+    ) {
         render_pass.set_pipeline(&self.render_pipeline);        
         render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
@@ -647,7 +650,7 @@ impl SurfaceBindlessResources {
         render_pass.multi_draw_indexed_indirect(
             &self.indirect_commands_buffer,
             0,
-            total_meshlets_count,
+            commands.len() as u32,
         );
     }
 }

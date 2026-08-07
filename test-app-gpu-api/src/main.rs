@@ -877,7 +877,7 @@ async fn run() {
                                     }
                                 );
             
-                                surface_resources.draw_gpu_driven_frame(&mut render_pass, meshlets.len() as u32);
+                                surface_resources.draw_gpu_driven_frame(&mut render_pass, &surface_indirect_commands);
                                 model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
                                 //model_pipeline.draw(&mut render_pass, &object_groups);
                                 line_pipeline.draw(&mut render_pass, line_indices.len() as u32);
