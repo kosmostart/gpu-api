@@ -101,7 +101,7 @@ impl SurfaceBindlessResources {
             first_index: 0,
             base_vertex: 0,
             first_instance: 0,
-        };        
+        };
 
         let indirect_commands_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Terrain Single Indirect Command Buffer"),

@@ -114,7 +114,7 @@ async fn run() {
         .get_default_config(&adapter, layout.size.width, layout.size.height)
         .expect("Surface isn't supported by the adapter.");
 
-    config.present_mode = wgpu::PresentMode::Immediate;
+    config.present_mode = wgpu::PresentMode::Mailbox;
     config.format = wgpu::TextureFormat::Rgba8Unorm;
     config.view_formats.push(wgpu::TextureFormat::Rgba8UnormSrgb);    
 
@@ -816,7 +816,10 @@ async fn run() {
                             model_bindless_resources.load_frame(&queue, &mut encoder, &camera, &mut staging_belt, &global_instances, &init_data.nodes,
                                 //&init_data.joints,
                                 &culling_tasks);
-                                
+
+                            model_bindless_resources.clear_gpu_driven_frame(&mut encoder);
+
+                            /*                                
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                                     label: Some("Model Bindless clear Pass"),
@@ -825,6 +828,7 @@ async fn run() {
 
                                 model_bindless_resources.clear_gpu_driven_frame(&mut compute_pass);
                             }
+                            */
                             
                             {
                                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {

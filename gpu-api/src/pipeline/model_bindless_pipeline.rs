@@ -34,10 +34,11 @@ pub struct ModelBindlessResources {
     pub culling_tasks_buffer: wgpu::Buffer,    
     pub visible_instances_buffer: wgpu::Buffer,
     
+    pub indirect_commands_template_buffer: wgpu::Buffer,
     pub indirect_commands_buffer: wgpu::Buffer,
     
     pub culling_compute_pipeline: wgpu::ComputePipeline,
-    pub clear_commands_pipeline: ClearCommandsPipeline,
+    //pub clear_commands_pipeline: ClearCommandsPipeline,
     pub render_pipeline: wgpu::RenderPipeline,
     
     pub materials_bind_group: wgpu::BindGroup,
@@ -114,12 +115,19 @@ impl ModelBindlessResources {
             mapped_at_creation: false,
         });        
 
+        let indirect_commands_template_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Indirect Commands Buffer"),
+            size: (primitives_count * 3 * size_of::<DrawIndexedIndirectCommand>()) as u64,
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let indirect_commands_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Indirect Commands Buffer"),
             size: (primitives_count * 3 * size_of::<DrawIndexedIndirectCommand>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::INDIRECT | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
-        }); 
+        });
         
         let culling_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Culling Compute Shader"),
@@ -629,9 +637,10 @@ impl ModelBindlessResources {
             materials_buffer,
             culling_tasks_buffer,
             visible_instances_buffer,
+            indirect_commands_template_buffer,
             indirect_commands_buffer,
             culling_compute_pipeline,
-            clear_commands_pipeline,
+            //clear_commands_pipeline,
             render_pipeline,
             materials_bind_group,
             camera_bind_group,
@@ -651,6 +660,7 @@ impl ModelBindlessResources {
         queue.write_buffer(&self.mega_vertex_buffer, 0, bytemuck::cast_slice(vertices));
         queue.write_buffer(&self.mega_index_buffer, 0, bytemuck::cast_slice(indices));
         queue.write_buffer(&self.materials_buffer, 0, bytemuck::cast_slice(material_factors));
+        queue.write_buffer(&self.indirect_commands_template_buffer, 0, bytemuck::cast_slice(indirect_commands));
         queue.write_buffer(&self.indirect_commands_buffer, 0, bytemuck::cast_slice(indirect_commands));
     }
   
@@ -745,17 +755,24 @@ impl ModelBindlessResources {
 
     pub fn clear_gpu_driven_frame(
         &self,
-        compute_pass: &mut ComputePass,        
+        encoder: &mut wgpu::CommandEncoder,
+        //compute_pass: &mut ComputePass,        
     ) {
-        self.clear_commands_pipeline.compute(compute_pass);     
+        //self.clear_commands_pipeline.compute(compute_pass);
+        encoder.copy_buffer_to_buffer(
+            &self.indirect_commands_template_buffer,
+            0,
+            &self.indirect_commands_buffer,
+            0,
+            self.indirect_commands_buffer.size(), 
+        );
     }
 
     pub fn compute_gpu_driven_frame(
         &self,
         compute_pass: &mut ComputePass,
         culling_tasks: &[CullingTask]
-    ) {
-        self.clear_commands_pipeline.compute(compute_pass);
+    ) {        
         compute_pass.set_pipeline(&self.culling_compute_pipeline);
         compute_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         compute_pass.set_bind_group(1, &self.culling_compute_bind_group, &[]);

@@ -18,7 +18,6 @@ struct MaterialFactors {
 }
 @group(0) @binding(8) var<storage, read> global_materials: array<MaterialFactors>;
 
-// --- ГРУППА 1: Камера ---
 struct CameraUniform {
     camera_position: vec3<f32>,
     padding: u32,
@@ -28,12 +27,11 @@ struct CameraUniform {
 };
 @group(1) @binding(0) var<uniform> camera: CameraUniform;
 
-// --- ГРУППА 2: Геометрия и данные куллинга террейна (render_bind_group) ---
 struct TerrainVertex {
     position: vec3<f32>,
-    pad0: f32, // Явный паддинг до 16 байт
+    pad0: f32,
     normal: vec3<f32>,
-    pad1: f32, // Явный паддинг до 16 байт
+    pad1: f32,
 };
 
 struct TerrainMeshletDescription {
@@ -63,13 +61,11 @@ struct FragmentInput {
 @vertex
 fn vs_main(
     @builtin(vertex_index) vertex_idx: u32,
-    @builtin(instance_index) instance_idx: u32 // Идет линейно: 0, 1, 2... 1499
-) -> FragmentInput {        
-    // Идеально чисто достаем ID мешлета из плоского массива
+    @builtin(instance_index) instance_idx: u32
+) -> FragmentInput {            
     let meshlet_id = active_meshlets[instance_idx];
     let meshlet = terrain_meshlets[meshlet_id];
-    
-    // Ручная выборка индексов и вершин (как в вашем исходном коде)
+        
     let global_index_pos = meshlet.index_offset + vertex_idx;
     let local_vertex_id = terrain_indices[global_index_pos];
     
