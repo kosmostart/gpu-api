@@ -646,23 +646,29 @@ impl SurfaceBindlessResources {
     pub fn compute_gpu_driven_frame(
         &self,
         compute_pass: &mut wgpu::ComputePass,
-        total_tasks_count: u32,
+        total_meshlets_count: u32,
     ) {
         compute_pass.set_pipeline(&self.culling_compute_pipeline);
         compute_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         compute_pass.set_bind_group(1, &self.culling_compute_bind_group, &[]);
-        compute_pass.dispatch_workgroups(total_tasks_count, 1, 1);
+        let workgroup_count = (total_meshlets_count + 63) / 64;
+        compute_pass.dispatch_workgroups(workgroup_count, 1, 1);
     }
 
-    pub fn draw_gpu_driven_frame(&self,
+    pub fn draw_gpu_driven_frame(
+        &self,
         render_pass: &mut wgpu::RenderPass,
-        commands: &[DrawIndexedIndirectCommand],
+        total_meshlets_count: u32,
     ) {
-        render_pass.set_pipeline(&self.render_pipeline);        
+        render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.materials_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-        render_pass.set_bind_group(2, &self.render_bind_group, &[]);                 
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);        
-        render_pass.multi_draw_indexed_indirect(&self.indirect_commands_buffer, 0, commands.len() as u32);
+        render_pass.set_bind_group(2, &self.render_bind_group, &[]);
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);                
+        render_pass.multi_draw_indexed_indirect(
+            &self.indirect_commands_buffer, 
+            0, 
+            total_meshlets_count
+        );
     }
 }

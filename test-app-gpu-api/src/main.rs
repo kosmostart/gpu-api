@@ -794,7 +794,7 @@ async fn run() {
                                     timestamp_writes: None,
                                 });
 
-                                surface_resources.compute_gpu_driven_frame(&mut compute_pass, surface_culling_tasks.len() as u32);
+                                surface_resources.compute_gpu_driven_frame(&mut compute_pass, surface_data.meshlets.len() as u32);
                             }
                             
                             
@@ -867,7 +867,7 @@ async fn run() {
                                     }
                                 );
             
-                                surface_resources.draw_gpu_driven_frame(&mut render_pass, &surface_data.indirect_commands);
+                                surface_resources.draw_gpu_driven_frame(&mut render_pass, surface_data.meshlets.len() as u32);
                                 model_bindless_resources.draw_gpu_driven_frame(&mut render_pass, &indirect_commands);
                                 //model_pipeline.draw(&mut render_pass, &object_groups);
                                 line_pipeline.draw(&mut render_pass, line_indices.len() as u32);

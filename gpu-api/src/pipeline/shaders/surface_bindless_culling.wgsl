@@ -52,23 +52,26 @@ fn is_aabb_visible(aabb_min: vec3<f32>, aabb_max: vec3<f32>) -> bool {
 
 @compute @workgroup_size(64)
 fn culling_main(
-    @builtin(workgroup_id) workgroup_id: vec3<u32>,
-    @builtin(local_invocation_id) local_id: vec3<u32>
-) {
-    let task_index = workgroup_id.x;
-    if (task_index >= arrayLength(&terrain_tasks)) { return; }
+    @builtin(global_invocation_id) global_id: vec3<u32>
+) {    
+    let task = terrain_tasks[0u];   
+    let local_meshlet_id = global_id.x;
+    if (local_meshlet_id >= task.meshlet_count) {
+        return;
+    }
     
-    let task = terrain_tasks[task_index];
+    let global_meshlet_id = task.start_meshlet_index + local_meshlet_id;
+    let meshlet = terrain_meshlets[global_meshlet_id];    
+    let cmd_index = task.indirect_cmd_index + local_meshlet_id;
 
-    for (var i = local_id.x; i < task.meshlet_count; i = i + 64u) {
-        let global_meshlet_id = task.start_meshlet_index + i;
-        let meshlet = terrain_meshlets[global_meshlet_id];            
-        let cmd_index = global_meshlet_id;
-
-        if (is_aabb_visible(meshlet.aabb_min, meshlet.aabb_max)) {            
-            draw_commands[cmd_index].instance_count = 1u;
-        } else {            
-            draw_commands[cmd_index].instance_count = 0u;
-        }
+    if (is_aabb_visible(meshlet.aabb_min, meshlet.aabb_max)) {
+        draw_commands[cmd_index].index_count = meshlet.index_count;
+        draw_commands[cmd_index].instance_count = 1u;
+        draw_commands[cmd_index].first_index = meshlet.index_offset;
+        draw_commands[cmd_index].base_vertex = meshlet.vertex_offset;
+        draw_commands[cmd_index].first_instance = 0u;
+    } else {
+        draw_commands[cmd_index].instance_count = 0u;
+        draw_commands[cmd_index].index_count = 0u;
     }
 }
