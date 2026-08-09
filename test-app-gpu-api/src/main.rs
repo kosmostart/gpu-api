@@ -183,7 +183,7 @@ async fn run() {
     let position = vec3(view_source.x, view_source.y, view_source.z);
     let object = Object::new(&device, &queue, &model_pipeline, model_data, vec![view_source], loaded_images, FRAME_CYCLE_LENGTH_FOR_ANIMATION, &mut init_data);
 
-    let surface_resources = SurfaceBindlessResources::new(&device, &queue, &camera_uniform, surface_depth_stencil_state, &mut init_data);
+    let surface_resources = SurfaceBindlessResources::new(&device, &queue, &camera_uniform, surface_depth_stencil_state, &init_data.materials);
     
     let mut test_world = world::world::World::new(10, vec3(20.0, 20.0, 20.0));
 

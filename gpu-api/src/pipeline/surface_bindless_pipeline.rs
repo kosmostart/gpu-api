@@ -3,7 +3,7 @@ use gpu_api_dto::TextureType;
 use gpu_api_relay::model_bindless_data::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, SurfaceVertex, TerrainCullingTask, TerrainMeshletDescription, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}, wgt::DrawIndirectArgs};
-use crate::{camera::Camera, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::InitData}}};
+use crate::{camera::Camera, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{InitData, MaterialData}}}};
 use gpu_api_relay::model_bindless_data::CameraUniform;
 
 pub const MAX_VERTICES: u64 = 1_000_000;
@@ -46,7 +46,7 @@ impl SurfaceBindlessResources {
         queue: &wgpu::Queue,        
         camera_uniform: &CameraUniform,
         depth_stencil: Option<wgpu::DepthStencilState>,        
-        init_data: &mut InitData,
+        materials: &[MaterialData],
     ) -> Self {        
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Mega Vertex Buffer"),
@@ -453,9 +453,9 @@ impl SurfaceBindlessResources {
         let mut normal_views = vec![&dummy_view; max_textures];
         let mut emissive_views = vec![&dummy_view; max_textures];
         
-        info!("Materials total: {}", init_data.materials.len());
+        info!("Materials total: {}", materials.len());
         
-        for (material_idx, md) in init_data.materials.iter().enumerate() {
+        for (material_idx, md) in materials.iter().enumerate() {
             info!("Got material {}, textures: {}", material_idx, md.textures.len());
             if material_idx >= max_textures {
                 panic!("Max textures limit reached!");
