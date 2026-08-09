@@ -82,8 +82,7 @@ async fn run() {
                 required_features:
                     wgpu::Features::TEXTURE_FORMAT_16BIT_NORM |
                     wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING |
-                    wgpu::Features::TEXTURE_BINDING_ARRAY |
-                    wgpu::Features::MULTI_DRAW_INDIRECT_COUNT,
+                    wgpu::Features::TEXTURE_BINDING_ARRAY,                    
                 required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
