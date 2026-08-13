@@ -68,8 +68,9 @@ fn vs_main(
 
     var out: FragmentInput;
     let world_pos = vec4<f32>(vertex.position, 1.0);
-        
+            
     out.clip_position = camera.projection * world_pos;
+    
     out.world_position = world_pos.xyz;
     out.normal = vertex.normal;
     out.uv = world_pos.xz * 0.05;

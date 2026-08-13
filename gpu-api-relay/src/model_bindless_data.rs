@@ -42,26 +42,24 @@ unsafe impl bytemuck::Zeroable for NodeData {}
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct InstanceData {
-    pub model_matrix: glam::Mat4, // 64 байта
+    pub model_matrix: glam::Mat4,
     
     // Блок метаданных
-    pub is_animated: u32,         // 4 байта
-    pub node_index: u32,          // 4 байта
-    pub joints_offset: u32,       // 4 байта
-    pub material_index: u32,      // 4 байта
-    pub primitive_index: u32,     // 4 байта
+    pub is_animated: u32,
+    pub node_index: u32,
+    pub joints_offset: u32,
+    pub material_index: u32,
+    pub primitive_index: u32,
+        
+    pub _pad0: u32,
+    pub _pad1: u32,
+    pub _pad2: u32,
+        
+    pub aabb_min: [f32; 3],
+    pub _pad_aabb1: u32,
     
-    // Добиваем блок метаданных до 16-байтовой границы (20 + 12 = 32 байта)
-    pub _pad0: u32,               // 4 байта
-    pub _pad1: u32,               // 4 байта
-    pub _pad2: u32,               // 4 байта
-    
-    // Безопасные AABB без скрытых SIMD-компонентов glam
-    pub aabb_min: [f32; 3],       // 12 байт
-    pub _pad_aabb1: u32,          // 4 байта (округляем до 16 байт)
-    
-    pub aabb_max: [f32; 3],       // 12 байт
-    pub _pad_aabb2: u32,          // 4 байта (округляем до 16 байт)
+    pub aabb_max: [f32; 3],
+    pub _pad_aabb2: u32,
 }
 
 unsafe impl bytemuck::Pod for InstanceData {}
@@ -159,42 +157,49 @@ unsafe impl bytemuck::Zeroable for SurfaceVertex {}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, SchemaWrite, SchemaRead)]
-pub struct TerrainMeshletDescription {
+pub struct SurfaceMeshletDescription {
     pub aabb_min: [f32; 3],
-    pub vertex_offset: u32, // Смещение начала вершин этого мешлета в буфере чанка
+    pub vertex_offset: u32,
     
     pub aabb_max: [f32; 3],
-    pub index_offset: u32,  // Смещение в глобальном буфере индексов
+    pub index_offset: u32,
     
-    pub index_count: u32,   // Всегда 294 для сетки 8x8
+    pub index_count: u32,
     pub material_index: u32,
-    pub pad0: u32,          // Выравнивание до 16 байт (std430)
+    pub pad0: u32,
     pub pad1: u32,
 }
 
-unsafe impl bytemuck::Pod for TerrainMeshletDescription {}
-unsafe impl bytemuck::Zeroable for TerrainMeshletDescription {}
+unsafe impl bytemuck::Pod for SurfaceMeshletDescription {}
+unsafe impl bytemuck::Zeroable for SurfaceMeshletDescription {}
 
 #[derive(Clone, Debug, Default, SchemaWrite, SchemaRead)]
 pub struct SurfaceData {
     pub vertices: Vec<SurfaceVertex>,
     pub indices: Vec<u32>,
-    pub meshlets: Vec<TerrainMeshletDescription>,
+    pub meshlets: Vec<SurfaceMeshletDescription>,
     pub indirect_commands: Vec<DrawIndexedIndirectCommand>,
+}
+
+impl SurfaceData {
+    pub fn new() -> Self {
+        Self {
+            vertices: Vec::new(),
+            indices: Vec::new(),
+            meshlets: Vec::new(),
+            indirect_commands: Vec::new(),
+        }
+    }
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default)]
-pub struct TerrainCullingTask {
-    /// Индекс в глобальном `meshlets_buffer`, с которого этот таск начинает проверку
+pub struct SurfaceCullingTask {
     pub start_meshlet_index: u32,
-    /// Сколько мешлетов нужно проверить в рамках этой задачи
     pub meshlet_count: u32,
-    /// Индекс в массиве счетчиков/команд (в нашей схеме с draw_counts[0] здесь обычно 0)
-    pub indirect_cmd_index: u32,
-    /// Явное выравнивание (padding) до 16 байт, чтобы размер структуры был предсказуем
+    pub indirect_cmd_index: u32,    
     pub _padding: u32,
 }
 
-unsafe impl bytemuck::Pod for TerrainCullingTask {}
-unsafe impl bytemuck::Zeroable for TerrainCullingTask {}
+unsafe impl bytemuck::Pod for SurfaceCullingTask {}
+unsafe impl bytemuck::Zeroable for SurfaceCullingTask {}

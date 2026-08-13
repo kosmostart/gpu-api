@@ -61,14 +61,14 @@ fn culling_main(
     }
     
     let global_meshlet_id = task.start_meshlet_index + local_meshlet_id;
-    let meshlet = terrain_meshlets[global_meshlet_id];    
+    let meshlet = terrain_meshlets[global_meshlet_id];
     let cmd_index = task.indirect_cmd_index + local_meshlet_id;
 
     if (is_aabb_visible(meshlet.aabb_min, meshlet.aabb_max)) {
         draw_commands[cmd_index].index_count = meshlet.index_count;
         draw_commands[cmd_index].instance_count = 1u;
         draw_commands[cmd_index].first_index = meshlet.index_offset;
-        draw_commands[cmd_index].base_vertex = meshlet.vertex_offset;
+        draw_commands[cmd_index].base_vertex = 0u;
         draw_commands[cmd_index].first_instance = 0u;
     } else {
         draw_commands[cmd_index].instance_count = 0u;

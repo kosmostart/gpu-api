@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use gpu_api_dto::TextureType;
-use gpu_api_relay::model_bindless_data::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, SurfaceVertex, TerrainCullingTask, TerrainMeshletDescription, VisibleInstanceData};
+use gpu_api_relay::model_bindless_data::{CullingTask, DrawIndexedIndirectCommand, InstanceData, MaterialFactors, NodeData, PrimitiveMeta, SurfaceVertex, SurfaceCullingTask, SurfaceMeshletDescription, VisibleInstanceData};
 use log::info;
 use wgpu::{ComputePass, RenderPass, TextureFormat, util::{DeviceExt, StagingBelt}, wgt::DrawIndirectArgs};
 use crate::{camera::Camera, pipeline::{clear_commands_pipeline::{self, ClearCommandsPipeline}, model_pipeline::{CAMERA_UNIFORM_SIZE, model::{InitData, MaterialData}}}};
@@ -62,7 +62,7 @@ impl SurfaceBindlessResources {
             mapped_at_creation: false,
         });
         
-        let meshlets_buffer_size = MAX_INSTANCES * size_of::<TerrainMeshletDescription>() as u64; // (global_meshlets.len() * std::mem::size_of::<TerrainMeshletDescription>()) as wgpu::BufferAddress;
+        let meshlets_buffer_size = MAX_INSTANCES * size_of::<SurfaceMeshletDescription>() as u64; // (global_meshlets.len() * std::mem::size_of::<TerrainMeshletDescription>()) as wgpu::BufferAddress;
 
         let meshlets_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Terrain Meshlets Description Buffer"),
@@ -78,7 +78,7 @@ impl SurfaceBindlessResources {
             mapped_at_creation: false,
         });
         
-        let buffer_size = (MAX_TERRAIN_CULLING_TASKS * std::mem::size_of::<TerrainCullingTask>()) as u64;
+        let buffer_size = (MAX_TERRAIN_CULLING_TASKS * std::mem::size_of::<SurfaceCullingTask>()) as u64;
 
         let culling_tasks_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Terrain Culling Tasks Buffer"),
@@ -597,7 +597,7 @@ impl SurfaceBindlessResources {
         queue: &wgpu::Queue,
         vertices: &[SurfaceVertex],
         indices: &[u32],
-        meshlets: &[TerrainMeshletDescription],
+        meshlets: &[SurfaceMeshletDescription],
         material_factors: &[MaterialFactors],
         indirect_commands: &[DrawIndexedIndirectCommand]
     ) {        
@@ -615,7 +615,7 @@ impl SurfaceBindlessResources {
         encoder: &mut wgpu::CommandEncoder,
         camera: &Camera,
         staging_belt: &mut StagingBelt,
-        culling_tasks: &[TerrainCullingTask],        
+        culling_tasks: &[SurfaceCullingTask],        
     ) {        
         {                                                                                            
             let camera_uniform = camera.get_uniform();

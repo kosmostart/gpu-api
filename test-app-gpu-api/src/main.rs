@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
 use glam::{Mat4, Vec3, vec3};
-use gpu_api_relay::model_bindless_data::{InstanceData, NodeData, PrimitiveMeta, SurfaceData, TerrainCullingTask};
+use gpu_api_relay::model_bindless_data::{InstanceData, NodeData, PrimitiveMeta, SurfaceData, SurfaceCullingTask};
 use log::*;
 use winit::{dpi::{PhysicalPosition, PhysicalSize}, event::{ElementState, Event, MouseScrollDelta, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::Window};
 use wgpu::{CurrentSurfaceTexture, DeviceDescriptor, ExperimentalFeatures, MemoryHints, RequestAdapterOptions, StoreOp};

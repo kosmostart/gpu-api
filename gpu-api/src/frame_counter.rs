@@ -3,7 +3,10 @@ use log::info;
 pub struct FrameCounter {
     pub frame_cycle_index: usize,
     pub frame_cycle_length: usize,
-    pub time_per_frame: f32,    
+    /// Real frame length (as time)
+    pub last_frame_time: f32, 
+    /// Target frame time (for fixed FPS). For non fixed FPS will be equal to last_frame_time
+    pub target_time_per_frame: f32,
     #[cfg(not(target_arch = "wasm32"))]
     pub last_frame_instant: std::time::Instant,
     #[cfg(target_arch = "wasm32")]
@@ -22,7 +25,8 @@ impl FrameCounter {
         Self {
             frame_cycle_index: 0,
             frame_cycle_length,
-            time_per_frame: 1.0 / frame_cycle_length as f32,
+            last_frame_time: 0.0,
+            target_time_per_frame: 1.0 / frame_cycle_length as f32,
             #[cfg(not(target_arch = "wasm32"))]
             last_frame_instant: std::time::Instant::now(),
             #[cfg(target_arch = "wasm32")]
@@ -42,9 +46,9 @@ impl FrameCounter {
         #[cfg(target_arch = "wasm32")]
         let now = web_time::Instant::now();
 
-        // 2. Calculate time passed since the last frame
-        let delta_time = now.duration_since(self.last_frame_instant).as_secs_f32();
-        self.time_per_frame = delta_time;
+        // 2. Calculate time passed since the last frame        
+        self.last_frame_time = now.duration_since(self.last_frame_instant).as_secs_f32();
+        self.target_time_per_frame = self.last_frame_time;
         self.last_frame_instant = now;
 
         // 3. Increment total frames tracked in this interval
@@ -58,7 +62,7 @@ impl FrameCounter {
             let fps = self.frame_count as f32 / elapsed_since_print;
             
             // Print to console (works on both native stdout and WASM with wasm-bindgen)
-            info!("FPS: {:.1} (Frame time: {:.2}ms)", fps, self.time_per_frame * 1000.0);
+            info!("FPS: {:.1} (Frame time: {:.2}ms)", fps, self.target_time_per_frame * 1000.0);
 
             // Reset intervals for the next measurement cycle
             self.frame_count = 0;
@@ -73,8 +77,9 @@ impl FrameCounter {
         let new_instant = web_time::Instant::now();
 
         let frame_time = (new_instant - self.last_frame_instant).as_secs_f32();
+        self.last_frame_time = frame_time;
 
-        let res = frame_time > self.time_per_frame;
+        let res = frame_time > self.target_time_per_frame;
 
         if res {
             self.frame_count = self.frame_count + 1;
