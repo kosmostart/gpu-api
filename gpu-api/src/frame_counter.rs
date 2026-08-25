@@ -5,17 +5,17 @@ use web_time::{Duration, Instant};
 
 pub struct FrameCounter {
     #[cfg(not(target_arch = "wasm32"))]
-    last_printed_instant: Instant,
+    pub last_printed_instant: Instant,
     #[cfg(target_arch = "wasm32")]
-    last_printed_instant: webtime::Instant,
+    pub last_printed_instant: webtime::Instant,
     #[cfg(not(target_arch = "wasm32"))]
-    last_frame_instant: Instant,
+    pub last_frame_instant: Instant,
     #[cfg(target_arch = "wasm32")]
-    last_frame_instant: web_time::Instant,
-    frame_count: u32,
-    fps: f64,
-    delta_time: f64,
-    target_fps: u32,
+    pub last_frame_instant: web_time::Instant,
+    pub frame_count: u32,
+    pub fps: f64,
+    pub delta_time: f64,
+    pub target_fps: u32,
 }
 
 impl FrameCounter {
