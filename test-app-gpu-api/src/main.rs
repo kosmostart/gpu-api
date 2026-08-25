@@ -13,7 +13,7 @@ use gpu_api::{camera::create_camera, frame_counter::FrameCounter, pipeline::{sel
 use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
 use world::world::World;
 
-pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: u32 = 200;
+pub const TARGET_FPS: u32 = 200;
 pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
 
 #[derive(Debug)]
@@ -383,7 +383,7 @@ async fn run() {
     let line_indices: Vec<u32> = vec![0, 1, 1, 2];
 
     let mut staging_belt = wgpu::util::StagingBelt::new(device.clone(), 5 * 1024);
-    let mut frame_counter = FrameCounter::new(FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER);
+    let mut frame_counter = FrameCounter::new(TARGET_FPS);
 
     event_loop.run(move |event, target| {        
         target.set_control_flow(ControlFlow::Wait);
