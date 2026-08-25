@@ -13,7 +13,7 @@ use gpu_api::{camera::create_camera, frame_counter::FrameCounter, pipeline::{sel
 use gpu_api_dto::{AnimationComputationMode, AnimationProperty, ViewSource};
 use world::world::World;
 
-pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: usize = 200;
+pub const FRAME_CYCLE_LENGTH_FOR_FRAME_COUNTER: u32 = 200;
 pub const FRAME_CYCLE_LENGTH_FOR_ANIMATION: usize = 200;
 
 #[derive(Debug)]
@@ -447,7 +447,7 @@ async fn run() {
                     }
                     WindowEvent::RedrawRequested => {
                         //frame_counter.simple_update();
-                        if frame_counter.update() {
+                        if frame_counter.tick() {
                                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                     label: Some("Redraw")
                                 }

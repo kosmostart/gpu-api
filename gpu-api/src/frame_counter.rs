@@ -1,111 +1,77 @@
-use log::info;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::{Duration, Instant};
+#[cfg(target_arch = "wasm32")]
+use web_time::{Duration, Instant};
 
 pub struct FrameCounter {
-    pub frame_cycle_index: usize,
-    pub frame_cycle_length: usize,
-    /// Real frame length (as time)
-    pub last_frame_time: f32, 
-    /// Target frame time (for fixed FPS). For non fixed FPS will be equal to last_frame_time
-    pub target_time_per_frame: f32,
     #[cfg(not(target_arch = "wasm32"))]
-    pub last_frame_instant: std::time::Instant,
+    last_printed_instant: Instant,
     #[cfg(target_arch = "wasm32")]
-    pub last_frame_instant: web_time::Instant,
-    /// Instant of the last time we printed the frame time.
+    last_printed_instant: webtime::Instant,
     #[cfg(not(target_arch = "wasm32"))]
-    pub last_printed_instant: std::time::Instant,
+    last_frame_instant: Instant,
     #[cfg(target_arch = "wasm32")]
-    pub last_printed_instant: web_time::Instant,
-    /// Number of frames since the last time we printed the frame time.
-    pub frame_count: u32
+    last_frame_instant: web_time::Instant,
+    frame_count: u32,
+    fps: f64,
+    delta_time: f64,
+    target_fps: u32,
 }
 
 impl FrameCounter {
-    pub fn new(frame_cycle_length: usize) -> Self {
-        Self {
-            frame_cycle_index: 0,
-            frame_cycle_length,
-            last_frame_time: 0.0,
-            target_time_per_frame: 1.0 / frame_cycle_length as f32,
-            #[cfg(not(target_arch = "wasm32"))]
-            last_frame_instant: std::time::Instant::now(),
-            #[cfg(target_arch = "wasm32")]
-            last_frame_instant: web_time::Instant::now(),
-            #[cfg(not(target_arch = "wasm32"))]
-            last_printed_instant: std::time::Instant::now(),
-            #[cfg(target_arch = "wasm32")]
-            last_printed_instant: web_time::Instant::now(),
-            frame_count: 0
-        }
-    }
-
-    pub fn simple_update(&mut self) {
-        // 1. Get the current time based on the architecture
+    pub fn new(target_fps: u32) -> Self {
         #[cfg(not(target_arch = "wasm32"))]
-        let now = std::time::Instant::now();
+        let now = Instant::now();
         #[cfg(target_arch = "wasm32")]
         let now = web_time::Instant::now();
 
-        // 2. Calculate time passed since the last frame        
-        self.last_frame_time = now.duration_since(self.last_frame_instant).as_secs_f32();
-        self.target_time_per_frame = self.last_frame_time;
+        Self {            
+            last_printed_instant: now,            
+            last_frame_instant: now,
+            frame_count: 0,
+            fps: 0.0,
+            delta_time: 0.0,
+            target_fps,
+        }
+    }
+    
+    pub fn update(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        let now = Instant::now();
+        #[cfg(target_arch = "wasm32")]
+        let now = web_time::Instant::now();                
+        self.update_metrics(now);
+    }
+    
+    pub fn tick(&mut self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        let now = Instant::now();
+        #[cfg(target_arch = "wasm32")]
+        let now = web_time::Instant::now();
+
+        let target_frame_time = Duration::from_secs_f64(1.0 / self.target_fps as f64);
+        let elapsed_time = now.duration_since(self.last_frame_instant);
+        
+        if elapsed_time < target_frame_time {
+            return false;
+        }
+        
+        self.update_metrics(now);
+        true
+    }
+    
+    fn update_metrics(&mut self, now: Instant) {
+        let timestep = now.duration_since(self.last_frame_instant);
+        self.delta_time = timestep.as_secs_f64();
         self.last_frame_instant = now;
 
-        // 3. Increment total frames tracked in this interval
         self.frame_count += 1;
 
-        // 4. Calculate time passed since the last print log
-        let elapsed_since_print = now.duration_since(self.last_printed_instant).as_secs_f32();
-
-        // 5. Update and print FPS every 1.0 second
-        if elapsed_since_print >= 1.0 {
-            let fps = self.frame_count as f32 / elapsed_since_print;
-            
-            // Print to console (works on both native stdout and WASM with wasm-bindgen)
-            info!("FPS: {:.1} (Frame time: {:.2}ms)", fps, self.target_time_per_frame * 1000.0);
-
-            // Reset intervals for the next measurement cycle
+        let time_since_print = now.duration_since(self.last_printed_instant);
+        if time_since_print >= Duration::from_secs(1) {
+            self.fps = self.frame_count as f64 / time_since_print.as_secs_f64();
             self.frame_count = 0;
             self.last_printed_instant = now;
         }
-    }
-
-    pub fn update(&mut self) -> bool {        
-        #[cfg(not(target_arch = "wasm32"))]
-        let new_instant = std::time::Instant::now();
-        #[cfg(target_arch = "wasm32")]
-        let new_instant = web_time::Instant::now();
-
-        let frame_time = (new_instant - self.last_frame_instant).as_secs_f32();
-        self.last_frame_time = frame_time;
-
-        let res = frame_time > self.target_time_per_frame;
-
-        if res {
-            self.frame_count = self.frame_count + 1;
-            self.frame_cycle_index = self.frame_cycle_index + 1;
-
-            if self.frame_cycle_index == self.frame_cycle_length {
-                self.frame_cycle_index = 0;        
-            }
-            self.last_frame_instant = new_instant;
-        }
-
-
-
-        let elapsed_secs = (new_instant - self.last_printed_instant).as_secs_f32();
-        
-        if elapsed_secs > 1.0 {
-            let elapsed_ms = elapsed_secs * 1000.0;
-            let frame_time = elapsed_ms / self.frame_count as f32;
-            let fps = self.frame_count as f32 / elapsed_secs;
-
-            info!("FPS: {:.1} (Frame time: {:.2}ms)", fps, frame_time);
-
-            self.last_printed_instant = new_instant;
-            self.frame_count = 0;
-        }
-        
-        res
     }
 }

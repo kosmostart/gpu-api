@@ -4328,6 +4328,7 @@ dependencies = [
  "data-arena",
  "glam",
  "gpu-api-relay",
+ "log",
 ]
 
 [[package]]
