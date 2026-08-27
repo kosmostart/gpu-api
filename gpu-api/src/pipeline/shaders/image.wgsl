@@ -99,7 +99,7 @@ fn solid_fs_main(
         input.position[1] < input.clip[1] ||
         input.position[1] > input.clip[3]
     ) {
-        //discard;
+        discard;
     }
 
     var mixed_color: vec4<f32> = textureSample(image_texture, image_sampler, input.texture_coordinates);    
