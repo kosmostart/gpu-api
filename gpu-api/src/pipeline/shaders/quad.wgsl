@@ -1,6 +1,8 @@
 struct Globals {
     transform: mat4x4<f32>,
-    scale: f32
+    scale: f32,
+    _padding: f32,
+    viewport_offset: vec2<f32>
 }
 
 @group(0) @binding(0) var<uniform> globals: Globals;

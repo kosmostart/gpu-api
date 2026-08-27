@@ -28,7 +28,7 @@ struct VertexOutput {
     @location(6) shadow_color: vec4<f32>,
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
-    @location(9) clip: vec4<f32>    
+    @location(9) clip: vec4<f32>,    
 }
 
 @vertex
@@ -99,13 +99,15 @@ fn solid_fs_main(
         input.position[1] < input.clip[1] ||
         input.position[1] > input.clip[3]
     ) {
-        discard;
+        //discard;
     }
 
     var mixed_color: vec4<f32> = textureSample(image_texture, image_sampler, input.texture_coordinates);    
 
+    let local_pixel_pos = input.position.xy - globals.viewport_offset;
+
     var dist = rounded_box_sdf(
-        -(input.position.xy - input.pos - input.scale * 0.5) * 2.0,
+        -(local_pixel_pos - input.pos - input.scale * 0.5) * 2.0,
         input.scale,
         input.border_radius * 2.0
     ) / 2.0;

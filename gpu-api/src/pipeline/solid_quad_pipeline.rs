@@ -51,20 +51,20 @@ unsafe impl bytemuck::Pod for SolidQuad {}
 pub struct Uniforms {
     pub transform: [f32; 16],
     pub scale: f32,
-    // Uniforms must be aligned to their largest member,
-    // this uses a mat4x4<f32> which aligns to 16, so align to that
-    pub _padding: [f32; 3],
+    pub _padding: f32,
+    pub viewport_offset: [f32; 2],     
 }
 
 unsafe impl bytemuck::Pod for Uniforms {}
 unsafe impl bytemuck::Zeroable for Uniforms {}
 
 impl Uniforms {
-    pub fn new(transformation: Transformation, scale: f32) -> Uniforms {
+    pub fn new(transformation: Transformation, scale: f32, viewport_offset: [f32; 2]) -> Uniforms {
         Self {
             transform: *transformation.as_ref(),
             scale,
-            _padding: [0.0; 3],
+            _padding: 0.0,
+            viewport_offset,            
         }
     }
 }
@@ -73,7 +73,8 @@ impl Default for Uniforms {
         Self {
             transform: *Transformation::identity().as_ref(),
             scale: 1.0,
-            _padding: [0.0; 3],
+            _padding: 0.0,
+            viewport_offset: [0.0, 0.0],            
         }
     }
 }

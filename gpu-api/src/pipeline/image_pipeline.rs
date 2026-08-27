@@ -103,7 +103,7 @@ impl Pipeline {
         for image_object in image_objects {
             if image_object.quads.len() == 0 {
                 continue;
-            }
+            }            
 
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
@@ -120,7 +120,7 @@ impl Pipeline {
                 label: Some("Quad uniforms layout"),
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
