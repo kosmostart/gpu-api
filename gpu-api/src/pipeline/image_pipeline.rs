@@ -54,6 +54,7 @@ pub struct Pipeline {
 
 pub struct ImageObject {
     pub name: String,
+    pub is_active: bool,
     pub vertex_buffer: wgpu::Buffer,
     pub image_bind_group: wgpu::BindGroup,
     pub image_texture: crate::texture::Texture,
@@ -90,6 +91,7 @@ impl ImageObject {
 
         ImageObject {
             name: name.to_owned(),
+            is_active: true,
             vertex_buffer,
             image_bind_group,
             image_texture,
@@ -101,7 +103,7 @@ impl ImageObject {
 impl Pipeline {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>, image_objects: &Vec<ImageObject>) {
         for image_object in image_objects {
-            if image_object.quads.len() == 0 {
+            if image_object.is_active == false || image_object.quads.len() == 0 {
                 continue;
             }            
 
